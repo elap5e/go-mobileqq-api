@@ -103,7 +103,7 @@ func (b *Buffer) DecodeBytes() ([]byte, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	b.idx += int(n)
-	return v[:n], err
+	return v[:n], nil
 }
 
 // DecodeString consumes an encoded length-prefixed raw string from the buffer.
@@ -112,12 +112,18 @@ func (b *Buffer) DecodeString() (string, error) {
 	return string(v), err
 }
 
-// DecodeRawBytes consumes an encoded raw bytes to the buffer.
-func (b *Buffer) DecodeRawBytes(n int) ([]byte, error) {
-	panic("")
+// DecodeBytesN consumes an n-limited encoded raw bytes to the buffer.
+func (b *Buffer) DecodeBytesN(n uint16) ([]byte, error) {
+	v := b.buf[b.idx:]
+	if len(v) < int(n) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	b.idx += int(n)
+	return v[:n], nil
 }
 
-// DecodeRawString consumes an encoded raw string to the buffer.
-func (b *Buffer) DecodeRawString(n int) (string, error) {
-	panic("")
+// DecodeStringN consumes an n-limited encoded raw string to the buffer.
+func (b *Buffer) DecodeStringN(n uint16) (string, error) {
+	v, err := b.DecodeBytesN(n)
+	return string(v), err
 }

@@ -80,6 +80,21 @@ func (b *Buffer) EncodeString(v string) {
 	b.EncodeBytes([]byte(v))
 }
 
+// EncodeBytesN appends an n-limited length-prefixed raw bytes to the buffer.
+func (b *Buffer) EncodeBytesN(v []byte, n uint16) {
+	l := uint16(len(v))
+	if l > n {
+		l = n
+	}
+	b.EncodeUint16(l)
+	b.EncodeRawBytes(v[:l])
+}
+
+// EncodeStringN appends an n-limited length-prefixed raw string to the buffer.
+func (b *Buffer) EncodeStringN(v string, n uint16) {
+	b.EncodeBytesN([]byte(v), n)
+}
+
 // EncodeRawBytes appends a raw bytes to the buffer.
 func (b *Buffer) EncodeRawBytes(v []byte) {
 	b.buf = append(b.buf, v...)

@@ -4,26 +4,24 @@ import (
 	"github.com/elap5e/go-mobileqq-api/bytes"
 )
 
-type T16E struct {
+type T108 struct {
 	tlv  *TLV
 	bArr []byte
 }
 
-func NewT16E(bArr []byte) *T16E {
-	return &T16E{
-		tlv:  NewTLV(0x016e, 0x0000, nil),
+func NewT108(bArr []byte) *T108 {
+	return &T108{
+		tlv:  NewTLV(0x0108, 0x0000, nil),
 		bArr: bArr,
 	}
 }
 
-func (t *T16E) Encode(b *bytes.Buffer) {
-	v := bytes.NewBuffer([]byte{})
-	v.EncodeBytesN(t.bArr, 0x0040)
-	t.tlv.SetValue(v)
+func (t *T108) Encode(b *bytes.Buffer) {
+	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
 	t.tlv.Encode(b)
 }
 
-func (t *T16E) Decode(b *bytes.Buffer) error {
+func (t *T108) Decode(b *bytes.Buffer) error {
 	if err := t.tlv.Decode(b); err != nil {
 		return err
 	}

@@ -40,13 +40,13 @@ func (t *T11A) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	if t.face, err = v.DecodeRawBytes(0x0002); err != nil {
+	if t.face, err = v.DecodeBytesN(0x0002); err != nil {
 		return err
 	}
-	if t.age, err = v.DecodeRawBytes(0x0001); err != nil {
+	if t.age, err = v.DecodeBytesN(0x0001); err != nil {
 		return err
 	}
-	if t.gender, err = v.DecodeRawBytes(0x0001); err != nil {
+	if t.gender, err = v.DecodeBytesN(0x0001); err != nil {
 		return err
 	}
 	if t.nick, err = v.DecodeBytes(); err != nil {

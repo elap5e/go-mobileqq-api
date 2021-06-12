@@ -42,7 +42,7 @@ func (t *T11D) Decode(b *bytes.Buffer) error {
 		return err
 	}
 	t.appID = uint64(appID)
-	if t.stKey, err = v.DecodeRawBytes(0x0010); err != nil {
+	if t.stKey, err = v.DecodeBytesN(0x0010); err != nil {
 		return err
 	}
 	if t.st, err = v.DecodeBytes(); err != nil {

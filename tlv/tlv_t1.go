@@ -60,7 +60,7 @@ func (t *T1) Decode(b *bytes.Buffer) error {
 	if _, err := v.DecodeUint32(); err != nil {
 		return err
 	}
-	if t.ip, err = v.DecodeRawBytes(0x0004); err != nil {
+	if t.ip, err = v.DecodeBytesN(0x0004); err != nil {
 		return err
 	}
 	if _, err := v.DecodeUint32(); err != nil {
