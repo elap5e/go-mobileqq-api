@@ -10,6 +10,11 @@ type TLV struct {
 	v *bytes.Buffer
 }
 
+type TLVCodec interface {
+	Encode(b *bytes.Buffer)
+	Decode(b *bytes.Buffer) error
+}
+
 func NewTLV(t uint16, l uint16, v *bytes.Buffer) *TLV {
 	return &TLV{t: t, l: l, v: v}
 }
