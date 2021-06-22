@@ -5,19 +5,19 @@ import (
 )
 
 type T10A struct {
-	tlv  *TLV
-	bArr []byte
+	tlv *TLV
+	a2  []byte // A2
 }
 
-func NewT10A(bArr []byte) *T10A {
+func NewT10A(a2 []byte) *T10A {
 	return &T10A{
-		tlv:  NewTLV(0x010a, 0x0000, nil),
-		bArr: bArr,
+		tlv: NewTLV(0x010a, 0x0000, nil),
+		a2:  a2,
 	}
 }
 
 func (t *T10A) Encode(b *bytes.Buffer) {
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
+	t.tlv.SetValue(bytes.NewBuffer(t.a2))
 	t.tlv.Encode(b)
 }
 
@@ -29,6 +29,6 @@ func (t *T10A) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	t.a2 = v.Bytes()
 	return nil
 }

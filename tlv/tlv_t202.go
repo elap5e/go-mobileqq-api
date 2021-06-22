@@ -5,26 +5,23 @@ import (
 )
 
 type T202 struct {
-	tlv   *TLV
-	bArr  []byte
-	bArr2 []byte
+	tlv      *TLV
+	md5BSSID [16]byte
+	ssid     []byte
 }
 
-func NewT202(bArr, bArr2 []byte) *T202 {
+func NewT202(md5BSSID [16]byte, ssid []byte) *T202 {
 	return &T202{
-		tlv:   NewTLV(0x0202, 0x0000, nil),
-		bArr:  bArr,
-		bArr2: bArr2,
+		tlv:      NewTLV(0x0202, 0x0000, nil),
+		md5BSSID: md5BSSID,
+		ssid:     ssid,
 	}
 }
 
 func (t *T202) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
-	if len(t.bArr) == 0 {
-		t.bArr = make([]byte, 16)
-	}
-	v.EncodeBytesN(t.bArr, 0x0010)
-	v.EncodeBytesN(t.bArr2, 0x0020)
+	v.EncodeBytesN(t.md5BSSID[:], 0x0010)
+	v.EncodeBytesN(t.ssid, 0x0020)
 	t.tlv.SetValue(v)
 	t.tlv.Encode(b)
 }
@@ -37,10 +34,12 @@ func (t *T202) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	if t.bArr, err = v.DecodeBytes(); err != nil {
+	md5BSSID, err := v.DecodeBytes()
+	if err != nil {
 		return err
 	}
-	if t.bArr2, err = v.DecodeBytes(); err != nil {
+	copy(t.md5BSSID[:], md5BSSID)
+	if t.ssid, err = v.DecodeBytes(); err != nil {
 		return err
 	}
 	return nil

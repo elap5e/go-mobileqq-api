@@ -6,18 +6,18 @@ import (
 
 type T108 struct {
 	tlv  *TLV
-	bArr []byte
+	ksid []byte
 }
 
-func NewT108(bArr []byte) *T108 {
+func NewT108(ksid []byte) *T108 {
 	return &T108{
 		tlv:  NewTLV(0x0108, 0x0000, nil),
-		bArr: bArr,
+		ksid: ksid,
 	}
 }
 
 func (t *T108) Encode(b *bytes.Buffer) {
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
+	t.tlv.SetValue(bytes.NewBuffer(t.ksid))
 	t.tlv.Encode(b)
 }
 
@@ -29,6 +29,6 @@ func (t *T108) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	t.ksid = v.Bytes()
 	return nil
 }

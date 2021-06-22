@@ -24,40 +24,6 @@ func NewCipher(v [16]byte) *Cipher {
 	return &Cipher{key: key, tmp: tmp}
 }
 
-func (c *Cipher) decrypt(src []byte, off, n int) (dst []byte) {
-	if (n-off)%8 != 0 {
-		return nil
-	}
-	dst = make([]byte, n-off)
-	for i := 0; i < len(dst); i += 8 {
-		c.decrypt64bit(dst[i:i+8], src[off+i:off+i+8])
-	}
-	return dst[dst[0]&0x07+3 : n-off-7]
-}
-
-func (c *Cipher) decrypt64bit(dst, src []byte) {
-	// TODO: fix src&dst memory overlap
-	xorBytes(dst, src, c.tmp[2])
-	c.decryptBlock(dst, dst)
-	copy(c.tmp[2], dst)
-	xorBytes(dst, dst, c.tmp[3])
-	copy(c.tmp[3], src)
-}
-
-func (c *Cipher) decryptBlock(dst, src []byte) {
-	_ = src[7] // early bounds check
-	s0 := binary.BigEndian.Uint32(src[0:4])
-	s1 := binary.BigEndian.Uint32(src[4:8])
-	var sum uint32 = 0xE3779B90 // -478700656
-	for i := 0; i < 0x10; i++ {
-		s1 -= ((s0 << 4) + c.key[2]) ^ (s0 + sum) ^ ((s0 >> 5) + c.key[3])
-		s0 -= ((s1 << 4) + c.key[0]) ^ (s1 + sum) ^ ((s1 >> 5) + c.key[1])
-		sum -= 0x9E3779B9 // -1640531527
-	}
-	binary.BigEndian.PutUint32(dst[0:4], s0)
-	binary.BigEndian.PutUint32(dst[4:8], s1)
-}
-
 func (c *Cipher) encrypt(src []byte, off, n int) (dst []byte) {
 	fill := 10 - (n-off+1)%8
 	dst = make([]byte, fill+n-off+7)
@@ -93,15 +59,49 @@ func (c *Cipher) encryptBlock(dst, src []byte) {
 	binary.BigEndian.PutUint32(dst[4:8], s1)
 }
 
-func (c *Cipher) Decrypt(src []byte) (dst []byte) {
-	return c.decrypt(src, 0, len(src))
+func (c *Cipher) decrypt(src []byte, off, n int) (dst []byte) {
+	if (n-off)%8 != 0 {
+		return nil
+	}
+	dst = make([]byte, n-off)
+	for i := 0; i < len(dst); i += 8 {
+		c.decrypt64bit(dst[i:i+8], src[off+i:off+i+8])
+	}
+	return dst[dst[0]&0x07+3 : n-off-7]
+}
+
+func (c *Cipher) decrypt64bit(dst, src []byte) {
+	// TODO: fix src&dst memory overlap
+	xorBytes(dst, src, c.tmp[2])
+	c.decryptBlock(dst, dst)
+	copy(c.tmp[2], dst)
+	xorBytes(dst, dst, c.tmp[3])
+	copy(c.tmp[3], src)
+}
+
+func (c *Cipher) decryptBlock(dst, src []byte) {
+	_ = src[7] // early bounds check
+	s0 := binary.BigEndian.Uint32(src[0:4])
+	s1 := binary.BigEndian.Uint32(src[4:8])
+	var sum uint32 = 0xE3779B90 // -478700656
+	for i := 0; i < 0x10; i++ {
+		s1 -= ((s0 << 4) + c.key[2]) ^ (s0 + sum) ^ ((s0 >> 5) + c.key[3])
+		s0 -= ((s1 << 4) + c.key[0]) ^ (s1 + sum) ^ ((s1 >> 5) + c.key[1])
+		sum -= 0x9E3779B9 // -1640531527
+	}
+	binary.BigEndian.PutUint32(dst[0:4], s0)
+	binary.BigEndian.PutUint32(dst[4:8], s1)
 }
 
 func (c *Cipher) Encrypt(src []byte) (dst []byte) {
 	return c.encrypt(src, 0, len(src))
 }
 
-func (c *Cipher) SetKey(v []byte) {
+func (c *Cipher) Decrypt(src []byte) (dst []byte) {
+	return c.decrypt(src, 0, len(src))
+}
+
+func (c *Cipher) SetKey(v [16]byte) {
 	c.key[0] = binary.BigEndian.Uint32(v[0:])
 	c.key[1] = binary.BigEndian.Uint32(v[4:])
 	c.key[2] = binary.BigEndian.Uint32(v[8:])

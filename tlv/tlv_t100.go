@@ -5,20 +5,20 @@ import (
 )
 
 type T100 struct {
-	tlv   *TLV
-	appID uint64
-	j2    uint64
-	i     uint32
-	i2    uint32
+	tlv              *TLV
+	appID            uint64
+	subAppID         uint64
+	appClientVersion uint32
+	mainSigMap       uint32
 }
 
-func NewT100(appID, j2 uint64, i, i2 uint32) *T100 {
+func NewT100(appID, subAppID uint64, appClientVersion, mainSigMap uint32) *T100 {
 	return &T100{
-		tlv:   NewTLV(0x0100, 0x0000, nil),
-		appID: appID,
-		j2:    j2,
-		i:     i,
-		i2:    i2,
+		tlv:              NewTLV(0x0100, 0x0000, nil),
+		appID:            appID,
+		subAppID:         subAppID,
+		appClientVersion: appClientVersion,
+		mainSigMap:       mainSigMap,
 	}
 }
 
@@ -27,9 +27,9 @@ func (t *T100) Encode(b *bytes.Buffer) {
 	v.EncodeUint16(0x0001)
 	v.EncodeUint32(0x00000011)
 	v.EncodeUint32(uint32(t.appID))
-	v.EncodeUint32(uint32(t.j2))
-	v.EncodeUint32(t.i)
-	v.EncodeUint32(t.i2)
+	v.EncodeUint32(uint32(t.subAppID))
+	v.EncodeUint32(t.appClientVersion)
+	v.EncodeUint32(t.mainSigMap)
 	t.tlv.SetValue(v)
 	t.tlv.Encode(b)
 }
@@ -53,15 +53,15 @@ func (t *T100) Decode(b *bytes.Buffer) error {
 		return err
 	}
 	t.appID = uint64(appID)
-	j2, err := v.DecodeUint32()
+	subAppID, err := v.DecodeUint32()
 	if err != nil {
 		return err
 	}
-	t.j2 = uint64(j2)
-	if t.i, err = v.DecodeUint32(); err != nil {
+	t.subAppID = uint64(subAppID)
+	if t.appClientVersion, err = v.DecodeUint32(); err != nil {
 		return err
 	}
-	if t.i2, err = v.DecodeUint32(); err != nil {
+	if t.mainSigMap, err = v.DecodeUint32(); err != nil {
 		return err
 	}
 	return nil

@@ -1,3 +1,7 @@
+.vscode/
+bin/
+tmp/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

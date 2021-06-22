@@ -5,22 +5,19 @@ import (
 )
 
 type T188 struct {
-	tlv  *TLV
-	bArr []byte
+	tlv          *TLV
+	md5AndroidID [16]byte
 }
 
-func NewT188(bArr []byte) *T188 {
+func NewT188(md5AndroidID [16]byte) *T188 {
 	return &T188{
-		tlv:  NewTLV(0x0188, 0x0000, nil),
-		bArr: bArr,
+		tlv:          NewTLV(0x0188, 0x0000, nil),
+		md5AndroidID: md5AndroidID,
 	}
 }
 
 func (t *T188) Encode(b *bytes.Buffer) {
-	if len(t.bArr) == 0 {
-		t.bArr = make([]byte, 16)
-	}
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
+	t.tlv.SetValue(bytes.NewBuffer(t.md5AndroidID[:]))
 	t.tlv.Encode(b)
 }
 
@@ -32,6 +29,6 @@ func (t *T188) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	copy(t.md5AndroidID[:], v.Bytes())
 	return nil
 }

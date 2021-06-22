@@ -12,5 +12,5 @@ func NewBuffer(buf []byte) *Buffer {
 }
 
 func (b *Buffer) Bytes() []byte {
-	return b.buf
+	return b.buf[b.idx:]
 }

@@ -5,20 +5,20 @@ import (
 )
 
 type T16E struct {
-	tlv  *TLV
-	bArr []byte
+	tlv   *TLV
+	model []byte
 }
 
-func NewT16E(bArr []byte) *T16E {
+func NewT16E(model []byte) *T16E {
 	return &T16E{
-		tlv:  NewTLV(0x016e, 0x0000, nil),
-		bArr: bArr,
+		tlv:   NewTLV(0x016e, 0x0000, nil),
+		model: model,
 	}
 }
 
 func (t *T16E) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
-	v.EncodeBytesN(t.bArr, 0x0040)
+	v.EncodeBytesN(t.model, 0x0040)
 	t.tlv.SetValue(v)
 	t.tlv.Encode(b)
 }
@@ -31,6 +31,6 @@ func (t *T16E) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	t.model = v.Bytes()
 	return nil
 }

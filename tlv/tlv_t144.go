@@ -7,7 +7,7 @@ import (
 
 type T144 struct {
 	tlv  *TLV
-	key  [16]byte
+	key  [16]byte // Key
 	tlvs []TLVCodec
 }
 

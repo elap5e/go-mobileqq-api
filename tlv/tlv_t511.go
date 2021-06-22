@@ -9,34 +9,34 @@ import (
 )
 
 type T511 struct {
-	tlv  *TLV
-	list []string
+	tlv     *TLV
+	domains []string
 }
 
-func NewT511(list []string) *T511 {
+func NewT511(domains []string) *T511 {
 	return &T511{
-		tlv:  NewTLV(0x0511, 0x0000, nil),
-		list: list,
+		tlv:     NewTLV(0x0511, 0x0000, nil),
+		domains: domains,
 	}
 }
 
 func (t *T511) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
-	var list []string
-	for i := range t.list {
-		if t.list[i] != "" {
-			list = append(list, t.list[i])
+	var domains []string
+	for i := range t.domains {
+		if t.domains[i] != "" {
+			domains = append(domains, t.domains[i])
 		}
 	}
-	v.EncodeUint16(uint16(len(list)))
+	v.EncodeUint16(uint16(len(domains)))
 	var flag uint8
-	for _, str := range list {
-		idx0 := strings.Index(str, "(")
-		idx1 := strings.Index(str, ")")
+	for _, domain := range domains {
+		idx0 := strings.Index(domain, "(")
+		idx1 := strings.Index(domain, ")")
 		if idx0 != 0 || idx1 <= 0 {
 			flag = 0x01
 		} else {
-			i, err := strconv.Atoi(str[idx0+1 : idx1])
+			i, err := strconv.Atoi(domain[idx0+1 : idx1])
 			if err != nil {
 				log.Printf("GetTLV0x0511 error: %s", err.Error())
 			}
@@ -50,10 +50,10 @@ func (t *T511) Encode(b *bytes.Buffer) {
 			if z2 {
 				flag |= 0x02
 			}
-			str = str[idx1+1:]
+			domain = domain[idx1+1:]
 		}
 		v.EncodeUint8(flag)
-		v.EncodeString(str)
+		v.EncodeString(domain)
 	}
 	t.tlv.SetValue(v)
 	t.tlv.Encode(b)

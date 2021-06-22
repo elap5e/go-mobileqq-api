@@ -5,22 +5,19 @@ import (
 )
 
 type T194 struct {
-	tlv  *TLV
-	bArr []byte
+	tlv     *TLV
+	md5IMSI [16]byte
 }
 
-func NewT194(bArr []byte) *T194 {
+func NewT194(md5IMSI [16]byte) *T194 {
 	return &T194{
-		tlv:  NewTLV(0x0194, 0x0000, nil),
-		bArr: bArr,
+		tlv:     NewTLV(0x0194, 0x0000, nil),
+		md5IMSI: md5IMSI,
 	}
 }
 
 func (t *T194) Encode(b *bytes.Buffer) {
-	if len(t.bArr) == 0 {
-		t.bArr = make([]byte, 16)
-	}
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
+	t.tlv.SetValue(bytes.NewBuffer(t.md5IMSI[:]))
 	t.tlv.Encode(b)
 }
 
@@ -32,6 +29,6 @@ func (t *T194) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	copy(t.md5IMSI[:], v.Bytes())
 	return nil
 }
