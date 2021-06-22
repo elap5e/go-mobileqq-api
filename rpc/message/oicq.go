@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
@@ -18,6 +19,7 @@ type OICQMessage struct {
 	PublicKey     []byte
 	ShareKey      [16]byte
 	Type          uint16
+	Code          uint8
 	TLVs          map[uint16]tlv.TLVCodec
 }
 
@@ -53,6 +55,63 @@ func marshalOICQMessageData(ctx context.Context, msg *OICQMessage) ([]byte, erro
 	return buf.Bytes(), nil
 }
 
+func unmarshalOICQMessageHead(ctx context.Context, buf *bytes.Buffer, msg *OICQMessage) error {
+	var err error
+	var tmp uint8
+	if tmp, err = buf.DecodeUint8(); err != nil {
+		return err
+	} else if tmp != 0x02 {
+		return fmt.Errorf("unexpected start, got 0x%x", tmp)
+	}
+	if _, err = buf.DecodeUint16(); err != nil {
+		return err
+	}
+	if msg.Version, err = buf.DecodeUint16(); err != nil {
+		return err
+	}
+	if msg.ServiceMethod, err = buf.DecodeUint16(); err != nil {
+		return err
+	}
+	if _, err = buf.DecodeUint16(); err != nil {
+		return err
+	}
+	var uin uint32
+	if uin, err = buf.DecodeUint32(); err != nil {
+		return err
+	}
+	msg.Uin = uint64(uin)
+	if _, err = buf.DecodeUint8(); err != nil {
+		return err
+	}
+	if msg.EncryptMethod, err = buf.DecodeUint8(); err != nil {
+		return err
+	}
+	if _, err = buf.DecodeUint8(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func unmarshalOICQMessageData(ctx context.Context, buf *bytes.Buffer, msg *OICQMessage) error {
+	var err error
+	if msg.Type, err = buf.DecodeUint16(); err != nil {
+		return err
+	}
+	if msg.Code, err = buf.DecodeUint8(); err != nil {
+		return err
+	}
+	var l uint16
+	if l, err = buf.DecodeUint16(); err != nil {
+		return err
+	}
+	for i := 0; i < int(l); i++ {
+		tlv := tlv.TLV{}
+		tlv.Decode(buf)
+		msg.TLVs[tlv.GetType()] = &tlv
+	}
+	return nil
+}
+
 func MarshalOICQMessage(ctx context.Context, msg *OICQMessage) ([]byte, error) {
 	head, err := marshalOICQMessageHead(ctx, msg)
 	if err != nil {
@@ -86,5 +145,19 @@ func MarshalOICQMessage(ctx context.Context, msg *OICQMessage) ([]byte, error) {
 }
 
 func UnmarshalOICQMessage(ctx context.Context, data []byte, msg *OICQMessage) error {
+	buf := bytes.NewBuffer(data)
+	if err := unmarshalOICQMessageHead(ctx, buf, msg); err != nil {
+		return err
+	}
+	tmp := buf.Bytes()[:buf.Len()-1]
+	switch msg.EncryptMethod {
+	case 0x00:
+	case 0x03:
+		msg.ShareKey = msg.RandomKey
+	}
+	buf = bytes.NewBuffer(crypto.NewCipher(msg.ShareKey).Decrypt(tmp))
+	if err := unmarshalOICQMessageData(ctx, buf, msg); err != nil {
+		return err
+	}
 	return nil
 }

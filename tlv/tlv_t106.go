@@ -4,46 +4,47 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"math/rand"
+	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
 )
 
 type T106 struct {
-	tlv             *TLV
-	appID           uint64
-	j2              uint64
-	i               uint32
-	uin             uint64
-	bArr            []byte
-	ipAddr          []byte
-	i2              bool
-	bArr3           []byte
-	salt            uint64
-	bArr4           []byte
-	bArr5           []byte
-	isGUIDAvailable bool
-	guid            []byte
-	i4              uint32
+	tlv              *TLV
+	appID            uint64
+	subAppID         uint64
+	appClientVersion uint32
+	uin              uint64
+	timeBytes        []byte
+	ipAddr           []byte
+	i2               bool
+	passwordMD5      [16]byte
+	salt             uint64
+	username         []byte
+	tgtgtKey         [16]byte
+	isGUIDAvailable  bool
+	guid             []byte
+	loginType        uint32
 }
 
-func NewT106(appID, j2 uint64, i uint32, uin uint64, bArr, ipAddr []byte, i2 bool, bArr3 []byte, salt uint64, bArr4, bArr5 []byte, isGUIDAvailable bool, guid []byte, i4 uint32) *T106 {
+func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, timeBytes, ipAddr []byte, i2 bool, passwordMD5 [16]byte, salt uint64, username []byte, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
 	return &T106{
-		tlv:             NewTLV(0x0106, 0x0000, nil),
-		appID:           appID,
-		j2:              j2,
-		i:               i,
-		uin:             uin,
-		bArr:            bArr,
-		ipAddr:          ipAddr,
-		i2:              i2,
-		bArr3:           bArr3,
-		salt:            salt,
-		bArr4:           bArr4,
-		bArr5:           bArr5,
-		isGUIDAvailable: isGUIDAvailable,
-		guid:            guid,
-		i4:              i4,
+		tlv:              NewTLV(0x0106, 0x0000, nil),
+		appID:            appID,
+		subAppID:         subAppID,
+		appClientVersion: appClientVersion,
+		uin:              uin,
+		timeBytes:        timeBytes,
+		ipAddr:           ipAddr,
+		i2:               i2,
+		passwordMD5:      passwordMD5,
+		salt:             salt,
+		username:         username,
+		tgtgtKey:         tgtgtKey,
+		isGUIDAvailable:  isGUIDAvailable,
+		guid:             guid,
+		loginType:        loginType,
 	}
 }
 
@@ -53,17 +54,17 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	v.EncodeUint32(rand.Uint32())
 	v.EncodeUint32(0x00000011)
 	v.EncodeUint32(uint32(t.appID))
-	v.EncodeUint32(t.i)
+	v.EncodeUint32(t.appClientVersion)
 	if t.uin == 0 {
 		v.EncodeUint64(t.salt)
 	} else {
 		v.EncodeUint64(t.uin)
 	}
-	v.EncodeRawBytes(t.bArr)
+	v.EncodeUint32(uint32(time.Now().UnixNano() / 1e6)) // v.EncodeRawBytes(t.timeBytes)
 	v.EncodeRawBytes(t.ipAddr)
 	v.EncodeBool(t.i2)
-	v.EncodeRawBytes(t.bArr3)
-	v.EncodeRawBytes(t.bArr5)
+	v.EncodeRawBytes(t.passwordMD5[:])
+	v.EncodeRawBytes(t.tgtgtKey[:])
 	v.EncodeUint32(0x00000000)
 	v.EncodeBool(t.isGUIDAvailable)
 	if len(t.guid) == 0 {
@@ -72,11 +73,11 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	} else {
 		v.EncodeRawBytes(t.guid)
 	}
-	v.EncodeUint32(uint32(t.j2))
-	v.EncodeUint32(t.i4)
-	v.EncodeBytes(t.bArr4)
+	v.EncodeUint32(uint32(t.subAppID))
+	v.EncodeUint32(t.loginType)
+	v.EncodeBytes(t.username)
 
-	key := append(t.bArr3, make([]byte, 8)...)
+	key := append(t.passwordMD5[:], make([]byte, 8)...)
 	if t.salt == 0 {
 		binary.BigEndian.PutUint64(key[16:], t.salt)
 	} else {

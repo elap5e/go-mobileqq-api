@@ -23,8 +23,16 @@ func (t *TLV) SetValue(v *bytes.Buffer) {
 	t.v = v
 }
 
+func (t *TLV) GetType() uint16 {
+	return t.t
+}
+
 func (t *TLV) GetValue() (*bytes.Buffer, error) {
 	return t.v, nil
+}
+
+func (t *TLV) MustGetValue() *bytes.Buffer {
+	return t.v
 }
 
 func (t *TLV) Encode(b *bytes.Buffer) {

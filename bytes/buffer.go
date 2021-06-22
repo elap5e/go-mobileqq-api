@@ -14,3 +14,7 @@ func NewBuffer(buf []byte) *Buffer {
 func (b *Buffer) Bytes() []byte {
 	return b.buf[b.idx:]
 }
+
+func (b *Buffer) Len() int {
+	return len(b.buf) - b.idx
+}

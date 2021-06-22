@@ -12,6 +12,7 @@ import (
 type AuthGetSessionTicketWithoutPasswordRequest struct {
 	Username     string
 	Uin          uint64
+	Seq          uint32
 	DstAppID     uint64
 	MainSigMap   uint32
 	SubDstAppID  uint64
@@ -48,7 +49,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	)
 	tlvs[0x0143] = tlv.NewT143(req.AuthData.D2)
 	tlvs[0x0142] = tlv.NewT142(defaultAPKID)
-	tlvs[0x0154] = tlv.NewT154(0x0000)
+	tlvs[0x0154] = tlv.NewT154(req.Seq)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.MainSigMap&0xfdfffffe, req.Uin, 0x0000)
 	tlvs[0x0141] = tlv.NewT141(defaultDeviceSIMOPName, defaultDeviceNetworkTypeID, defaultDeviceAPNName)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
@@ -78,23 +79,20 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	})
 }
 
-func (req *AuthGetSessionTicketWithoutPasswordRequest) Unmarshal(ctx context.Context, msg *message.OICQMessage) error {
-	return nil
-}
-
 func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *AuthGetSessionTicketWithoutPasswordRequest) (interface{}, error) {
 	s2c := new(ServerToClientMessage)
+	req.Seq = c.getNextSeq()
 	buf, err := req.Marshal(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if err := c.Call("wtlogin.exchange_emp", &ClientToServerMessage{
 		Username: req.Username,
-		Seq:      c.getNextSeq(),
+		Seq:      req.Seq,
 		Buffer:   buf,
 		Simple:   true,
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return s2c, nil
+	return c.AuthGetSessionTicket(ctx, s2c)
 }

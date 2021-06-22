@@ -1,12 +1,21 @@
 package rpc
 
 import (
-	"crypto/rand"
+	"math/rand"
+	"net"
 )
 
 var (
 	defaultDeviceKSID = []byte("")
 	defaultDeviceGUID = []byte("%4;7t>;28<fclient.5*6")
+
+	defaultDeviceDPWD = func(n int) []byte {
+		b := make([]byte, n)
+		for i := range b {
+			b[i] = byte(0x41 + rand.Intn(1)*0x20 + rand.Intn(26))
+		}
+		return b
+	}(16)
 
 	defaultClientRandomKey = func() [16]byte { var v [16]byte; rand.Read(v[:]); return v }()
 )
@@ -28,6 +37,7 @@ var (
 	defaultDeviceNetworkType   = "Wi-Fi"
 	defaultDeviceNetworkTypeID = uint16(0x0002)
 	defaultDeviceNetIPFamily   = "IPv4IPv6"
+	defaultDeviceIPv4Address   = net.IPv4(192, 168, 0, 100)
 	defaultDeviceMACAddress    = []byte("00:05:69:0E:8E:9A")
 	defaultDeviceBSSIDAddress  = []byte("00:50:56:9B:EA:5F")
 	defaultDeviceSSIDAddress   = []byte("")
