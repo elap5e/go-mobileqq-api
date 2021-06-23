@@ -1,25 +1,23 @@
 package tlv
 
 import (
-	"fmt"
-
 	"github.com/elap5e/go-mobileqq-api/bytes"
 )
 
 type T191 struct {
-	tlv *TLV
-	i   uint8
+	tlv          *TLV
+	verifyMethod uint8
 }
 
-func NewT191(i uint8) *T191 {
+func NewT191(verifyMethod uint8) *T191 {
 	return &T191{
-		tlv: NewTLV(0x0191, 0x0000, nil),
-		i:   i,
+		tlv:          NewTLV(0x0191, 0x0000, nil),
+		verifyMethod: verifyMethod,
 	}
 }
 
 func (t *T191) Encode(b *bytes.Buffer) {
-	t.tlv.SetValue(bytes.NewBuffer([]byte{t.i, 0x01}))
+	t.tlv.SetValue(bytes.NewBuffer([]byte{t.verifyMethod}))
 	t.tlv.Encode(b)
 }
 
@@ -31,14 +29,8 @@ func (t *T191) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	if t.i, err = v.DecodeUint8(); err != nil {
+	if t.verifyMethod, err = v.DecodeUint8(); err != nil {
 		return err
-	}
-	ver, err := v.DecodeUint8()
-	if err != nil {
-		return err
-	} else if ver != 0x01 {
-		return fmt.Errorf("version 0x%x not support", ver)
 	}
 	return nil
 }

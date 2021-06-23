@@ -74,8 +74,8 @@ func (req *AuthCheckWebSignatureRequest) Encode(ctx context.Context) (*ClientToS
 		return nil, err
 	}
 	return &ClientToServerMessage{
-		Seq:      req.Seq,
 		Username: req.Username,
+		Seq:      req.Seq,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil

@@ -41,10 +41,10 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	tlvs[0x0116] = tlv.NewT116(defaultClientMiscBitmap, defaultClientSubSigMap, req.SubAppIDList)
 	tlvs[0x0108] = tlv.NewT108(defaultDeviceKSID)
 	tlvs[0x0144] = tlv.NewT144(md5.Sum(req.AuthData.Key[:]),
-		tlv.NewT109(md5.Sum(defaultDeviceOSID)),
+		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(ctx),
 		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSVersion, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
-		tlv.NewT128(defaultDeviceIsGUIDFileNil, defaultDeviceIsGUIDGenSucc, defaultDeviceIsGUIDChanged, defaultDeviceGUIDFlag, defaultDeviceOSBuildModel, defaultDeviceGUID, defaultDeviceOSBuildBrand),
+		tlv.NewT128(defaultDeviceIsGUIDFileNil, defaultDeviceIsGUIDGenSucc, defaultDeviceIsGUIDChanged, defaultDeviceGUIDFlag, defaultDeviceOSBuildModel, defaultDeviceGUID[:], defaultDeviceOSBuildBrand),
 		tlv.NewT16E(defaultDeviceOSBuildModel),
 	)
 	tlvs[0x0143] = tlv.NewT143(req.AuthData.D2)
@@ -60,7 +60,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	// tlvs[0x0172] = tlv.NewT172([]byte{})
 	tlvs[0x0177] = tlv.NewT177(defaultClientBuildTime, defaultClientSDKVersion)
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
-	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSID))
+	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
 	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(defaultDeviceIMSI)))
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
@@ -89,6 +89,7 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 	if err := c.Call("wtlogin.exchange_emp", &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
+		AppID:    defaultClientAppID,
 		Buffer:   buf,
 		Simple:   false,
 	}, s2c); err != nil {

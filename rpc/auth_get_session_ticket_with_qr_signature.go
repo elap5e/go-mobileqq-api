@@ -56,8 +56,9 @@ func (req *AuthGetSessionTicketWithQRSignatureRequest) Encode(ctx context.Contex
 		return nil, err
 	}
 	return &ClientToServerMessage{
-		Seq:      req.Seq,
 		Username: req.Username,
+		Seq:      req.Seq,
+		AppID:    defaultClientAppID,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil

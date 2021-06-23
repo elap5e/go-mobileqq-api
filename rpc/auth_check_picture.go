@@ -39,8 +39,8 @@ func (req *AuthCheckPictureRequest) Encode(ctx context.Context) (*ClientToServer
 		return nil, err
 	}
 	return &ClientToServerMessage{
-		Seq:      req.Seq,
 		Username: req.Username,
+		Seq:      req.Seq,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil

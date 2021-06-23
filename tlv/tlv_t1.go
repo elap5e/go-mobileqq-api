@@ -29,7 +29,7 @@ func (t *T1) Encode(b *bytes.Buffer) {
 	v.EncodeUint32(rand.Uint32())
 	v.EncodeUint32(uint32(t.uin))
 	v.EncodeUint32(uint32(time.Now().UnixNano() / 1e6))
-	v.EncodeRawBytes(t.ip)
+	v.EncodeRawBytes(t.ip.To4())
 	v.EncodeUint16(0x0000)
 	t.tlv.SetValue(v)
 	t.tlv.Encode(b)

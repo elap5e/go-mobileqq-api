@@ -1,13 +1,14 @@
 package rpc
 
 import (
+	"crypto/md5"
 	"math/rand"
 	"net"
 )
 
 var (
 	defaultDeviceKSID          = []byte("")
-	defaultDeviceGUID          = []byte("%4;7t>;28<fclient.5*6")
+	defaultDeviceGUID          = md5.Sum(append(defaultDeviceOSBuildID, defaultDeviceMACAddress...)) // []byte("%4;7t>;28<fclient.5*6")
 	defaultDeviceGUIDFlag      = uint32((1 << 24 & 0xFF000000) | (0 << 8 & 0xFF00))
 	defaultDeviceIsGUIDFileNil = false
 	defaultDeviceIsGUIDGenSucc = true
@@ -27,26 +28,26 @@ var (
 )
 
 var (
-	defaultDeviceOSID      = []byte("")
+	defaultDeviceOSBuildID = []byte("8b5c5fe9-a7b8-4f23-bc84-5e6730254da5")
 	defaultDeviceOSType    = []byte("android")
 	defaultDeviceOSVersion = []byte("10")
 
-	defaultDeviceOSBuildBrand = []byte("XIAOMI")
-	defaultDeviceOSBuildModel = []byte("MIUI")
+	defaultDeviceOSBuildBrand = []byte("be257ffb-865b-4e88-a4ea-5f9ef8617ad0")
+	defaultDeviceOSBuildModel = []byte("7c712868-0cad-44d1-9029-dadd6b0f9c21")
 
-	defaultDeviceIMEI = "867345045018141"
-	defaultDeviceIMSI = "088976436707562405"
+	defaultDeviceIMEI = "c5413b37-eade-4ccd-976f-76a659d51684"
+	defaultDeviceIMSI = "4c9762cb-d6ae-4ebf-965d-0fc556dc9bc9"
 
-	defaultDeviceAPNName   = []byte("")
-	defaultDeviceSIMOPName = []byte("CMCC")
+	defaultDeviceAPNName   = []byte("wifi")
+	defaultDeviceSIMOPName = []byte("ffb4190b-00f5-4c7b-b3a0-490f58401a5d")
 
 	defaultDeviceNetworkType   = "Wi-Fi"
 	defaultDeviceNetworkTypeID = uint16(0x0002)
 	defaultDeviceNetIPFamily   = "IPv4IPv6"
 	defaultDeviceIPv4Address   = net.IPv4(192, 168, 0, 100)
-	defaultDeviceMACAddress    = []byte("00:05:69:0E:8E:9A")
-	defaultDeviceBSSIDAddress  = []byte("00:50:56:9B:EA:5F")
-	defaultDeviceSSIDAddress   = []byte("")
+	defaultDeviceMACAddress    = []byte("00:50:56:C0:00:08")
+	defaultDeviceBSSIDAddress  = []byte("00:50:56:C0:00:09")
+	defaultDeviceSSIDAddress   = []byte("021dbef5-ca98-4774-ba37-59a844408e39")
 )
 
 var (
@@ -57,6 +58,7 @@ var (
 )
 
 var (
+	defaultClientAppID      = uint32(0x20030cb2)
 	defaultClientMainSigMap = uint32(0x00ff32f2)
 	defaultClientMiscBitmap = uint32(0x08f7ff7c)
 	defaultClientSubSigMap  = uint32(0x00010400)

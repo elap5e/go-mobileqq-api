@@ -73,8 +73,9 @@ func (req *AuthRefreshSMSRequest) Encode(ctx context.Context) (*ClientToServerMe
 		return nil, err
 	}
 	return &ClientToServerMessage{
-		Seq:      req.Seq,
 		Username: req.Username,
+		Seq:      req.Seq,
+		AppID:    defaultClientAppID,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
@@ -92,5 +93,5 @@ func (c *Client) AuthRefreshSMS(ctx context.Context, req *AuthRefreshSMSRequest)
 	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return s2c, nil
 }

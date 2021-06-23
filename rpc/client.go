@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/hex"
 	"io"
 	"log"
 	"math/rand"
@@ -25,13 +26,16 @@ type Client struct {
 	codec ClientCodec
 
 	c2sMutex sync.Mutex
-	c2s      ClientToServerMessage
+	c2s      *ClientToServerMessage
 
 	mutex    sync.Mutex
 	seq      uint32
 	pending  map[uint32]*ClientCall
 	closing  bool
 	shutdown bool
+
+	tgtgtKey [16]byte
+	cookie   [4]byte
 }
 
 func (c *Client) getNextSeq() uint32 {
@@ -63,9 +67,9 @@ func (c *Client) send(call *ClientCall) {
 	c.mutex.Unlock()
 
 	// Encode and send the request.
-	c.c2s.Seq = seq
+	c.c2s = call.ClientToServerMessage
 	c.c2s.ServiceMethod = call.ServiceMethod
-	err := c.codec.Encode(&c.c2s)
+	err := c.codec.Encode(c.c2s)
 	if err != nil {
 		c.mutex.Lock()
 		call = c.pending[seq]
@@ -93,24 +97,15 @@ func (c *Client) revc() {
 		delete(c.pending, seq)
 		c.mutex.Unlock()
 
-		switch {
-		case call == nil:
-			// err = client.codec.ReadResponseBody(nil)
-			// if err != nil {
-			// 	err = errors.New("reading error body: " + err.Error())
-			// }
-		case s2c.ReturnCode != 1000:
-			// call.Error = ServerError(response.Error)
-			// err = client.codec.ReadResponseBody(nil)
-			// if err != nil {
-			// 	err = errors.New("reading error body: " + err.Error())
-			// }
-			call.done()
-		default:
-			// err = client.codec.ReadResponseBody(call.Reply)
-			// if err != nil {
-			// 	call.Error = errors.New("reading body " + err.Error())
-			// }
+		if call != nil {
+			call.ServerToClientMessage.Version = s2c.Version
+			call.ServerToClientMessage.EncryptType = s2c.EncryptType
+			call.ServerToClientMessage.Username = s2c.Username
+			call.ServerToClientMessage.Seq = s2c.Seq
+			call.ServerToClientMessage.ReturnCode = s2c.ReturnCode
+			call.ServerToClientMessage.ServiceMethod = s2c.ServiceMethod
+			call.ServerToClientMessage.Cookie = s2c.Cookie
+			call.ServerToClientMessage.Buffer = s2c.Buffer
 			call.done()
 		}
 	}
@@ -158,6 +153,10 @@ func NewClientWithCodec(codec ClientCodec) *Client {
 		seq:     uint32(rand.Int31n(100000)) + 60000,
 		pending: make(map[uint32]*ClientCall),
 	}
+	rand.Read(c.tgtgtKey[:])
+	log.Printf("==> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
+	rand.Read(c.cookie[:])
+	log.Printf("==> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
 	go c.revc()
 	return c
 }
@@ -205,4 +204,18 @@ func (c *Client) Go(serviceMethod string, c2s *ClientToServerMessage, s2c *Serve
 func (c *Client) Call(cmd string, c2s *ClientToServerMessage, s2c *ServerToClientMessage) error {
 	call := <-c.Go(cmd, c2s, s2c, make(chan *ClientCall, 1)).Done
 	return call.Error
+}
+
+func (c *Client) HeartbeatAlive() error {
+	c2s := &ClientToServerMessage{
+		Seq:      c.getNextSeq(),
+		Username: "0",
+		Buffer:   nil,
+		Simple:   false,
+	}
+	s2c := new(ServerToClientMessage)
+	if err := c.Call("Heartbeat.Alive", c2s, s2c); err != nil {
+		return err
+	}
+	return nil
 }
