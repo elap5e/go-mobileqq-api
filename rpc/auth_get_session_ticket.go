@@ -60,7 +60,7 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 	switch resp.Code {
 	case 0x00:
 	case 0xcc:
-		return c.AuthRegisterDevice(ctx, NewAuthRegisterDeviceRequest(resp.Uin, resp.T104, resp.T401))
+		return c.AuthRegisterDevice(ctx, NewAuthRegisterDeviceRequest(resp.Uin))
 	}
 	return resp.Code, nil
 }

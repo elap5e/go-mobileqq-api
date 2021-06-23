@@ -6,18 +6,18 @@ import (
 
 type T193 struct {
 	tlv  *TLV
-	bArr []byte
+	code []byte
 }
 
-func NewT193(bArr []byte) *T193 {
+func NewT193(code []byte) *T193 {
 	return &T193{
 		tlv:  NewTLV(0x0193, 0x0000, nil),
-		bArr: bArr,
+		code: code,
 	}
 }
 
 func (t *T193) Encode(b *bytes.Buffer) {
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
+	t.tlv.SetValue(bytes.NewBuffer(t.code))
 	t.tlv.Encode(b)
 }
 
@@ -29,6 +29,6 @@ func (t *T193) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	t.code = v.Bytes()
 	return nil
 }

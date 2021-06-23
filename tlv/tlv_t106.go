@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"math/rand"
-	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
@@ -16,26 +15,26 @@ type T106 struct {
 	subAppID         uint64
 	appClientVersion uint32
 	uin              uint64
-	timeBytes        []byte
+	currentTime      uint32
 	ipAddr           []byte
 	i2               bool
 	passwordMD5      [16]byte
 	salt             uint64
-	username         []byte
+	username         string
 	tgtgtKey         [16]byte
 	isGUIDAvailable  bool
 	guid             []byte
 	loginType        uint32
 }
 
-func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, timeBytes, ipAddr []byte, i2 bool, passwordMD5 [16]byte, salt uint64, username []byte, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
+func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, currentTime uint32, ipAddr []byte, i2 bool, passwordMD5 [16]byte, salt uint64, username string, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
 	return &T106{
 		tlv:              NewTLV(0x0106, 0x0000, nil),
 		appID:            appID,
 		subAppID:         subAppID,
 		appClientVersion: appClientVersion,
 		uin:              uin,
-		timeBytes:        timeBytes,
+		currentTime:      currentTime,
 		ipAddr:           ipAddr,
 		i2:               i2,
 		passwordMD5:      passwordMD5,
@@ -60,7 +59,7 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	} else {
 		v.EncodeUint64(t.uin)
 	}
-	v.EncodeUint32(uint32(time.Now().UnixNano() / 1e6)) // v.EncodeRawBytes(t.timeBytes)
+	v.EncodeUint32(t.currentTime)
 	v.EncodeRawBytes(t.ipAddr)
 	v.EncodeBool(t.i2)
 	v.EncodeRawBytes(t.passwordMD5[:])
@@ -75,7 +74,7 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	}
 	v.EncodeUint32(uint32(t.subAppID))
 	v.EncodeUint32(t.loginType)
-	v.EncodeBytes(t.username)
+	v.EncodeString(t.username)
 
 	key := append(t.passwordMD5[:], make([]byte, 8)...)
 	if t.salt == 0 {

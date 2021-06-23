@@ -7,20 +7,20 @@ import (
 )
 
 type T18 struct {
-	tlv        *TLV
-	appID      uint64
-	mainSigMap uint32
-	uin        uint64
-	i2         uint16
+	tlv              *TLV
+	appID            uint64
+	appClientVersion uint32
+	uin              uint64
+	i2               uint16
 }
 
-func NewT18(appID uint64, mainSigMap uint32, uin uint64, i2 uint16) *T18 {
+func NewT18(appID uint64, appClientVersion uint32, uin uint64, i2 uint16) *T18 {
 	return &T18{
-		tlv:        NewTLV(0x0018, 0x0000, nil),
-		appID:      appID,
-		mainSigMap: mainSigMap,
-		uin:        uin,
-		i2:         i2,
+		tlv:              NewTLV(0x0018, 0x0000, nil),
+		appID:            appID,
+		appClientVersion: appClientVersion,
+		uin:              uin,
+		i2:               i2,
 	}
 }
 
@@ -29,7 +29,7 @@ func (t *T18) Encode(b *bytes.Buffer) {
 	v.EncodeUint16(0x0001)
 	v.EncodeUint32(0x00000600)
 	v.EncodeUint32(uint32(t.appID))
-	v.EncodeUint32(t.mainSigMap)
+	v.EncodeUint32(t.appClientVersion)
 	v.EncodeUint32(uint32(t.uin))
 	v.EncodeUint16(t.i2)
 	v.EncodeUint16(0x0000)
@@ -62,7 +62,7 @@ func (t *T18) Decode(b *bytes.Buffer) error {
 		return err
 	}
 	t.appID = uint64(appID)
-	if t.mainSigMap, err = v.DecodeUint32(); err != nil {
+	if t.appClientVersion, err = v.DecodeUint32(); err != nil {
 		return err
 	}
 	uin, err := v.DecodeUint32()

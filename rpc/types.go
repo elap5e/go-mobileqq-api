@@ -23,8 +23,8 @@ type ClientToServerMessage struct {
 	Version       uint32
 	EncryptType   uint8
 	EncryptKey    [16]byte
-	Username      string
 	Seq           uint32
+	Username      string
 	AppID         uint32
 	ServiceMethod string
 	Cookie        []byte
@@ -36,8 +36,8 @@ type ClientToServerMessage struct {
 type ServerToClientMessage struct {
 	Version       uint32
 	EncryptType   uint8
-	Username      string
 	Seq           uint32
+	Username      string
 	ReturnCode    uint32
 	ServiceMethod string
 	Cookie        []byte

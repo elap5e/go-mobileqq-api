@@ -27,7 +27,7 @@ func NewAuthGetSessionTicketWithoutPasswordRequest(uin uint64, auth *ClientAuthD
 		Uin:          uin,
 		DstAppID:     defaultClientDstAppID,
 		MainSigMap:   defaultClientMainSigMap,
-		SubDstAppID:  defaultClientSubDstAppID,
+		SubDstAppID:  defaultClientOpenAppID,
 		SubAppIDList: defaultClientSubAppIDList,
 		Domains:      defaultClientDomains,
 		AuthData:     auth,
@@ -43,12 +43,12 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	tlvs[0x0144] = tlv.NewT144(md5.Sum(req.AuthData.Key[:]),
 		tlv.NewT109(md5.Sum(defaultDeviceOSID)),
 		tlv.NewT52D(ctx),
-		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSBuildVersionRelease, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
-		tlv.NewT128(false, true, false, (1<<24&0xFF000000)|(0<<8&0xFF00), defaultDeviceOSBuildModel, defaultDeviceGUID, defaultDeviceOSBuildBrand),
+		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSVersion, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
+		tlv.NewT128(defaultDeviceIsGUIDFileNil, defaultDeviceIsGUIDGenSucc, defaultDeviceIsGUIDChanged, defaultDeviceGUIDFlag, defaultDeviceOSBuildModel, defaultDeviceGUID, defaultDeviceOSBuildBrand),
 		tlv.NewT16E(defaultDeviceOSBuildModel),
 	)
 	tlvs[0x0143] = tlv.NewT143(req.AuthData.D2)
-	tlvs[0x0142] = tlv.NewT142(defaultAPKID)
+	tlvs[0x0142] = tlv.NewT142(defaultClientPackageName)
 	tlvs[0x0154] = tlv.NewT154(req.Seq)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.MainSigMap&0xfdfffffe, req.Uin, 0x0000)
 	tlvs[0x0141] = tlv.NewT141(defaultDeviceSIMOPName, defaultDeviceNetworkTypeID, defaultDeviceAPNName)
@@ -56,7 +56,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	if len(req.Domains) > 0 {
 		tlvs[0x0511] = tlv.NewT511(req.Domains)
 	}
-	tlvs[0x0147] = tlv.NewT147(req.DstAppID, defaultAPKVersionName, defaultAPKSignatureMD5)
+	tlvs[0x0147] = tlv.NewT147(req.DstAppID, defaultClientVersionName, defaultClientSignatureMD5)
 	// tlvs[0x0172] = tlv.NewT172([]byte{})
 	tlvs[0x0177] = tlv.NewT177(defaultClientBuildTime, defaultClientSDKVersion)
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
@@ -90,7 +90,7 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 		Username: req.Username,
 		Seq:      req.Seq,
 		Buffer:   buf,
-		Simple:   true,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

@@ -4,41 +4,51 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/rpc/message"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthRegisterDeviceRequest struct {
+type AuthRefreshSMSRequest struct {
 	Seq      uint32
 	Uin      uint64
 	Username string
+	LockType uint8
 
 	T104         []byte
+	SMSAppID     uint64
+	T174         []byte
 	MiscBitmap   uint32
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	T401         [16]byte
+	SMSExtraData []byte
 }
 
-func NewAuthRegisterDeviceRequest(uin uint64) *AuthRegisterDeviceRequest {
-	return &AuthRegisterDeviceRequest{
+func NewAuthRefreshSMSRequest(uin uint64) *AuthRefreshSMSRequest {
+	return &AuthRefreshSMSRequest{
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
+		LockType: 0x00,
 
 		T104:         nil,
+		SMSAppID:     defaultClientSMSAppID,
+		T174:         nil,
 		MiscBitmap:   defaultClientMiscBitmap,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		T401:         [16]byte{},
+		SMSExtraData: nil,
 	}
 }
 
-func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthRefreshSMSRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0401] = tlv.NewT401(req.T401)
+	tlvs[0x0174] = tlv.NewT174(req.T174)
+	tlvs[0x017a] = tlv.NewT17A(req.SMSAppID)
+	tlvs[0x0197] = tlv.NewTLV(0x0197, 0x0000, bytes.NewBuffer([]byte{req.LockType}))
+	tlvs[0x0542] = tlv.NewT542(req.SMSExtraData)
 
 	return &message.OICQMessage{
 		Version:       0x1f41,
@@ -48,12 +58,12 @@ func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*m
 		RandomKey:     defaultClientRandomKey,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
-		Type:          0x0014,
+		Type:          0x0008,
 		TLVs:          tlvs,
 	}, nil
 }
 
-func (req *AuthRegisterDeviceRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
+func (req *AuthRefreshSMSRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
 	msg, err := req.EncodeOICQMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -70,10 +80,10 @@ func (req *AuthRegisterDeviceRequest) Encode(ctx context.Context) (*ClientToServ
 	}, nil
 }
 
-func (c *Client) AuthRegisterDevice(ctx context.Context, req *AuthRegisterDeviceRequest) (interface{}, error) {
+func (c *Client) AuthRefreshSMS(ctx context.Context, req *AuthRefreshSMSRequest) (interface{}, error) {
 	req.Seq = c.getNextSeq()
 	req.T104 = []byte{}
-	req.T401 = [16]byte{} // md5.Sum(append(append(defaultDeviceGUID, defaultDeviceDPWD...), t402...))
+	req.T174 = []byte{}
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err
