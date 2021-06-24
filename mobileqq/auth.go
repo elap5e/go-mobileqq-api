@@ -97,40 +97,37 @@ func (c *Client) Auth(username, password string) error {
 const tmplAuthCAPTCHA = `<!DOCTYPE html>
 <html>
 <head lang="zh-CN">
-<meta charset="UTF-8" />
-<meta name="renderer" content="webkit" />
-<meta
-name="viewport"
-content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no"
-/>
-<title>验证码</title>
+	<meta charset="UTF-8" />
+	<meta name="renderer" content="webkit" />
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<title>验证码</title>
 </head>
 <body>
-<div id="cap_iframe" style="width: 230px; height: 220px"></div>
-<script type="text/javascript">
-!(function () {
-	var queryString = location.search
-	var params = new URLSearchParams(queryString);
-	var elem = document.createElement("script");
-	elem.type = "text/javascript";
-	elem.src = "http://captcha.qq.com/template/TCapIframeApi.js" + queryString;
-	document.getElementsByTagName("head").item(0).appendChild(elem);
-	elem.onload = function () {
-	capInit(document.getElementById("cap_iframe"), {
-		callback: function (data) {
-			var xhr = new XMLHttpRequest();
-			xhr.open("POST", "/api/captcha", true);
-			var formData = new FormData();
-			formData.append("uin", parseInt(params.get("uin")));
-			formData.append("ticket", data.ticket);
-			formData.append("code", data.ret);
-			xhr.onload = function (e) { window.close(); };
-			xhr.send(formData);
-		},
-		showHeader: !1,
-	});
-	};
-})();
-</script>
+	<div id="cap_iframe" style="width: 230px; height: 220px"></div>
+	<script type="text/javascript">
+		!(function () {
+			var queryString = location.search;
+			var params = new URLSearchParams(queryString);
+			var elem = document.createElement("script");
+			elem.type = "text/javascript";
+			elem.src = "http://captcha.qq.com/template/TCapIframeApi.js" + queryString;
+			document.getElementsByTagName("head").item(0).appendChild(elem);
+			elem.onload = function () {
+			capInit(document.getElementById("cap_iframe"), {
+				callback: function (data) {
+					var xhr = new XMLHttpRequest();
+					xhr.open("POST", "/api/captcha", true);
+					var formData = new FormData();
+					formData.append("uin", parseInt(params.get("uin")));
+					formData.append("ticket", data.ticket);
+					formData.append("code", data.ret);
+					xhr.onload = function (e) { window.close(); };
+					xhr.send(formData);
+				},
+				showHeader: !1,
+			});
+			};
+		})();
+	</script>
 </body>
 </html>`
