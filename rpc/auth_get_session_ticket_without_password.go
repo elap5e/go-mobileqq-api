@@ -72,6 +72,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 		Uin:           req.Uin,
 		EncryptMethod: 0x07,
 		RandomKey:     defaultClientRandomKey,
+		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
 		Type:          0x000b,

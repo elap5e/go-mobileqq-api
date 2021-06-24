@@ -15,6 +15,12 @@ import (
 
 var ecdh = crypto.NewECDH()
 
+func init() {
+	if err := ecdh.UpdateShareKey(); err != nil {
+		log.Fatalf("failed to init ecdh, error %s", err.Error())
+	}
+}
+
 type ClientCodec interface {
 	Encode(msg *ClientToServerMessage) error
 	Decode(msg *ServerToClientMessage) error
@@ -36,6 +42,9 @@ type Client struct {
 
 	tgtgtKey [16]byte
 	cookie   [4]byte
+
+	t104 []byte
+	t547 []byte
 }
 
 func (c *Client) getNextSeq() uint32 {
@@ -154,9 +163,9 @@ func NewClientWithCodec(codec ClientCodec) *Client {
 		pending: make(map[uint32]*ClientCall),
 	}
 	rand.Read(c.tgtgtKey[:])
-	log.Printf("==> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
+	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
 	rand.Read(c.cookie[:])
-	log.Printf("==> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
+	log.Printf("--> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
 	go c.revc()
 	return c
 }

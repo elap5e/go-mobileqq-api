@@ -54,7 +54,7 @@ func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
 	}
 	wg.Wait()
 
-	return net.DialTCP("tcp", nil, c.addrs[0])
+	return net.Dial("tcp", c.addrs[0].String())
 }
 
 func tcping(addr *net.TCPAddr) error {

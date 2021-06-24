@@ -66,10 +66,10 @@ func (req *AuthGetSessionTicketWithQRSignatureRequest) Encode(ctx context.Contex
 
 func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *AuthGetSessionTicketWithQRSignatureRequest) (interface{}, error) {
 	req.Seq = c.getNextSeq()
-	req.TGTGTKey = [16]byte{}
+	req.TGTGTKey = c.tgtgtKey
 	req.T106 = []byte{}
 	req.T16A = []byte{}
-	req.T104 = []byte{}
+	req.T104 = c.t104
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err

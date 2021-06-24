@@ -41,14 +41,17 @@ func (req *AuthCheckPictureRequest) Encode(ctx context.Context) (*ClientToServer
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
+		AppID:    defaultClientAppID,
+		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthCheckPicture(ctx context.Context, req *AuthCheckPictureRequest) (interface{}, error) {
+func (c *Client) AuthCheckPicture(ctx context.Context, req *AuthCheckPictureRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.T104 = []byte{}
+	req.Cookie = c.cookie[:]
+	req.T104 = c.t104
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err

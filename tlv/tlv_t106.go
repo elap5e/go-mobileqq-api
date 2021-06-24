@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"math/rand"
+	"net"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
@@ -16,7 +17,7 @@ type T106 struct {
 	appClientVersion uint32
 	uin              uint64
 	currentTime      uint32
-	ipAddr           []byte
+	ip               net.IP
 	i2               bool
 	passwordMD5      [16]byte
 	salt             uint64
@@ -27,7 +28,7 @@ type T106 struct {
 	loginType        uint32
 }
 
-func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, currentTime uint32, ipAddr []byte, i2 bool, passwordMD5 [16]byte, salt uint64, username string, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
+func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, currentTime uint32, ip net.IP, i2 bool, passwordMD5 [16]byte, salt uint64, username string, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
 	return &T106{
 		tlv:              NewTLV(0x0106, 0x0000, nil),
 		appID:            appID,
@@ -35,7 +36,7 @@ func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, curren
 		appClientVersion: appClientVersion,
 		uin:              uin,
 		currentTime:      currentTime,
-		ipAddr:           ipAddr,
+		ip:               ip,
 		i2:               i2,
 		passwordMD5:      passwordMD5,
 		salt:             salt,
@@ -51,16 +52,16 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
 	v.EncodeUint16(0x0004)
 	v.EncodeUint32(rand.Uint32())
-	v.EncodeUint32(0x00000011)
+	v.EncodeUint32(defaultSSOVersion)
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(t.appClientVersion)
-	if t.uin == 0 {
-		v.EncodeUint64(t.salt)
-	} else {
+	if t.uin != 0 {
 		v.EncodeUint64(t.uin)
+	} else {
+		v.EncodeUint64(t.salt)
 	}
 	v.EncodeUint32(t.currentTime)
-	v.EncodeRawBytes(t.ipAddr)
+	v.EncodeRawBytes(t.ip.To4())
 	v.EncodeBool(t.i2)
 	v.EncodeRawBytes(t.passwordMD5[:])
 	v.EncodeRawBytes(t.tgtgtKey[:])
@@ -77,10 +78,10 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	v.EncodeString(t.username)
 
 	key := append(t.passwordMD5[:], make([]byte, 8)...)
-	if t.salt == 0 {
-		binary.BigEndian.PutUint64(key[16:], t.salt)
-	} else {
+	if t.uin != 0 {
 		binary.BigEndian.PutUint64(key[16:], t.uin)
+	} else {
+		binary.BigEndian.PutUint64(key[16:], t.salt)
 	}
 	t.tlv.SetValue(bytes.NewBuffer(crypto.NewCipher(md5.Sum(key)).Encrypt(v.Bytes())))
 	t.tlv.Encode(b)

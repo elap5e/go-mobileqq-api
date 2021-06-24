@@ -12,6 +12,7 @@ type AuthCheckWebSignatureRequest struct {
 	Seq      uint32
 	Uin      uint64
 	Username string
+	Cookie   []byte
 	CheckWeb bool
 
 	T104         []byte
@@ -49,14 +50,15 @@ func (req *AuthCheckWebSignatureRequest) EncodeOICQMessage(ctx context.Context) 
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0547] = tlv.NewT547(req.T547)
+	// tlvs[0x0547] = tlv.NewT547(req.T547)
 
 	return &message.OICQMessage{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x07,
+		EncryptMethod: 0x87,
 		RandomKey:     defaultClientRandomKey,
+		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
 		Type:          0x0002,
@@ -76,14 +78,18 @@ func (req *AuthCheckWebSignatureRequest) Encode(ctx context.Context) (*ClientToS
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
+		AppID:    defaultClientAppID,
+		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthCheckWebSignature(ctx context.Context, req *AuthCheckWebSignatureRequest) (interface{}, error) {
+func (c *Client) AuthCheckWebSignature(ctx context.Context, req *AuthCheckWebSignatureRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.T104 = []byte{}
+	req.Cookie = c.cookie[:]
+	req.T104 = c.t104
+	req.T547 = c.t547
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err

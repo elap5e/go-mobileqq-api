@@ -167,6 +167,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 		Uin:           req.Uin,
 		EncryptMethod: 0x87,
 		RandomKey:     defaultClientRandomKey,
+		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
 		Type:          0x0009,
@@ -193,11 +194,11 @@ func (req *AuthGetSessionTicketWithPasswordRequest) Encode(ctx context.Context) 
 	}, nil
 }
 
-func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (interface{}, error) {
+func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.TGTGTKey = c.tgtgtKey
 	req.Cookie = c.cookie[:]
-	req.T104 = []byte{}
+	req.T104 = c.t104
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err

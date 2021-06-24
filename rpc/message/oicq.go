@@ -18,6 +18,7 @@ type OICQMessage struct {
 	Uin           uint64
 	EncryptMethod uint8
 	RandomKey     [16]byte
+	KeyVersion    uint16
 	PublicKey     []byte
 	ShareKey      [16]byte
 	Type          uint16
@@ -131,7 +132,7 @@ func MarshalOICQMessage(ctx context.Context, msg *OICQMessage) ([]byte, error) {
 		buf.EncodeUint8(0x01)
 		buf.EncodeRawBytes(msg.RandomKey[:])
 		buf.EncodeUint16(0x0131)
-		buf.EncodeUint16(0x0001) // TODO: fix here
+		buf.EncodeUint16(msg.KeyVersion)
 		buf.EncodeBytes(msg.PublicKey)
 	case 0x45: // ST
 		buf.EncodeUint8(0x01)
@@ -148,7 +149,7 @@ func MarshalOICQMessage(ctx context.Context, msg *OICQMessage) ([]byte, error) {
 	// for i := range msg.TLVs {
 	// 	log.Printf("<-- [send] dump tlv 0x%04x", i)
 	// }
-	log.Printf("<-- [send] encryptMethod 0x%02x, dump oicq\n%s", msg.EncryptMethod, hex.Dump(data))
+	log.Printf("<-- [send] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(data))
 	buf.EncodeRawBytes(crypto.NewCipher(msg.ShareKey).Encrypt(data))
 	buf.EncodeUint8(0x03)
 	ret := append(head, buf.Bytes()...)
@@ -169,7 +170,7 @@ func UnmarshalOICQMessage(ctx context.Context, data []byte, msg *OICQMessage) er
 		msg.ShareKey = msg.RandomKey
 	}
 	buf = bytes.NewBuffer(crypto.NewCipher(msg.ShareKey).Decrypt(tmp))
-	log.Printf("--> [recv] encryptMethod 0x%02x, dump oicq\n%s", msg.EncryptMethod, hex.Dump(buf.Bytes()))
+	log.Printf("--> [recv] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(buf.Bytes()))
 	if err := unmarshalOICQMessageData(ctx, buf, msg); err != nil {
 		return err
 	}
@@ -177,19 +178,34 @@ func UnmarshalOICQMessage(ctx context.Context, data []byte, msg *OICQMessage) er
 		v := msg.TLVs[i].(*tlv.TLV)
 		buf, _ := v.GetValue()
 		switch i {
-		case 0x000a: // code 0x00000009, message 服务器繁忙，请你稍后再试。
-			fallthrough
-		case 0x0146: // code 0x00000009, message 登录失败
+		case 0x000a: // message 服务器繁忙，请你稍后再试。
 			code, _ := buf.DecodeUint32()
+			message, _ := buf.DecodeString()
+			log.Printf("--> [recv] dump tlv 0x000a, code 0x%08x, message %s", code, message)
+		case 0x0146: // message 登录失败
+			code, _ := buf.DecodeUint32()
+			title, _ := buf.DecodeString()
+			message, _ := buf.DecodeString()
+			log.Printf("--> [recv] dump tlv 0x0146, code 0x%08x, title %s, message %s", code, title, message)
+		case 0x0104: // session
+			log.Printf("--> [recv] dump tlv 0x0104:\n%s", hex.Dump(buf.Bytes()))
+		case 0x0105: // picture
+			sign, _ := buf.DecodeBytes()
+			data, _ := buf.DecodeBytes()
+			log.Printf("--> [recv] dump tlv 0x0105, sign 0x%x, picture length %d", sign, len(data))
+		case 0x0165: // picture
+			_, _ = buf.DecodeUint32()
+			l, _ := buf.DecodeUint8()
+			code, _ := buf.DecodeStringN(uint16(l))
+			_, _ = buf.DecodeUint16()
 			mess, _ := buf.DecodeString()
-			log.Printf("--> [recv] dump tlv 0x%04x, code 0x%08x, message %s", i, code, mess)
-		case 0x0104: // Session
-			log.Printf("--> [recv] dump tlv 0x%04x\n%s", i, hex.Dump(buf.Bytes()))
-		case 0x0192: // CAPTCHA URL
-			log.Printf("--> [recv] dump tlv 0x%04x, url %s", i, string(buf.Bytes()))
+			log.Printf("--> [recv] dump tlv 0x0165, code %s, message %s", code, mess)
+		case 0x0192: // captcha
+			log.Printf("--> [recv] dump tlv 0x0192, url %s", string(buf.Bytes()))
 		default:
-			log.Printf("--> [recv] dump tlv 0x%04x", i)
+			log.Printf("--> [recv] dump tlv 0x%04x:\n%s", i, hex.Dump(buf.Bytes()))
 		}
+		buf.Seek(0)
 	}
 	return nil
 }

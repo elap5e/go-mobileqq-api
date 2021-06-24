@@ -25,7 +25,7 @@ func NewT100(appID, subAppID uint64, appClientVersion, mainSigMap uint32) *T100 
 func (t *T100) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
 	v.EncodeUint16(0x0001)
-	v.EncodeUint32(0x00000011)
+	v.EncodeUint32(defaultSSOVersion)
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(uint32(t.subAppID))
 	v.EncodeUint32(t.appClientVersion)

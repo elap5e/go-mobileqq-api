@@ -18,3 +18,7 @@ func (b *Buffer) Bytes() []byte {
 func (b *Buffer) Len() int {
 	return len(b.buf) - b.idx
 }
+
+func (b *Buffer) Seek(i int) {
+	b.idx = i
+}

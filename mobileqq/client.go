@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
-	"strconv"
 	"sync"
 
 	"github.com/elap5e/go-mobileqq-api/rpc"
@@ -38,6 +38,7 @@ func NewClient() *Client {
 func (c *Client) init() {
 	c.connMux.Lock()
 	c.conn, _ = c.createConn(context.Background())
+	log.Printf("^_^ [conn] connected to server %s", c.addrs[0].String())
 	c.connMux.Unlock()
 	c.rpc = rpc.NewClient(c.conn)
 }
@@ -69,10 +70,4 @@ func (c *Client) Run(ctx context.Context, f func(ctx context.Context) error) err
 	}
 
 	return c.runUntilClosed(ctx)
-}
-
-func (c *Client) Auth(username, password string) error {
-	uin, _ := strconv.Atoi(username)
-	c.rpc.AuthGetSessionTicketWithPassword(c.ctx, rpc.NewAuthGetSessionTicketWithPasswordRequest(uint64(uin), password))
-	return nil
 }

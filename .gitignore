@@ -1,6 +1,8 @@
 .vscode/
 bin/
 tmp/
+.env
+picture.jpg
 
 # Binaries for programs and plugins
 *.exe

@@ -46,6 +46,7 @@ func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*m
 		Uin:           req.Uin,
 		EncryptMethod: 0x07,
 		RandomKey:     defaultClientRandomKey,
+		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
 		Type:          0x0014,
