@@ -21,11 +21,15 @@ type AuthGetSessionTicketResponse struct {
 	ErrorCode    uint32
 	ErrorTitle   string
 	ErrorMessage string
+	Message      string
+	SMSMobile    string
 
 	T104 []byte
 	T119 []byte
 	T150 []byte
 	T161 []byte
+	T174 []byte
+	T17B []byte
 	T401 [16]byte
 	T402 []byte
 	T403 []byte
@@ -55,6 +59,12 @@ func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []b
 	if v, ok := msg.TLVs[0x0119].(*tlv.TLV); ok {
 		resp.T119 = v.MustGetValue().Bytes()
 	}
+	if v, ok := msg.TLVs[0x0174].(*tlv.TLV); ok {
+		resp.T174 = v.MustGetValue().Bytes()
+	}
+	if v, ok := msg.TLVs[0x017b].(*tlv.TLV); ok {
+		resp.T17B = v.MustGetValue().Bytes()
+	}
 	if v, ok := msg.TLVs[0x0192].(*tlv.TLV); ok {
 		resp.CaptchaSign = string(v.MustGetValue().Bytes())
 	}
@@ -69,6 +79,15 @@ func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []b
 	}
 	if v, ok := msg.TLVs[0x0161].(*tlv.TLV); ok {
 		resp.T161 = v.MustGetValue().Bytes()
+	}
+	if v, ok := msg.TLVs[0x017e].(*tlv.TLV); ok {
+		resp.Message = string(v.MustGetValue().Bytes())
+	}
+	if v, ok := msg.TLVs[0x0178].(*tlv.TLV); ok {
+		buf, _ := v.GetValue()
+		_, _ = buf.DecodeString()
+		mobile, _ := buf.DecodeString()
+		resp.SMSMobile = mobile
 	}
 	if v, ok := msg.TLVs[0x0402].(*tlv.TLV); ok {
 		resp.T402 = v.MustGetValue().Bytes()
@@ -90,10 +109,10 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 	}
 	switch resp.Code {
 	case 0x00:
-		// Success
+		// success
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
-		// CAPTCHA
+		// captcha
 		c.t104 = resp.T104
 		c.t547 = resp.T546 // TODO: check
 		if resp.CaptchaSign != "" {
@@ -101,18 +120,27 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 		} else {
 			log.Printf(">_x [warn] need picture verify, uin %s, code 0x02", resp.Username)
 		}
+	case 0xa0, 0xef:
+		// device lock
+		c.t104 = resp.T104
+		if resp.SMSMobile != "" {
+			c.t174 = resp.T174
+			c.t401 = resp.T401
+			log.Printf(">_x [warn] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s", resp.Username, resp.SMSMobile, resp.Code, resp.Message)
+		} else {
+			c.t17b = resp.T17B
+			log.Printf(">_x [warn] need sms mobile verify response, uin %s", resp.Username)
+		}
 	case 0x01:
 		log.Printf("x_x [fail] invalid login, uin %s, code 0x01, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
 	case 0x06:
 		log.Printf("x_x [fail] not implement, uin %s, code 0x06, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
 	case 0x09:
 		log.Printf("x_x [fail] invalid service, uin %s, code 0x09, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
-	case 0xa0, 0xef:
-		// DevLock
 	case 0xed:
-		log.Printf("x_x [fail] invalid device, uin %s, code 0x09, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
+		log.Printf("x_x [fail] invalid device, uin %s, code 0xed, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
 	case 0xcc:
-		c.AuthRegisterDevice(ctx, NewAuthRegisterDeviceRequest(resp.Uin))
+		return c.AuthRegisterDevice(ctx, NewAuthRegisterDeviceRequest(resp.Uin))
 	}
 	return resp, nil
 }

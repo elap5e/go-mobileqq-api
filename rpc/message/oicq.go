@@ -187,8 +187,21 @@ func UnmarshalOICQMessage(ctx context.Context, data []byte, msg *OICQMessage) er
 			title, _ := buf.DecodeString()
 			message, _ := buf.DecodeString()
 			log.Printf("--> [recv] dump tlv 0x0146, code 0x%08x, title %s, message %s", code, title, message)
+		case 0x017d: // type:message,type:message
+			type1, _ := buf.DecodeUint16()
+			message1, _ := buf.DecodeString()
+			type2, _ := buf.DecodeUint16()
+			message2, _ := buf.DecodeString()
+			log.Printf("--> [recv] dump tlv 0x017d, type1 0x%04x, message1 %s, type2 0x%04x, message2 %s", type1, message1, type2, message2)
 		case 0x0104: // session
-			log.Printf("--> [recv] dump tlv 0x0104:\n%s", hex.Dump(buf.Bytes()))
+			log.Printf("--> [recv] dump tlv 0x0104, session %s", string(buf.Bytes()))
+		case 0x0178: // countryCode:mobile
+			countryCode, _ := buf.DecodeString()
+			mobile, _ := buf.DecodeString()
+			status, _ := buf.DecodeUint32()
+			counts, _ := buf.DecodeUint16()
+			timeLimit, _ := buf.DecodeUint16()
+			log.Printf("--> [recv] dump tlv 0x0178, country code %s, mobile %s, status 0x%08x, counts 0x%04x, timeLimit 0x%04x", countryCode, mobile, status, counts, timeLimit)
 		case 0x0105: // picture
 			sign, _ := buf.DecodeBytes()
 			data, _ := buf.DecodeBytes()
@@ -198,10 +211,12 @@ func UnmarshalOICQMessage(ctx context.Context, data []byte, msg *OICQMessage) er
 			l, _ := buf.DecodeUint8()
 			code, _ := buf.DecodeStringN(uint16(l))
 			_, _ = buf.DecodeUint16()
-			mess, _ := buf.DecodeString()
-			log.Printf("--> [recv] dump tlv 0x0165, code %s, message %s", code, mess)
+			message, _ := buf.DecodeString()
+			log.Printf("--> [recv] dump tlv 0x0165, code %s, message %s", code, message)
 		case 0x0192: // captcha
 			log.Printf("--> [recv] dump tlv 0x0192, url %s", string(buf.Bytes()))
+		case 0x0174, 0x017e, 0x0204, 0x0402, 0x0403:
+			log.Printf("--> [recv] dump tlv 0x%04x, raw %s", i, string(buf.Bytes()))
 		default:
 			log.Printf("--> [recv] dump tlv 0x%04x:\n%s", i, hex.Dump(buf.Bytes()))
 		}

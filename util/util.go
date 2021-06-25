@@ -1,7 +1,9 @@
 package util
 
 import (
+	"bufio"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,4 +21,12 @@ func CheckUsername(username string) bool {
 		return false
 	}
 	return true
+}
+
+func ReadLine(rd *bufio.Reader) (string, error) {
+	str, err := rd.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(str, "\n"), nil
 }

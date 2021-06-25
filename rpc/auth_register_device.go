@@ -71,10 +71,10 @@ func (req *AuthRegisterDeviceRequest) Encode(ctx context.Context) (*ClientToServ
 	}, nil
 }
 
-func (c *Client) AuthRegisterDevice(ctx context.Context, req *AuthRegisterDeviceRequest) (interface{}, error) {
+func (c *Client) AuthRegisterDevice(ctx context.Context, req *AuthRegisterDeviceRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.T104 = []byte{}
-	req.T401 = [16]byte{} // md5.Sum(append(append(defaultDeviceGUID, defaultDeviceDPWD...), t402...))
+	req.T104 = c.t104
+	req.T401 = c.t401
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err

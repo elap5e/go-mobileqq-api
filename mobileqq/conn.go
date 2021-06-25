@@ -14,14 +14,14 @@ func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
 
 	ips, err := net.LookupIP("msfwifi.3g.qq.com")
 	if err != nil {
-		log.Printf("failed to nslookup msfwifi.3g.qq.com, with error %s", err.Error())
+		log.Printf("x_x [conn] failed to nslookup msfwifi.3g.qq.com, with error %s", err.Error())
 	}
 	for _, ip := range ips {
 		addrs = append(addrs, &net.TCPAddr{IP: ip, Port: 8080})
 	}
 	ips, err = net.LookupIP("msfwifiv6.3g.qq.com")
 	if err != nil {
-		log.Printf("failed to nslookup msfwifiv6.3g.qq.com, with error %s", err.Error())
+		log.Printf("x_x [conn] failed to nslookup msfwifiv6.3g.qq.com, with error %s", err.Error())
 	}
 	for _, ip := range ips {
 		addrs = append(addrs, &net.TCPAddr{IP: ip, Port: 8080})
@@ -46,7 +46,7 @@ func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
 		go func(addr *net.TCPAddr) {
 			defer wg.Done()
 			if err := tcping(addr); err != nil {
-				log.Printf("failed to dial tcp %s, with error %s", addr, err.Error())
+				log.Printf("x_x [conn] failed to dial tcp %s, with error %s", addr, err.Error())
 				return
 			}
 			c.addrs = append(c.addrs, addr)

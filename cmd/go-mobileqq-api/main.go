@@ -20,11 +20,12 @@ func init() {
 	viper.ReadInConfig()
 	username = viper.GetString("GMA_USERNAME")
 	password = viper.GetString("GMA_PASSWORD")
-	log.Printf("username %s, password %s", username, password)
 	rpc.SetClientForAndroidPad()
 }
 
 func main() {
 	c := mobileqq.NewClient()
-	c.Auth(username, password)
+	if err := c.Auth(username, password); err != nil {
+		log.Printf("x_x [auth] error: %s", err.Error())
+	}
 }

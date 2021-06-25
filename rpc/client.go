@@ -126,6 +126,9 @@ type Client struct {
 	cookie   [4]byte
 
 	t104 []byte
+	t174 []byte
+	t17b []byte
+	t401 [16]byte
 	t547 []byte
 }
 

@@ -13,6 +13,7 @@ type AuthRefreshSMSDataRequest struct {
 	Seq      uint32
 	Uin      uint64
 	Username string
+	Cookie   []byte
 	LockType uint8
 
 	T104         []byte
@@ -77,15 +78,17 @@ func (req *AuthRefreshSMSDataRequest) Encode(ctx context.Context) (*ClientToServ
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,
+		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (interface{}, error) {
+func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.T104 = []byte{}
-	req.T174 = []byte{}
+	req.Cookie = c.cookie[:]
+	req.T104 = c.t104
+	req.T174 = c.t174
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err
@@ -94,5 +97,5 @@ func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSData
 	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
 		return nil, err
 	}
-	return s2c, nil
+	return c.AuthGetSessionTicket(ctx, s2c)
 }
