@@ -14,8 +14,7 @@ type AuthGetSessionTicketWithQRSignatureRequest struct {
 func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) *AuthGetSessionTicketWithQRSignatureRequest {
 	return &AuthGetSessionTicketWithQRSignatureRequest{
 		&AuthGetSessionTicketWithPasswordRequest{
-			Username:  fmt.Sprintf("%d", uin),
-			ImageType: 0x01,
+			Username: fmt.Sprintf("%d", uin),
 
 			DstAppID:         defaultClientDstAppID,
 			SubDstAppID:      defaultClientOpenAppID,
@@ -29,7 +28,7 @@ func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) 
 			LoginType:        0x00000000,
 			T106:             nil,
 			T16A:             nil,
-			MiscBitmap:       defaultClientMiscBitmap,
+			MiscBitmap:       clientMiscBitmap,
 			SubSigMap:        defaultClientSubSigMap,
 			SubAppIDList:     defaultClientSubAppIDList,
 			MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
@@ -38,9 +37,9 @@ func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) 
 			I8:               0x00,
 			I9:               0x0000,
 			I10:              0x01,
-			KSID:             defaultDeviceKSID,
+			KSID:             GetClientCodecKSID(),
 			T104:             nil,
-			PackageName:      defaultClientPackageName,
+			PackageName:      clientPackageName,
 			Domains:          defaultClientDomains,
 		},
 	}
@@ -58,7 +57,7 @@ func (req *AuthGetSessionTicketWithQRSignatureRequest) Encode(ctx context.Contex
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
-		AppID:    defaultClientAppID,
+		AppID:    clientAppID,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil

@@ -14,13 +14,12 @@ import (
 )
 
 type AuthGetSessionTicketWithPasswordRequest struct {
-	Seq       uint32
-	Username  string
-	Cookie    []byte
-	ImageType uint8
-	T172      []byte
-	T9        []byte
-	TGTQR     []byte
+	Seq      uint32
+	Username string
+	Cookie   []byte
+	T172     []byte
+	T9       []byte
+	TGTQR    []byte
 
 	DstAppID         uint64
 	SubDstAppID      uint64
@@ -51,9 +50,8 @@ type AuthGetSessionTicketWithPasswordRequest struct {
 
 func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *AuthGetSessionTicketWithPasswordRequest {
 	return &AuthGetSessionTicketWithPasswordRequest{
-		Username:  fmt.Sprintf("%d", uin),
-		ImageType: 0x01,
-		T9:        []byte{0x01, 0x00},
+		Username: fmt.Sprintf("%d", uin),
+		T9:       []byte{0x01, 0x00},
 
 		DstAppID:         defaultClientDstAppID,
 		SubDstAppID:      defaultClientOpenAppID,
@@ -67,7 +65,7 @@ func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *Au
 		LoginType:        0x00000001,
 		T106:             nil,
 		T16A:             nil,
-		MiscBitmap:       defaultClientMiscBitmap,
+		MiscBitmap:       clientMiscBitmap,
 		SubSigMap:        defaultClientSubSigMap,
 		SubAppIDList:     defaultClientSubAppIDList,
 		MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
@@ -76,9 +74,9 @@ func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *Au
 		I8:               0x00,
 		I9:               0x0000,
 		I10:              0x01,
-		KSID:             defaultDeviceKSID,
+		KSID:             GetClientCodecKSID(),
 		T104:             nil,
-		PackageName:      defaultClientPackageName,
+		PackageName:      clientPackageName,
 		Domains:          defaultClientDomains,
 	}
 }
@@ -88,7 +86,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.AppClientVersion, req.Uin, req.I2)
 	tlvs[0x0001] = tlv.NewT1(req.Uin, req.IPv4Address)
 	if len(req.T106) == 0 {
-		tlvs[0x0106] = tlv.NewT106(req.DstAppID, req.SubDstAppID, req.AppClientVersion, req.Uin, req.CurrentTime, req.IPv4Address, true, req.PasswordMD5, 0, req.Username, req.TGTGTKey, true, defaultDeviceGUID[:], req.LoginType)
+		tlvs[0x0106] = tlv.NewT106(req.DstAppID, req.SubDstAppID, req.AppClientVersion, req.Uin, req.CurrentTime, req.IPv4Address, true, req.PasswordMD5, 0, req.Username, req.TGTGTKey, true, deviceGUID[:], req.LoginType)
 	} else {
 		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(req.T106))
 	}
@@ -102,20 +100,20 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 		tlvs[0x0104] = tlv.NewT104(req.T104)
 	}
 	tlvs[0x0142] = tlv.NewT142(req.PackageName)
-	if !util.CheckUinAccount(req.Username) {
+	if !util.CheckUsername(req.Username) {
 		tlvs[0x0112] = tlv.NewT112([]byte(req.Username))
 	}
 	tlvs[0x0144] = tlv.NewT144(req.TGTGTKey,
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(ctx),
 		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSVersion, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
-		tlv.NewT128(defaultDeviceIsGUIDFileNil, defaultDeviceIsGUIDGenSucc, defaultDeviceIsGUIDChanged, defaultDeviceGUIDFlag, defaultDeviceOSBuildModel, defaultDeviceGUID[:], defaultDeviceOSBuildBrand),
+		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, defaultDeviceOSBuildModel, deviceGUID[:], defaultDeviceOSBuildBrand),
 		tlv.NewT16E(defaultDeviceOSBuildModel),
 	)
-	tlvs[0x0145] = tlv.NewT145(defaultDeviceGUID[:])
-	tlvs[0x0147] = tlv.NewT147(req.DstAppID, defaultClientVersionName, defaultClientSignatureMD5)
+	tlvs[0x0145] = tlv.NewT145(deviceGUID[:])
+	tlvs[0x0147] = tlv.NewT147(req.DstAppID, clientVersionName, clientSignatureMD5)
 	if req.MiscBitmap&0x80 != 0 {
-		tlvs[0x0166] = tlv.NewT166(req.ImageType)
+		tlvs[0x0166] = tlv.NewT166(clientImageType)
 	}
 	if len(req.T16A) != 0 {
 		tlvs[0x016a] = tlv.NewT16A(req.T16A)
@@ -138,11 +136,11 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
 	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(defaultDeviceIMSI)))
-	tlvs[0x0191] = tlv.NewT191(defaultClientVerifyMethod)
+	tlvs[0x0191] = tlv.NewT191(clientVerifyMethod)
 	// DISABLED: SetNeedForPayToken
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
-	tlvs[0x0177] = tlv.NewT177(defaultClientBuildTime, defaultClientSDKVersion)
+	tlvs[0x0177] = tlv.NewT177(clientBuildTime, clientSDKVersion)
 	tlvs[0x0516] = tlv.NewTLV(0x0516, 0x0004, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00}))
 	tlvs[0x0521] = tlv.NewTLV(0x0521, 0x0006, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}))
 	if len(req.T9) != 0 {
@@ -166,7 +164,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
 		EncryptMethod: 0x87,
-		RandomKey:     defaultClientRandomKey,
+		RandomKey:     clientRandomKey,
 		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
@@ -187,7 +185,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) Encode(ctx context.Context) 
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
-		AppID:    defaultClientAppID,
+		AppID:    clientAppID,
 		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,

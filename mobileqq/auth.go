@@ -30,16 +30,12 @@ func (c *Client) Auth(username, password string) error {
 			u, _ := url.Parse(string(resp.CaptchaSign))
 			captcha := resp.CaptchaSign + "\nhttp://" + addr + "/api/captcha?" + u.RawQuery
 			log.Printf(">_< [info] verify captcha\n%s\n", captcha)
-			type PostAuthCheckWebSignatureRequest struct {
-				Uin  uint64
-				Code []byte
-			}
-			done := make(chan *PostAuthCheckWebSignatureRequest, 1)
+			done := make(chan string, 1)
 			go func() {
 				fmt.Printf(".......... ........ >_< [info] verify captcha code: ")
 				reader := bufio.NewReader(os.Stdin)
-				code, _ := reader.ReadString('\n')
-				done <- &PostAuthCheckWebSignatureRequest{uint64(resp.Uin), []byte(code)}
+				ticket, _ := reader.ReadString('\n')
+				done <- ticket
 			}()
 			mux := http.NewServeMux()
 			mux.Handle("/api/captcha", http.HandlerFunc(
@@ -49,13 +45,8 @@ func (c *Client) Auth(username, password string) error {
 						w.WriteHeader(http.StatusOK)
 						fmt.Fprintln(w, tmplAuthCAPTCHA)
 					case http.MethodPost:
-						uin, err := strconv.Atoi(r.FormValue("uin"))
-						if err != nil {
-							w.WriteHeader(http.StatusBadRequest)
-							return
-						}
 						w.WriteHeader(http.StatusOK)
-						done <- &PostAuthCheckWebSignatureRequest{uint64(uin), []byte(r.FormValue("ticket"))}
+						done <- r.FormValue("ticket")
 						fmt.Printf("%s\n", r.FormValue("ticket"))
 					}
 				},
@@ -69,7 +60,7 @@ func (c *Client) Auth(username, password string) error {
 					log.Fatalf("listen:%+s\n", err)
 				}
 			}()
-			post := <-done
+			ticket := <-done
 			ctxShutDown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer func() {
 				cancel()
@@ -77,7 +68,7 @@ func (c *Client) Auth(username, password string) error {
 			if err := srv.Shutdown(ctxShutDown); err != nil {
 				log.Fatalf("server Shutdown Failed:%+s", err)
 			}
-			if resp, err = c.rpc.AuthCheckWebSignature(c.ctx, rpc.NewAuthCheckWebSignatureRequest(post.Uin, post.Code)); err != nil {
+			if resp, err = c.rpc.AuthCheckCaptchaAndGetSessionTicket(c.ctx, rpc.NewAuthCheckCaptchaAndGetSessionTicketRequest(resp.Uin, []byte(ticket))); err != nil {
 				return err
 			}
 		} else {
@@ -86,10 +77,13 @@ func (c *Client) Auth(username, password string) error {
 			fmt.Printf(".......... ........ >_< [info] verify picture code: ")
 			reader := bufio.NewReader(os.Stdin)
 			code, _ := reader.ReadString('\n')
-			if resp, err = c.rpc.AuthCheckPicture(c.ctx, rpc.NewAuthCheckPictureRequest(resp.Uin, []byte(code), resp.PictureSign)); err != nil {
+			if resp, err = c.rpc.AuthCheckPictureAndGetSessionTicket(c.ctx, rpc.NewAuthCheckPictureAndGetSessionTicketRequest(resp.Uin, []byte(code), resp.PictureSign)); err != nil {
 				return err
 			}
 		}
+	}
+	if resp.Code != 0x00 {
+		return fmt.Errorf("auth failed with code 0x%02x", resp.Code)
 	}
 	return nil
 }
@@ -106,26 +100,23 @@ const tmplAuthCAPTCHA = `<!DOCTYPE html>
 	<div id="cap_iframe" style="width: 230px; height: 220px"></div>
 	<script type="text/javascript">
 		!(function () {
-			var queryString = location.search;
-			var params = new URLSearchParams(queryString);
 			var elem = document.createElement("script");
 			elem.type = "text/javascript";
-			elem.src = "http://captcha.qq.com/template/TCapIframeApi.js" + queryString;
+			elem.src = "http://captcha.qq.com/template/TCapIframeApi.js" + location.search;
 			document.getElementsByTagName("head").item(0).appendChild(elem);
 			elem.onload = function () {
-			capInit(document.getElementById("cap_iframe"), {
-				callback: function (data) {
-					var xhr = new XMLHttpRequest();
-					xhr.open("POST", "/api/captcha", true);
-					var formData = new FormData();
-					formData.append("uin", parseInt(params.get("uin")));
-					formData.append("ticket", data.ticket);
-					formData.append("code", data.ret);
-					xhr.onload = function (e) { window.close(); };
-					xhr.send(formData);
-				},
-				showHeader: !1,
-			});
+				capInit(document.getElementById("cap_iframe"), {
+					callback: function (data) {
+						var xhr = new XMLHttpRequest();
+						xhr.open("POST", "/api/captcha", true);
+						var formData = new FormData();
+						formData.append("ticket", data.ticket);
+						formData.append("code", data.ret);
+						xhr.onload = function (e) { window.close(); };
+						xhr.send(formData);
+					},
+					showHeader: !1,
+				});
 			};
 		})();
 	</script>

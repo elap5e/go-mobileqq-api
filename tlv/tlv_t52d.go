@@ -24,6 +24,7 @@ func NewT52D(ctx context.Context) *T52D {
 func (t *T52D) Encode(b *bytes.Buffer) {
 	v, _ := proto.Marshal(&pb.DeviceInfo{
 		Bootloader:   defaultDeviceBootloader,
+		ProcVersion:  defaultDeviceProcVersion,
 		Codename:     defaultDeviceCodename,
 		Incremental:  defaultDeviceIncremental,
 		Fingerprint:  defaultDeviceFingerprint,

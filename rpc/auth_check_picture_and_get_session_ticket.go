@@ -7,13 +7,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/rpc/message"
 )
 
-type AuthCheckPictureRequest struct {
-	*AuthCheckWebSignatureRequest
+type AuthCheckPictureAndGetSessionTicketRequest struct {
+	*AuthCheckCaptchaAndGetSessionTicketRequest
 }
 
-func NewAuthCheckPictureRequest(uin uint64, code, sign []byte) *AuthCheckPictureRequest {
-	return &AuthCheckPictureRequest{
-		&AuthCheckWebSignatureRequest{
+func NewAuthCheckPictureAndGetSessionTicketRequest(uin uint64, code, sign []byte) *AuthCheckPictureAndGetSessionTicketRequest {
+	return &AuthCheckPictureAndGetSessionTicketRequest{
+		&AuthCheckCaptchaAndGetSessionTicketRequest{
 			Uin:      uin,
 			Username: fmt.Sprintf("%d", uin),
 			CheckWeb: false,
@@ -21,7 +21,7 @@ func NewAuthCheckPictureRequest(uin uint64, code, sign []byte) *AuthCheckPicture
 			T104:         nil,
 			Code:         code,
 			Sign:         sign,
-			MiscBitmap:   defaultClientMiscBitmap,
+			MiscBitmap:   clientMiscBitmap,
 			SubSigMap:    defaultClientSubSigMap,
 			SubAppIDList: defaultClientSubAppIDList,
 			T547:         nil,
@@ -29,7 +29,7 @@ func NewAuthCheckPictureRequest(uin uint64, code, sign []byte) *AuthCheckPicture
 	}
 }
 
-func (req *AuthCheckPictureRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
+func (req *AuthCheckPictureAndGetSessionTicketRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
 	msg, err := req.EncodeOICQMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -41,14 +41,14 @@ func (req *AuthCheckPictureRequest) Encode(ctx context.Context) (*ClientToServer
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
-		AppID:    defaultClientAppID,
+		AppID:    clientAppID,
 		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthCheckPicture(ctx context.Context, req *AuthCheckPictureRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthCheckPictureAndGetSessionTicket(ctx context.Context, req *AuthCheckPictureAndGetSessionTicketRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
 	req.T104 = c.t104

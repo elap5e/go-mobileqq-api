@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
+	"github.com/elap5e/go-mobileqq-api/rpc"
 )
 
 var (
@@ -20,7 +21,7 @@ func init() {
 	username = viper.GetString("GMA_USERNAME")
 	password = viper.GetString("GMA_PASSWORD")
 	log.Printf("username %s, password %s", username, password)
-	// rpc.SetClientForAndroidPad()
+	rpc.SetClientForAndroidPad()
 }
 
 func main() {

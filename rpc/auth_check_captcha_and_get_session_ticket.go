@@ -8,7 +8,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthCheckWebSignatureRequest struct {
+type AuthCheckCaptchaAndGetSessionTicketRequest struct {
 	Seq      uint32
 	Uin      uint64
 	Username string
@@ -24,8 +24,8 @@ type AuthCheckWebSignatureRequest struct {
 	T547         []byte
 }
 
-func NewAuthCheckWebSignatureRequest(uin uint64, code []byte) *AuthCheckWebSignatureRequest {
-	return &AuthCheckWebSignatureRequest{
+func NewAuthCheckCaptchaAndGetSessionTicketRequest(uin uint64, code []byte) *AuthCheckCaptchaAndGetSessionTicketRequest {
+	return &AuthCheckCaptchaAndGetSessionTicketRequest{
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 		CheckWeb: true,
@@ -33,14 +33,14 @@ func NewAuthCheckWebSignatureRequest(uin uint64, code []byte) *AuthCheckWebSigna
 		T104:         nil,
 		Code:         code,
 		Sign:         nil,
-		MiscBitmap:   defaultClientMiscBitmap,
+		MiscBitmap:   clientMiscBitmap,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
 		T547:         nil,
 	}
 }
 
-func (req *AuthCheckWebSignatureRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthCheckCaptchaAndGetSessionTicketRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	if req.CheckWeb {
 		tlvs[0x0193] = tlv.NewT193(req.Code)
@@ -50,14 +50,14 @@ func (req *AuthCheckWebSignatureRequest) EncodeOICQMessage(ctx context.Context) 
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	// tlvs[0x0547] = tlv.NewT547(req.T547)
+	tlvs[0x0547] = tlv.NewT547(req.T547)
 
 	return &message.OICQMessage{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
 		EncryptMethod: 0x87,
-		RandomKey:     defaultClientRandomKey,
+		RandomKey:     clientRandomKey,
 		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
@@ -66,7 +66,7 @@ func (req *AuthCheckWebSignatureRequest) EncodeOICQMessage(ctx context.Context) 
 	}, nil
 }
 
-func (req *AuthCheckWebSignatureRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
+func (req *AuthCheckCaptchaAndGetSessionTicketRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
 	msg, err := req.EncodeOICQMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -78,14 +78,14 @@ func (req *AuthCheckWebSignatureRequest) Encode(ctx context.Context) (*ClientToS
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
-		AppID:    defaultClientAppID,
+		AppID:    clientAppID,
 		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthCheckWebSignature(ctx context.Context, req *AuthCheckWebSignatureRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthCheckCaptchaAndGetSessionTicket(ctx context.Context, req *AuthCheckCaptchaAndGetSessionTicketRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
 	req.T104 = c.t104

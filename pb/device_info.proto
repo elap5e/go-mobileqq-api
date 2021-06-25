@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-option go_package = "github.com/elap5e/go-mobileqq-api/pb";
+option go_package = "./;pb";
 
 message DeviceInfo {
   bytes bootloader = 10;
-  bytes version = 18;
+  bytes proc_version = 18;
   bytes codename = 26;
   bytes incremental = 34;
   bytes fingerprint = 42;

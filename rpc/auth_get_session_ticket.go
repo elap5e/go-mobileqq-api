@@ -34,7 +34,7 @@ type AuthGetSessionTicketResponse struct {
 
 func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []byte) error {
 	msg := &message.OICQMessage{
-		RandomKey: defaultClientRandomKey,
+		RandomKey: clientRandomKey,
 		PublicKey: ecdh.PublicKey,
 		ShareKey:  ecdh.ShareKey,
 	}
@@ -72,7 +72,7 @@ func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []b
 	}
 	if v, ok := msg.TLVs[0x0402].(*tlv.TLV); ok {
 		resp.T402 = v.MustGetValue().Bytes()
-		resp.T401 = md5.Sum(append(append(defaultDeviceGUID[:], defaultDeviceDPWD...), resp.T402...))
+		resp.T401 = md5.Sum(append(append(deviceGUID[:], deviceDPWD...), resp.T402...))
 	}
 	if v, ok := msg.TLVs[0x0403].(*tlv.TLV); ok {
 		resp.T403 = v.MustGetValue().Bytes()

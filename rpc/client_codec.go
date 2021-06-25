@@ -8,10 +8,55 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
 )
+
+var (
+	clientCodecKeys    = map[string]*ClientCodecKey{}
+	clientCodecKeysMux = sync.RWMutex{}
+	clientCodecKSID    = []byte{}
+)
+
+func SelectClientCodecKey(username string) *ClientCodecKey {
+	clientCodecKeysMux.RLock()
+	defer clientCodecKeysMux.RUnlock()
+	if key, ok := clientCodecKeys[username]; ok {
+		return &ClientCodecKey{
+			A1:     key.A1,
+			A2:     key.A2,
+			A3:     key.A3,
+			D1:     key.D1,
+			D2:     key.D2,
+			S1:     key.S1,
+			Key:    key.Key,
+			Cookie: key.Cookie,
+		} // TODO: anyway, need fix atomic
+	}
+	return nil
+}
+
+func InsertClientCodecKey(username string, key *ClientCodecKey) {
+	clientCodecKeysMux.Lock()
+	clientCodecKeys[username] = key
+	clientCodecKeysMux.Unlock()
+}
+
+func DeleteClientCodecKey(username string) {
+	clientCodecKeysMux.Lock()
+	delete(clientCodecKeys, username)
+	clientCodecKeysMux.Unlock()
+}
+
+func GetClientCodecKSID() []byte {
+	return clientCodecKSID
+}
+
+func SetClientCodecKSID(ksid []byte) {
+	clientCodecKSID = ksid
+}
 
 type clientCodec struct {
 	conn io.ReadWriteCloser
@@ -22,9 +67,6 @@ type clientCodec struct {
 	imei        string
 	imsi        string
 	revision    string
-
-	authData map[string]*ClientAuthData
-	ksid     []byte
 }
 
 func NewClientCodec(conn io.ReadWriteCloser) ClientCodec {
@@ -35,12 +77,12 @@ func NewClientCodec(conn io.ReadWriteCloser) ClientCodec {
 		netIPFamily: fixNetIPFamily(defaultDeviceNetIPFamily),
 		imei:        defaultDeviceIMEI,
 		imsi:        defaultDeviceIMSI,
-		revision:    defaultClientRevision,
+		revision:    clientRevision,
 	}
 }
 
 func fixAppID() uint32 {
-	appID := defaultClientCodecAppIDRelease
+	appID := clientCodecAppIDRelease
 	for i := range appID {
 		appID[i] ^= defaultClientCodecAppIDMapByte[i%4]
 	}
@@ -111,12 +153,11 @@ func (c *clientCodec) serializeData(msg *ClientToServerMessage) ([]byte, error) 
 			tmp[0xa] = c.netIPFamily
 			buf.EncodeRawBytes(tmp)
 		}
-		auth, ok := c.authData[msg.Username]
-		if !ok {
+		if key := SelectClientCodecKey(msg.Username); key == nil {
 			buf.EncodeUint32(4)
 		} else {
-			buf.EncodeUint32(uint32(len(auth.A2) + 4))
-			buf.EncodeRawBytes(auth.A2)
+			buf.EncodeUint32(uint32(len(key.A2) + 4))
+			buf.EncodeRawBytes(key.A2)
 		}
 	}
 	buf.EncodeUint32(uint32(len(msg.ServiceMethod) + 4))
@@ -126,8 +167,8 @@ func (c *clientCodec) serializeData(msg *ClientToServerMessage) ([]byte, error) 
 	if msg.Version == 0x0000000a {
 		buf.EncodeUint32(uint32(len(c.imei) + 4))
 		buf.EncodeRawString(c.imei)
-		buf.EncodeUint32(uint32(len(c.ksid) + 4))
-		buf.EncodeRawBytes(c.ksid)
+		buf.EncodeUint32(uint32(len(clientCodecKSID) + 4))
+		buf.EncodeRawBytes(clientCodecKSID)
 		{
 			tmp := "" + "|" + c.imsi + "|A" + c.revision
 			buf.EncodeUint16(uint16(len(tmp) + 2))
@@ -235,9 +276,8 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 		method == "client.correcttime" {
 		msg.EncryptType = 0x00
 	} else {
-		_, ok := c.authData[msg.Username]
 		cipher := crypto.NewCipher([16]byte{})
-		if !ok || len(msg.EncryptKey) == 0 ||
+		if key := SelectClientCodecKey(msg.Username); key == nil || len(msg.EncryptKey) == 0 ||
 			method == "login.auth" ||
 			method == "login.chguin" ||
 			method == "grayuinpro.check" ||
@@ -296,9 +336,8 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 	switch msg.EncryptType {
 	case 0x00:
 	case 0x01:
-		auth, ok := c.authData[msg.Username]
-		if ok {
-			buf = bytes.NewBuffer(crypto.NewCipher(auth.Key).Decrypt(buf.Bytes()))
+		if key := SelectClientCodecKey(msg.Username); key != nil {
+			buf = bytes.NewBuffer(crypto.NewCipher(key.Key).Decrypt(buf.Bytes()))
 		}
 	case 0x02:
 		buf = bytes.NewBuffer(crypto.NewCipher([16]byte{}).Decrypt(buf.Bytes()))

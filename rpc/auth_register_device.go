@@ -26,7 +26,7 @@ func NewAuthRegisterDeviceRequest(uin uint64) *AuthRegisterDeviceRequest {
 		Username: fmt.Sprintf("%d", uin),
 
 		T104:         nil,
-		MiscBitmap:   defaultClientMiscBitmap,
+		MiscBitmap:   clientMiscBitmap,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
 		T401:         [16]byte{},
@@ -45,7 +45,7 @@ func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*m
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
 		EncryptMethod: 0x07,
-		RandomKey:     defaultClientRandomKey,
+		RandomKey:     clientRandomKey,
 		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,

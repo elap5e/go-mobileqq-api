@@ -9,46 +9,45 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthCheckSMSRequest struct {
+type AuthRefreshSMSDataRequest struct {
 	Seq      uint32
 	Uin      uint64
 	Username string
 	LockType uint8
 
 	T104         []byte
-	T17C         []byte
+	SMSAppID     uint64
 	T174         []byte
 	MiscBitmap   uint32
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	T401         [16]byte
-	T547         []byte
 	SMSExtraData []byte
 }
 
-func NewAuthCheckSMSRequest(uin uint64) *AuthCheckSMSRequest {
-	return &AuthCheckSMSRequest{
+func NewAuthRefreshSMSDataRequest(uin uint64) *AuthRefreshSMSDataRequest {
+	return &AuthRefreshSMSDataRequest{
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 		LockType: 0x00,
 
 		T104:         nil,
-		MiscBitmap:   defaultClientMiscBitmap,
+		SMSAppID:     defaultClientSMSAppID,
+		T174:         nil,
+		MiscBitmap:   clientMiscBitmap,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		T547:         nil,
+		SMSExtraData: nil,
 	}
 }
 
-func (req *AuthCheckSMSRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthRefreshSMSDataRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0174] = tlv.NewT174(req.T174)
-	tlvs[0x017c] = tlv.NewT17C(req.T17C)
-	tlvs[0x0401] = tlv.NewT401(req.T401)
-	tlvs[0x0197] = tlv.NewTLV(0x0198, 0x0000, bytes.NewBuffer([]byte{req.LockType}))
+	tlvs[0x017a] = tlv.NewT17A(req.SMSAppID)
+	tlvs[0x0197] = tlv.NewTLV(0x0197, 0x0000, bytes.NewBuffer([]byte{req.LockType}))
 	tlvs[0x0542] = tlv.NewT542(req.SMSExtraData)
 
 	return &message.OICQMessage{
@@ -56,15 +55,16 @@ func (req *AuthCheckSMSRequest) EncodeOICQMessage(ctx context.Context) (*message
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
 		EncryptMethod: 0x07,
-		RandomKey:     defaultClientRandomKey,
+		RandomKey:     clientRandomKey,
+		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
-		Type:          0x0007,
+		Type:          0x0008,
 		TLVs:          tlvs,
 	}, nil
 }
 
-func (req *AuthCheckSMSRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
+func (req *AuthRefreshSMSDataRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
 	msg, err := req.EncodeOICQMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -76,14 +76,16 @@ func (req *AuthCheckSMSRequest) Encode(ctx context.Context) (*ClientToServerMess
 	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
+		AppID:    clientAppID,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthCheckSMS(ctx context.Context, req *AuthCheckSMSRequest) (interface{}, error) {
+func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (interface{}, error) {
 	req.Seq = c.getNextSeq()
 	req.T104 = []byte{}
+	req.T174 = []byte{}
 	c2s, err := req.Encode(ctx)
 	if err != nil {
 		return nil, err
@@ -92,5 +94,5 @@ func (c *Client) AuthCheckSMS(ctx context.Context, req *AuthCheckSMSRequest) (in
 	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return s2c, nil
 }
