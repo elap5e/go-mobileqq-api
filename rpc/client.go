@@ -132,6 +132,8 @@ type Client struct {
 	t174 []byte
 	t17b []byte
 	t401 [16]byte
+	t402 []byte
+	t403 []byte
 	t547 []byte
 }
 

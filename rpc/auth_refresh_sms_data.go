@@ -55,7 +55,7 @@ func (req *AuthRefreshSMSDataRequest) EncodeOICQMessage(ctx context.Context) (*m
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x07,
+		EncryptMethod: 0x87,
 		RandomKey:     clientRandomKey,
 		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,

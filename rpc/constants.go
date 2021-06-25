@@ -8,12 +8,12 @@ var (
 	defaultDeviceOSType    = []byte("android")
 	defaultDeviceOSVersion = []byte("11")
 
-	defaultDeviceOSBuildID    = []byte("RKQ1.200826.002")
+	defaultDeviceOSBuildID    = []byte("RKQ1.200827.002")
 	defaultDeviceOSBuildBrand = []byte("Xiaomi")
 	defaultDeviceOSBuildModel = []byte("Redmi K20")
 
-	defaultDeviceIMEI = "860308028836597"
-	defaultDeviceIMSI = "088906035901507677"
+	defaultDeviceIMEI = "860308028836598"
+	defaultDeviceIMSI = "088906035901507678"
 
 	defaultDeviceAPNName   = []byte("wifi")
 	defaultDeviceSIMOPName = []byte("CMCC")

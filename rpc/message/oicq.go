@@ -215,7 +215,9 @@ func UnmarshalOICQMessage(ctx context.Context, data []byte, msg *OICQMessage) er
 			log.Printf("--> [recv] dump tlv 0x0165, code %s, message %s", code, message)
 		case 0x0192: // captcha
 			log.Printf("--> [recv] dump tlv 0x0192, url %s", string(buf.Bytes()))
-		case 0x0174, 0x017e, 0x0204, 0x0402, 0x0403:
+		case 0x0174, 0x0402, 0x0403:
+			log.Printf("--> [recv] dump tlv 0x%04x:\n%s", i, hex.Dump(buf.Bytes()))
+		case 0x017e, 0x0204:
 			log.Printf("--> [recv] dump tlv 0x%04x, raw %s", i, string(buf.Bytes()))
 		default:
 			log.Printf("--> [recv] dump tlv 0x%04x:\n%s", i, hex.Dump(buf.Bytes()))
