@@ -36,10 +36,11 @@ func NewClient() *Client {
 }
 
 func (c *Client) init() {
+	log.Printf("==> [init] create connection")
 	c.connMux.Lock()
 	c.conn, _ = c.createConn(context.Background())
-	log.Printf("^_^ [conn] connected to server %s", c.addrs[0].String())
 	c.connMux.Unlock()
+	log.Printf("==> [init] create rpc client")
 	c.rpc = rpc.NewClient(c.conn)
 }
 
@@ -70,4 +71,8 @@ func (c *Client) Run(ctx context.Context, f func(ctx context.Context) error) err
 	}
 
 	return c.runUntilClosed(ctx)
+}
+
+func (c *Client) HeartbeatAlive() error {
+	return c.rpc.HeartbeatAlive()
 }

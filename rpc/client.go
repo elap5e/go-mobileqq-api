@@ -57,9 +57,12 @@ func init() {
 		}
 		return b
 	}(16)
+	log.Printf("--> [init] dump device dpwd\n%s", hex.Dump(deviceDPWD))
 	clientRandomKey = func() [16]byte { var v [16]byte; rand.Read(v[:]); return v }()
+	log.Printf("--> [init] dump client random key\n%s", hex.Dump(clientRandomKey[:]))
+	log.Printf("==> [init] update ecdh share key")
 	if err := ecdh.UpdateShareKey(); err != nil {
-		log.Fatalf("failed to init ecdh, error %s", err.Error())
+		log.Fatalf("x_x [init] failed to init ecdh, error: %s", err.Error())
 	}
 }
 

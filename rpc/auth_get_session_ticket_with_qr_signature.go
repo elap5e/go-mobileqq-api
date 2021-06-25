@@ -58,12 +58,13 @@ func (req *AuthGetSessionTicketWithQRSignatureRequest) Encode(ctx context.Contex
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,
+		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
 	}, nil
 }
 
-func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *AuthGetSessionTicketWithQRSignatureRequest) (interface{}, error) {
+func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *AuthGetSessionTicketWithQRSignatureRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.TGTGTKey = c.tgtgtKey
 	req.T106 = []byte{}

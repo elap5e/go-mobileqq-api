@@ -42,24 +42,29 @@ func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(addrs))
+	log.Printf("<== [conn] send tcp dialings")
 	for i := range addrs {
 		go func(addr *net.TCPAddr) {
 			defer wg.Done()
+			log.Printf("<-- [conn] send dial tcp %s", addr)
 			if err := tcping(addr); err != nil {
-				log.Printf("x_x [conn] failed to dial tcp %s, with error %s", addr, err.Error())
+				log.Printf("x_x [conn] %s", err.Error())
 				return
 			}
+			log.Printf("--> [conn] recv dial tcp %s", addr)
 			c.addrs = append(c.addrs, addr)
 		}(addrs[i])
 	}
 	wg.Wait()
+	log.Printf("==> [conn] recv tcp dialings")
 
+	defer log.Printf("^_^ [conn] connected to server %s", c.addrs[0].String())
 	return net.Dial("tcp", c.addrs[0].String())
 }
 
 func tcping(addr *net.TCPAddr) error {
 	for j := 0; j < 5; j++ {
-		conn, err := net.DialTimeout("tcp", addr.String(), time.Second)
+		conn, err := net.DialTimeout("tcp", addr.String(), 5*time.Second)
 		if err != nil {
 			return err
 		}

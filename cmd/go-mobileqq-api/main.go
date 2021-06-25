@@ -25,6 +25,9 @@ func init() {
 
 func main() {
 	c := mobileqq.NewClient()
+	if err := c.HeartbeatAlive(); err != nil {
+		log.Printf("x_x [test] error: %s", err.Error())
+	}
 	if err := c.Auth(username, password); err != nil {
 		log.Printf("x_x [auth] error: %s", err.Error())
 	}

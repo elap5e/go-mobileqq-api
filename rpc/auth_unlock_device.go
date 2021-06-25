@@ -8,7 +8,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthRegisterDeviceRequest struct {
+type AuthUnlockDeviceRequest struct {
 	Seq      uint32
 	Uin      uint64
 	Username string
@@ -20,8 +20,8 @@ type AuthRegisterDeviceRequest struct {
 	T401         [16]byte
 }
 
-func NewAuthRegisterDeviceRequest(uin uint64) *AuthRegisterDeviceRequest {
-	return &AuthRegisterDeviceRequest{
+func NewAuthUnlockDeviceRequest(uin uint64) *AuthUnlockDeviceRequest {
+	return &AuthUnlockDeviceRequest{
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 
@@ -33,7 +33,7 @@ func NewAuthRegisterDeviceRequest(uin uint64) *AuthRegisterDeviceRequest {
 	}
 }
 
-func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthUnlockDeviceRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
@@ -44,7 +44,7 @@ func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*m
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x07,
+		EncryptMethod: 0x87,
 		RandomKey:     clientRandomKey,
 		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
@@ -54,7 +54,7 @@ func (req *AuthRegisterDeviceRequest) EncodeOICQMessage(ctx context.Context) (*m
 	}, nil
 }
 
-func (req *AuthRegisterDeviceRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
+func (req *AuthUnlockDeviceRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
 	msg, err := req.EncodeOICQMessage(ctx)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (req *AuthRegisterDeviceRequest) Encode(ctx context.Context) (*ClientToServ
 	}, nil
 }
 
-func (c *Client) AuthRegisterDevice(ctx context.Context, req *AuthRegisterDeviceRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.T104 = c.t104
 	req.T401 = c.t401

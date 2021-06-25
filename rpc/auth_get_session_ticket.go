@@ -140,7 +140,7 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 	case 0xed:
 		log.Printf("x_x [fail] invalid device, uin %s, code 0xed, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
 	case 0xcc:
-		return c.AuthRegisterDevice(ctx, NewAuthRegisterDeviceRequest(resp.Uin))
+		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(resp.Uin))
 	}
 	return resp, nil
 }

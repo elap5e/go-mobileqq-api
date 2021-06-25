@@ -10,8 +10,9 @@ import (
 )
 
 type AuthGetSessionTicketWithoutPasswordRequest struct {
-	Username string
 	Seq      uint32
+	Username string
+	Cookie   []byte
 
 	Uin              uint64
 	DstAppID         uint64
@@ -46,7 +47,7 @@ func NewAuthGetSessionTicketWithoutPasswordRequest(uin uint64) *AuthGetSessionTi
 	}
 }
 
-func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Context) ([]byte, error) {
+func (req *AuthGetSessionTicketWithoutPasswordRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
 	key := SelectClientCodecKey(req.Username)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0100] = tlv.NewT100(req.DstAppID, req.SrcAppID, req.AppClientVersion, req.MainSigMap)
@@ -79,34 +80,48 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Marshal(ctx context.Conte
 	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
 	// tlvs[0x0544] = tlv.NewT544(req.Username, "810_a", nil)
 
-	return message.MarshalOICQMessage(ctx, &message.OICQMessage{
+	return &message.OICQMessage{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x07,
+		EncryptMethod: 0x87,
 		RandomKey:     clientRandomKey,
 		KeyVersion:    ecdh.KeyVersion,
 		PublicKey:     ecdh.PublicKey,
 		ShareKey:      ecdh.ShareKey,
 		Type:          0x000b,
 		TLVs:          tlvs,
-	})
+	}, nil
 }
 
-func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *AuthGetSessionTicketWithoutPasswordRequest) (interface{}, error) {
-	s2c := new(ServerToClientMessage)
-	req.Seq = c.getNextSeq()
-	buf, err := req.Marshal(ctx)
+func (req *AuthGetSessionTicketWithoutPasswordRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
+	msg, err := req.EncodeOICQMessage(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := c.Call("wtlogin.exchange_emp", &ClientToServerMessage{
+	buf, err := message.MarshalOICQMessage(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,
+		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
-	}, s2c); err != nil {
+	}, nil
+}
+
+func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *AuthGetSessionTicketWithoutPasswordRequest) (*AuthGetSessionTicketResponse, error) {
+	req.Seq = c.getNextSeq()
+	req.Cookie = c.cookie[:]
+	c2s, err := req.Encode(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s2c := new(ServerToClientMessage)
+	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
 		return nil, err
 	}
 	return c.AuthGetSessionTicket(ctx, s2c)
