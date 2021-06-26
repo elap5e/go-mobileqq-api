@@ -23,15 +23,15 @@ func NewT52D(ctx context.Context) *T52D {
 
 func (t *T52D) Encode(b *bytes.Buffer) {
 	v, _ := proto.Marshal(&pb.DeviceInfo{
-		Bootloader:   defaultDeviceBootloader,
-		ProcVersion:  defaultDeviceProcVersion,
-		Codename:     defaultDeviceCodename,
-		Incremental:  defaultDeviceIncremental,
-		Fingerprint:  defaultDeviceFingerprint,
-		BootId:       defaultDeviceBootID,
-		AndroidId:    defaultDeviceOSBuildID,
-		Baseband:     defaultDeviceBaseband,
-		InnerVersion: defaultDeviceInnerVersion,
+		Bootloader:   deviceBootloader,
+		ProcVersion:  deviceProcVersion,
+		Codename:     deviceCodename,
+		Incremental:  deviceIncremental,
+		Fingerprint:  deviceFingerprint,
+		BootId:       deviceBootID,
+		AndroidId:    deviceOSBuildID,
+		Baseband:     deviceBaseband,
+		InnerVersion: deviceInnerVersion,
 	})
 	t.tlv.SetValue(bytes.NewBuffer(v))
 	t.tlv.Encode(b)

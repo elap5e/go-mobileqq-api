@@ -3,22 +3,12 @@ package rpc
 type ClientCodecKey struct {
 	A1     []byte
 	A2     []byte
+	A2Key  [16]byte
 	A3     []byte
 	D1     []byte
 	D2     []byte
+	D2Key  [16]byte
 	S1     []byte
-	Key    [16]byte
-	Cookie []byte
-}
-
-type ClientAuthData struct {
-	A1     []byte
-	A2     []byte
-	A3     []byte
-	D1     []byte
-	D2     []byte
-	S1     []byte
-	Key    [16]byte
 	Cookie []byte
 }
 

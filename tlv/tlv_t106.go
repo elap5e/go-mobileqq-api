@@ -52,7 +52,7 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
 	v.EncodeUint16(0x0004)
 	v.EncodeUint32(rand.Uint32())
-	v.EncodeUint32(defaultSSOVersion)
+	v.EncodeUint32(ssoVersion)
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(t.appClientVersion)
 	if t.uin != 0 {

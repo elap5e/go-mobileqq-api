@@ -54,7 +54,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) EncodeOICQMessage(ctx con
 	tlvs[0x010a] = tlv.NewT10A(key.A2)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0108] = tlv.NewT108(req.KSID)
-	tlvs[0x0144] = tlv.NewT144(md5.Sum(key.Key[:]),
+	tlvs[0x0144] = tlv.NewT144(md5.Sum(key.D2Key[:]),
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(ctx),
 		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSVersion, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
@@ -121,7 +121,7 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
+	if err := c.Call("wtlogin.exchange_emp", c2s, s2c); err != nil {
 		return nil, err
 	}
 	return c.AuthGetSessionTicket(ctx, s2c)

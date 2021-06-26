@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type T1 struct {
@@ -28,7 +28,7 @@ func (t *T1) Encode(b *bytes.Buffer) {
 	v.EncodeUint16(0x0001)
 	v.EncodeUint32(rand.Uint32())
 	v.EncodeUint32(uint32(t.uin))
-	v.EncodeUint32(uint32(time.Now().UnixNano() / 1e6))
+	v.EncodeUint32(util.GetServerCurrentTime())
 	v.EncodeRawBytes(t.ip.To4())
 	v.EncodeUint16(0x0000)
 	t.tlv.SetValue(v)

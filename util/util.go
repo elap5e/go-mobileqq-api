@@ -7,12 +7,16 @@ import (
 	"time"
 )
 
-func GetServerCurrentTime(v int64) int64 {
-	return time.Now().UnixNano()/1e6 + v
+var (
+	serverTimeDuration = uint32(0x00000000) // TODO: add atomic
+)
+
+func SetServerCurrentTime(v uint32) {
+	serverTimeDuration = v - uint32(time.Now().Unix())
 }
 
-func GetServerCurrentTimeOffset(v int64) int64 {
-	return v - time.Now().UnixNano()/1e6
+func GetServerCurrentTime() uint32 {
+	return uint32(time.Now().Unix()) + serverTimeDuration
 }
 
 func CheckUsername(username string) bool {

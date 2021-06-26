@@ -1,10 +1,9 @@
 package tlv
 
 import (
-	"time"
-
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type T400 struct {
@@ -45,7 +44,7 @@ func (t *T400) Encode(b *bytes.Buffer) {
 	v.EncodeBytes(t.dpwd[:])
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(uint32(t.subAppID))
-	v.EncodeUint32(uint32(time.Now().UnixNano() / 1e6))
+	v.EncodeUint32(util.GetServerCurrentTime())
 	v.EncodeBytes(t.randSeed)
 	t.tlv.SetValue(bytes.NewBuffer(crypto.NewCipher(t.key).Encrypt(v.Bytes())))
 	t.tlv.Encode(b)

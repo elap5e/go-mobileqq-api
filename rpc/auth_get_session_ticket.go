@@ -6,6 +6,8 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/elap5e/go-mobileqq-api/bytes"
+	"github.com/elap5e/go-mobileqq-api/crypto"
 	"github.com/elap5e/go-mobileqq-api/rpc/message"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
@@ -109,6 +111,16 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 	switch resp.Code {
 	case 0x00:
 		// success
+		c.t119 = crypto.NewCipher(c.tgtgtKey).Decrypt(resp.T119)
+		buf := bytes.NewBuffer(c.t119)
+		l, _ := buf.DecodeUint16()
+		tlvs := map[uint16]tlv.TLVCodec{}
+		for i := 0; i < int(l); i++ {
+			tlv := tlv.TLV{}
+			tlv.Decode(buf)
+			tlvs[tlv.GetType()] = &tlv
+		}
+		message.DumpTLVs(ctx, tlvs)
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
 		// captcha

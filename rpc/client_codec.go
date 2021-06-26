@@ -27,11 +27,12 @@ func SelectClientCodecKey(username string) *ClientCodecKey {
 		return &ClientCodecKey{
 			A1:     key.A1,
 			A2:     key.A2,
+			A2Key:  key.A2Key,
 			A3:     key.A3,
 			D1:     key.D1,
 			D2:     key.D2,
+			D2Key:  key.D2Key,
 			S1:     key.S1,
-			Key:    key.Key,
 			Cookie: key.Cookie,
 		} // TODO: anyway, need fix atomic
 	}
@@ -337,7 +338,7 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 	case 0x00:
 	case 0x01:
 		if key := SelectClientCodecKey(msg.Username); key != nil {
-			buf = bytes.NewBuffer(crypto.NewCipher(key.Key).Decrypt(buf.Bytes()))
+			buf = bytes.NewBuffer(crypto.NewCipher(key.D2Key).Decrypt(buf.Bytes()))
 		}
 	case 0x02:
 		buf = bytes.NewBuffer(crypto.NewCipher([16]byte{}).Decrypt(buf.Bytes()))

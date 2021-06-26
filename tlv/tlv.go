@@ -4,6 +4,28 @@ import (
 	"github.com/elap5e/go-mobileqq-api/bytes"
 )
 
+var (
+	deviceBootloader   = []byte("unknown")
+	deviceProcVersion  = []byte("Linux version 2.6.18-92.el5 (brewbuilder@ls20-bc2-13.build.redhat.com)")
+	deviceCodename     = []byte("davinci")
+	deviceIncremental  = []byte("20.10.20")
+	deviceFingerprint  = []byte("Xiaomi/davinci/davinci:11/RKQ1.200827.002/20.10.20:user/release-keys")
+	deviceBootID       = []byte("aa6bf49c-a995-4761-874f-8b1a9eee341e")
+	deviceOSBuildID    = []byte("RKQ1.200827.002")
+	deviceBaseband     = []byte("4.3.c5-00069-SM6150_GEN_PACK-1")
+	deviceInnerVersion = []byte("20.10.20")
+
+	ssoVersion = uint32(0x00000011)
+)
+
+func SetSSOVersion(ver uint32) {
+	ssoVersion = ver
+}
+
+func SetDeviceOSBuildID(id []byte) {
+	deviceOSBuildID = id
+}
+
 type TLV struct {
 	t uint16
 	l uint16

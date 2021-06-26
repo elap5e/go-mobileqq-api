@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/rpc/message"
@@ -59,7 +58,7 @@ func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *Au
 		Uin:              uin,
 		I2:               0x0000,
 		IPv4Address:      defaultDeviceIPv4Address,
-		CurrentTime:      uint32(time.Now().UnixNano() / 1e6), // TODO: sync server time
+		CurrentTime:      util.GetServerCurrentTime(),
 		PasswordMD5:      md5.Sum([]byte(password)),
 		TGTGTKey:         [16]byte{},
 		LoginType:        0x00000001,
