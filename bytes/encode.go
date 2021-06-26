@@ -2,6 +2,7 @@ package bytes
 
 import (
 	"encoding/binary"
+	"math"
 )
 
 // EncodeUint8 appends an unsigned 8-bit integer to the buffer.
@@ -67,6 +68,16 @@ func (b *Buffer) EncodeUint64(v uint64) {
 // EncodeInt64 appends a signed 64-bit big-endian integer to the buffer.
 func (b *Buffer) EncodeInt64(v int64) {
 	b.EncodeUint64(uint64(v))
+}
+
+// EncodeFloat32 appends a float 32 big-endian integer to the buffer.
+func (b *Buffer) EncodeFloat32(v float32) {
+	b.EncodeUint32(math.Float32bits(v))
+}
+
+// EncodeFloat64 appends a float 64 big-endian integer to the buffer.
+func (b *Buffer) EncodeFloat64(v float64) {
+	b.EncodeUint64(math.Float64bits(v))
 }
 
 // EncodeBytes appends a length-prefixed raw bytes to the buffer.
