@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/rpc/message"
+	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
@@ -33,14 +33,14 @@ func NewAuthUnlockDeviceRequest(uin uint64) *AuthUnlockDeviceRequest {
 	}
 }
 
-func (req *AuthUnlockDeviceRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthUnlockDeviceRequest) EncodeOICQMessage(ctx context.Context) (*oicq.Message, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0401] = tlv.NewT401(req.T401)
 
-	return &message.OICQMessage{
+	return &oicq.Message{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
@@ -59,7 +59,7 @@ func (req *AuthUnlockDeviceRequest) Encode(ctx context.Context) (*ClientToServer
 	if err != nil {
 		return nil, err
 	}
-	buf, err := message.MarshalOICQMessage(ctx, msg)
+	buf, err := oicq.Marshal(ctx, msg)
 	if err != nil {
 		return nil, err
 	}

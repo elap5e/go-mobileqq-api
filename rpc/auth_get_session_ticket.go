@@ -8,7 +8,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
-	"github.com/elap5e/go-mobileqq-api/rpc/message"
+	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
@@ -39,12 +39,12 @@ type AuthGetSessionTicketResponse struct {
 }
 
 func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []byte) error {
-	msg := &message.OICQMessage{
+	msg := &oicq.Message{
 		RandomKey: clientRandomKey,
 		PublicKey: ecdh.PublicKey,
 		ShareKey:  ecdh.ShareKey,
 	}
-	if err := message.UnmarshalOICQMessage(ctx, buf, msg); err != nil {
+	if err := oicq.Unmarshal(ctx, buf, msg); err != nil {
 		return err
 	}
 	resp.Username = strconv.Itoa(int(msg.Uin))
@@ -120,7 +120,7 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 			tlv.Decode(buf)
 			tlvs[tlv.GetType()] = &tlv
 		}
-		message.DumpTLVs(ctx, tlvs)
+		tlv.DumpTLVs(ctx, tlvs)
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
 		// captcha

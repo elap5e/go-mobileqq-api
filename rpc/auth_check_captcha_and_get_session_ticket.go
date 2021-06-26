@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/rpc/message"
+	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
@@ -40,7 +40,7 @@ func NewAuthCheckCaptchaAndGetSessionTicketRequest(uin uint64, code []byte) *Aut
 	}
 }
 
-func (req *AuthCheckCaptchaAndGetSessionTicketRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthCheckCaptchaAndGetSessionTicketRequest) EncodeOICQMessage(ctx context.Context) (*oicq.Message, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	if req.CheckWeb {
 		tlvs[0x0193] = tlv.NewT193(req.Code)
@@ -52,7 +52,7 @@ func (req *AuthCheckCaptchaAndGetSessionTicketRequest) EncodeOICQMessage(ctx con
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0547] = tlv.NewT547(req.T547)
 
-	return &message.OICQMessage{
+	return &oicq.Message{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
@@ -71,7 +71,7 @@ func (req *AuthCheckCaptchaAndGetSessionTicketRequest) Encode(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	buf, err := message.MarshalOICQMessage(ctx, msg)
+	buf, err := oicq.Marshal(ctx, msg)
 	if err != nil {
 		return nil, err
 	}

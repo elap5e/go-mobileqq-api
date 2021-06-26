@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/rpc/message"
+	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 )
 
 type AuthCheckPictureAndGetSessionTicketRequest struct {
@@ -34,7 +34,7 @@ func (req *AuthCheckPictureAndGetSessionTicketRequest) Encode(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	buf, err := message.MarshalOICQMessage(ctx, msg)
+	buf, err := oicq.Marshal(ctx, msg)
 	if err != nil {
 		return nil, err
 	}

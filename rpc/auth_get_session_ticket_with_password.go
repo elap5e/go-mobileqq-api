@@ -7,7 +7,7 @@ import (
 	"net"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
-	"github.com/elap5e/go-mobileqq-api/rpc/message"
+	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 	"github.com/elap5e/go-mobileqq-api/util"
 )
@@ -80,7 +80,7 @@ func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *Au
 	}
 }
 
-func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx context.Context) (*oicq.Message, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.AppClientVersion, req.Uin, req.I2)
 	tlvs[0x0001] = tlv.NewT1(req.Uin, req.IPv4Address)
@@ -158,7 +158,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 	// DISABLED: nativeGetTestData
 	// tlvs[0x0548] = tlv.NewT548([]byte("nativeGetTestData"))
 
-	return &message.OICQMessage{
+	return &oicq.Message{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
@@ -177,7 +177,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) Encode(ctx context.Context) 
 	if err != nil {
 		return nil, err
 	}
-	buf, err := message.MarshalOICQMessage(ctx, msg)
+	buf, err := oicq.Marshal(ctx, msg)
 	if err != nil {
 		return nil, err
 	}

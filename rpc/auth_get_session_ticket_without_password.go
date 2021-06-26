@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/rpc/message"
+	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
@@ -47,7 +47,7 @@ func NewAuthGetSessionTicketWithoutPasswordRequest(uin uint64) *AuthGetSessionTi
 	}
 }
 
-func (req *AuthGetSessionTicketWithoutPasswordRequest) EncodeOICQMessage(ctx context.Context) (*message.OICQMessage, error) {
+func (req *AuthGetSessionTicketWithoutPasswordRequest) EncodeOICQMessage(ctx context.Context) (*oicq.Message, error) {
 	key := SelectClientCodecKey(req.Username)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0100] = tlv.NewT100(req.DstAppID, req.SrcAppID, req.AppClientVersion, req.MainSigMap)
@@ -80,7 +80,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) EncodeOICQMessage(ctx con
 	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
 	// tlvs[0x0544] = tlv.NewT544(req.Username, "810_a", nil)
 
-	return &message.OICQMessage{
+	return &oicq.Message{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
@@ -99,7 +99,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) Encode(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	buf, err := message.MarshalOICQMessage(ctx, msg)
+	buf, err := oicq.Marshal(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
