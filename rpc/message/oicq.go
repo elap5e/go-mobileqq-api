@@ -201,8 +201,7 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec, flag ...bool) {
 			type2, _ := buf.DecodeUint16()
 			message2, _ := buf.DecodeString()
 			log.Printf("--> [recv] dump tlv 0x017d, type1 0x%04x, message1 %s, type2 0x%04x, message2 %s", type1, message1, type2, message2)
-		case 0x0104: // session
-			log.Printf("--> [recv] dump tlv 0x0104, session %s", string(buf.Bytes()))
+
 		case 0x0178: // countryCode:mobile
 			countryCode, _ := buf.DecodeString()
 			mobile, _ := buf.DecodeString()
@@ -223,6 +222,11 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec, flag ...bool) {
 			log.Printf("--> [recv] dump tlv 0x0165, code %s, message %s", code, message)
 		case 0x0192: // captcha
 			log.Printf("--> [recv] dump tlv 0x0192, url %s", string(buf.Bytes()))
+
+		case 0x0104: // session
+			log.Printf("--> [recv] dump tlv 0x0104, session %s", string(buf.Bytes()))
+		case 0x0402: // 4 bytes
+			log.Printf("--> [recv] dump tlv 0x%04x, 8 byte:\n%s", i, hex.Dump(buf.Bytes()))
 
 		// TODO: recv 0x0119 sub tlvs
 		case 0x0119:
@@ -313,8 +317,6 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec, flag ...bool) {
 
 		case 0x0179: // 2 bytes
 			log.Printf("--> [recv] dump tlv 0x%04x, 2 bytes:\n%s", i, hex.Dump(buf.Bytes()))
-		// case 0x0402, 0x0403: // 4 bytes
-		// 	log.Printf("--> [recv] dump tlv 0x%04x, 8 byte:\n%s", i, hex.Dump(buf.Bytes()))
 		case 0x017e, 0x0204: // string
 			log.Printf("--> [recv] dump tlv 0x%04x, raw %s", i, string(buf.Bytes()))
 		default:
