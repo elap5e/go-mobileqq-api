@@ -81,7 +81,7 @@ func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSData
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", &ClientToServerMessage{
+	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,

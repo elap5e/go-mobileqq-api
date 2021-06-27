@@ -94,7 +94,7 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x87,
+		EncryptMethod: oicq.EncryptMethodECDH,
 		RandomKey:     c.randomKey,
 		KeyVersion:    c.serverPublicKeyVersion,
 		PublicKey:     c.privateKey.Public().Bytes(),
@@ -106,7 +106,7 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.exchange_emp", &ClientToServerMessage{
+	if err := c.Call(ServiceMethodAuthExchangeAccount, &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,

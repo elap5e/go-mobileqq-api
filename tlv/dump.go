@@ -64,7 +64,7 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 		// TODO: recv 0x0119 sub tlvs
 		case 0x0119:
 			log.Printf("--> [recv] tlv 0x0119(encrypt)")
-		case 0x0161, 0x0163, 0x0522, 0x0537, 0x0550: // decrypt
+		case 0x0161, 0x0163, 0x0522, 0x0550: // decrypt
 			log.Printf("--> [recv] tlv 0x%04x(decrypt)", i)
 		case 0x0102: // clientCodecKeyA8
 			log.Printf("--> [recv] tlv 0x0102(decrypt), clientCodecKeyA8")
@@ -140,6 +140,8 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 			log.Printf("--> [recv] tlv 0x016d(decrypt), _superKey %s", string(buf.Bytes()))
 		case 0x0305: // clientCodecKeyD2Key
 			log.Printf("--> [recv] tlv 0x0305(decrypt), clientCodecKeyD2Key")
+		case 0x0537: // loginExtraData
+			log.Printf("--> [recv] tlv 0x0537(decrypt), loginExtraData\n%s", hex.Dump(buf.Bytes()[2:]))
 		case 0x0512: // domain tickets
 			l, _ := buf.DecodeUint16()
 			kv := map[string]string{}
@@ -167,7 +169,7 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 		case 0x0203: // _da2
 		case 0x0322: // _deviceToken
 		case 0x0403: // randseed
-			// bArr19[2] G
+			// bArr19[2] G t401
 			// bArr19[3] DPWD
 		case 0x0530: // _loginResultField2
 			log.Printf("--> [recv] tlv 0x0530, _loginResultField2 %s", string(buf.Bytes()))

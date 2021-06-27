@@ -73,3 +73,11 @@ var (
 		"gamecenter.qq.com",
 	}
 )
+
+const (
+	ServiceMethodAuthLogin           = "wtlogin.login"
+	ServiceMethodAuthExchange        = "wtlogin.exchange"
+	ServiceMethodAuthExchangeAccount = "wtlogin.exchange_emp"
+	ServiceMethodAuthUsernameToUin   = "wtlogin.name2uin"
+	ServiceMethodAuthRegisterAccount = "wtlogin.trans_emp"
+)

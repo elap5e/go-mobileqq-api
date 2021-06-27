@@ -10,19 +10,19 @@ type T400 struct {
 	tlv      *TLV
 	key      [16]byte
 	uin      uint64
-	bArr2    []byte
+	guid     [16]byte
 	dpwd     [16]byte
 	appID    uint64
 	subAppID uint64
 	randSeed []byte
 }
 
-func NewT400(key [16]byte, uin uint64, bArr2 []byte, dpwd [16]byte, appID, subAppID uint64, randSeed []byte) *T400 {
+func NewT400(key [16]byte, uin uint64, guid, dpwd [16]byte, appID, subAppID uint64, randSeed []byte) *T400 {
 	return &T400{
 		tlv:      NewTLV(0x0400, 0x0000, nil),
 		key:      key,
 		uin:      uin,
-		bArr2:    bArr2,
+		guid:     guid,
 		dpwd:     dpwd,
 		appID:    appID,
 		subAppID: subAppID,
@@ -32,15 +32,12 @@ func NewT400(key [16]byte, uin uint64, bArr2 []byte, dpwd [16]byte, appID, subAp
 
 func (t *T400) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
-	if len(t.bArr2) == 0 {
-		t.bArr2 = make([]byte, 16)
-	}
 	if len(t.randSeed) == 0 {
 		t.randSeed = make([]byte, 8)
 	}
 	v.EncodeUint16(0x0001)
 	v.EncodeUint64(t.uin)
-	v.EncodeBytes(t.bArr2)
+	v.EncodeBytes(t.guid[:])
 	v.EncodeBytes(t.dpwd[:])
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(uint32(t.subAppID))

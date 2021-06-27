@@ -36,6 +36,8 @@ type AuthGetSessionTicketResponse struct {
 	T402 []byte
 	T403 []byte
 	T546 []byte
+
+	LoginExtraData []byte
 }
 
 func (resp *AuthGetSessionTicketResponse) SetTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec) error {
@@ -86,6 +88,9 @@ func (resp *AuthGetSessionTicketResponse) SetTLVs(ctx context.Context, tlvs map[
 	if v, ok := tlvs[0x0403].(*tlv.TLV); ok {
 		resp.T403 = v.MustGetValue().Bytes()
 	}
+	if v, ok := tlvs[0x0537].(*tlv.TLV); ok {
+		resp.LoginExtraData, _ = v.MustGetValue().DecodeBytes()
+	}
 	if v, ok := tlvs[0x0546].(*tlv.TLV); ok {
 		resp.T546 = v.MustGetValue().Bytes()
 	}
@@ -121,6 +126,7 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 			tlv.Decode(buf)
 			tlvs[tlv.GetType()] = &tlv
 		}
+		c.loginExtraData = resp.LoginExtraData
 		tlv.DumpTLVs(ctx, tlvs)
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
@@ -143,7 +149,7 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 		c.t174 = resp.T174
 		c.t402 = resp.T402
 		c.t403 = resp.T403
-		c.t401 = md5.Sum(append(append(deviceGUID[:], deviceDPWD...), c.t402...))
+		c.hashGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
 		log.Printf(">_x [warn] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s, code 0xef", resp.Username, resp.SMSMobile, resp.Code, resp.Message)
 	case 0x01:
 		log.Printf("x_x [fail] invalid login, uin %s, code 0x01, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
@@ -157,7 +163,7 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 		c.t104 = resp.T104
 		c.t402 = resp.T402
 		c.t403 = resp.T403
-		c.t401 = md5.Sum(append(append(deviceGUID[:], deviceDPWD...), c.t402...))
+		c.hashGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
 		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(resp.Uin))
 	}
 	return resp, nil

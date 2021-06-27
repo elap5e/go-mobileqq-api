@@ -47,7 +47,7 @@ func (req *AuthUnlockDeviceRequest) GetTLVs(ctx context.Context) (map[uint16]tlv
 func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.T104 = c.t104
-	req.T401 = c.t401
+	req.T401 = c.hashGUID
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequ
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x87,
+		EncryptMethod: oicq.EncryptMethodECDH,
 		RandomKey:     c.randomKey,
 		KeyVersion:    c.serverPublicKeyVersion,
 		PublicKey:     c.privateKey.Public().Bytes(),
@@ -68,7 +68,7 @@ func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequ
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", &ClientToServerMessage{
+	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,

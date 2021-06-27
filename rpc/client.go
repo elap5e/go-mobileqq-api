@@ -31,8 +31,10 @@ type ClientCodec interface {
 }
 
 type Client struct {
+	// codec
 	codec ClientCodec
 
+	// rpc
 	c2s    *ClientToServerMessage
 	c2sMux sync.Mutex
 
@@ -42,36 +44,65 @@ type Client struct {
 	closing  bool
 	shutdown bool
 
-	rand                   *rand.Rand
-	randomKey              [16]byte
+	// random
+	rand *rand.Rand
+
+	cookie         [4]byte
+	tgtgtKey       [16]byte
+	randomKey      [16]byte
+	randomPassword [16]byte
+
 	serverPublicKey        ecdh.PublicKey
 	serverPublicKeyVersion uint16
 	privateKey             ecdh.PrivateKey
 
-	tgtgtKey [16]byte
-	cookie   [4]byte
-
+	// tlvs
 	t104 []byte
 	t119 []byte
+	t172 []byte // from t161
+	t173 []byte // from t161
+	t17f []byte // from t161
+	t106 []byte // from t169
+	t10c []byte // from t169
+	t16a []byte // from t169
+	t145 []byte // from t169
 	t174 []byte
 	t17b []byte
-	t401 [16]byte
 	t402 []byte
 	t403 []byte
 	t547 []byte
 
+	hashGUID       [16]byte // t401
+	loginExtraData []byte   // from t537
+
+	// logger
 	logger log.Logger
 }
 
 func (c *Client) init() {
 	c.initLogger()
+
+	c.initCookie()
+	c.initTGTGTKey()
 	c.initRandomKey()
+	c.initRandomPassword()
+
 	c.initServerPublicKey()
 	c.initPrivateKey()
 }
 
 func (c *Client) initLogger() {
 	c.logger = log.Logger{}
+}
+
+func (c *Client) initCookie() {
+	rand.Read(c.cookie[:])
+	log.Printf("--> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
+}
+
+func (c *Client) initTGTGTKey() {
+	rand.Read(c.tgtgtKey[:])
+	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
 }
 
 func (c *Client) initRandomKey() {
@@ -136,6 +167,13 @@ func (c *Client) initPrivateKey() {
 		c.logger.Fatalf("==> [init] failed to init private key, error: %s", err.Error())
 	}
 	c.privateKey = *priv
+}
+
+func (c *Client) initRandomPassword() {
+	c.randomPassword = [16]byte{}
+	for i := range c.randomPassword {
+		c.randomPassword[i] = byte(0x41 + c.rand.Intn(1)*0x20 + c.rand.Intn(26))
+	}
 }
 
 func (c *Client) getNextSeq() uint32 {
@@ -254,10 +292,6 @@ func NewClientWithCodec(codec ClientCodec) *Client {
 		pending: make(map[uint32]*ClientCall),
 		rand:    rand.New(rand.NewSource(time.Now().Unix())),
 	}
-	rand.Read(c.tgtgtKey[:])
-	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
-	rand.Read(c.cookie[:])
-	log.Printf("--> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
 	c.init()
 	go c.revc()
 	return c
@@ -303,8 +337,8 @@ func (c *Client) Go(serviceMethod string, c2s *ClientToServerMessage, s2c *Serve
 	return call
 }
 
-func (c *Client) Call(cmd string, c2s *ClientToServerMessage, s2c *ServerToClientMessage) error {
-	call := <-c.Go(cmd, c2s, s2c, make(chan *ClientCall, 1)).Done
+func (c *Client) Call(serviceMethod string, c2s *ClientToServerMessage, s2c *ServerToClientMessage) error {
+	call := <-c.Go(serviceMethod, c2s, s2c, make(chan *ClientCall, 1)).Done
 	return call.Error
 }
 

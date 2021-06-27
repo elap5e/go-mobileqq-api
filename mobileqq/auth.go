@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/rpc"
@@ -144,8 +143,7 @@ func (c *Client) handleAuthResponse(resp *rpc.AuthGetSessionTicketResponse) (*rp
 }
 
 func (c *Client) Auth(username, password string) error {
-	uin, _ := strconv.Atoi(username)
-	resp, err := c.rpc.AuthGetSessionTicketWithPassword(c.ctx, rpc.NewAuthGetSessionTicketWithPasswordRequest(uint64(uin), password))
+	resp, err := c.rpc.AuthGetSessionTicketWithPassword(c.ctx, rpc.NewAuthGetSessionTicketWithPasswordRequest(username, password))
 	if err != nil {
 		return err
 	}

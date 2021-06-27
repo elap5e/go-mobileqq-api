@@ -17,14 +17,14 @@ func Marshal(ctx context.Context, msg *Message) ([]byte, error) {
 	}
 	buf := bytes.NewBuffer([]byte{})
 	switch msg.EncryptMethod {
-	case 0x07, 0x87: // ECDH
+	case EncryptMethodECDH:
 		buf.EncodeUint8(0x02)
 		buf.EncodeUint8(0x01)
 		buf.EncodeRawBytes(msg.RandomKey[:])
 		buf.EncodeUint16(0x0131)
 		buf.EncodeUint16(msg.KeyVersion)
 		buf.EncodeBytes(msg.PublicKey)
-	case 0x45: // ST
+	case EncryptMethodST:
 		buf.EncodeUint8(0x01)
 		buf.EncodeUint8(0x03)
 		buf.EncodeRawBytes(msg.RandomKey[:])
@@ -58,7 +58,12 @@ func marshalHead(ctx context.Context, msg *Message) ([]byte, error) {
 	buf.EncodeUint16(0x0001)
 	buf.EncodeUint32(uint32(msg.Uin))
 	buf.EncodeUint8(0x03)
-	buf.EncodeUint8(msg.EncryptMethod)
+	switch msg.EncryptMethod {
+	case EncryptMethodECDH:
+		buf.EncodeUint8(0x07 | 0x80)
+	case EncryptMethodST:
+		buf.EncodeUint8(0x45)
+	}
 	buf.EncodeUint8(0x00)
 	buf.EncodeUint32(0x00000002)
 	buf.EncodeUint32(0x00000000)

@@ -22,8 +22,8 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 		return err
 	}
 	switch msg.EncryptMethod {
-	case 0x00:
-	case 0x03:
+	case EncryptMethod0x00:
+	case EncryptMethod0x03:
 		msg.ShareKey = msg.RandomKey
 	}
 	buf = bytes.NewBuffer(crypto.NewCipher(msg.ShareKey).Decrypt(buf.Bytes()))
@@ -71,9 +71,11 @@ func unmarshalHead(ctx context.Context, buf *bytes.Buffer, msg *Message) error {
 	if _, err = buf.DecodeUint8(); err != nil {
 		return err
 	}
-	if msg.EncryptMethod, err = buf.DecodeUint8(); err != nil {
+	encryptMethod, err := buf.DecodeUint8()
+	if err != nil {
 		return err
 	}
+	msg.EncryptMethod = GetEncryptMethod(encryptMethod)
 	if _, err = buf.DecodeUint8(); err != nil {
 		return err
 	}

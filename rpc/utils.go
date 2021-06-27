@@ -2,9 +2,6 @@ package rpc
 
 import (
 	"crypto/md5"
-	"encoding/hex"
-	"log"
-	"math/rand"
 
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
@@ -15,7 +12,6 @@ var (
 	deviceIsGUIDFileNil = false
 	deviceIsGUIDGenSucc = true
 	deviceIsGUIDChanged = false
-	deviceDPWD          = []byte{}
 
 	clientVerifyMethod = uint8(0x82) // 0x00, 0x82
 )
@@ -39,17 +35,6 @@ var (
 	clientImageType  = uint8(0x01)
 	clientMiscBitmap = uint32(0x08f7ff7c)
 )
-
-func init() {
-	deviceDPWD = func(n int) []byte {
-		b := make([]byte, n)
-		for i := range b {
-			b[i] = byte(0x41 + rand.Intn(1)*0x20 + rand.Intn(26))
-		}
-		return b
-	}(16)
-	log.Printf("--> [init] dump device dpwd\n%s", hex.Dump(deviceDPWD))
-}
 
 func SetClientForAndroidPhone() {
 	clientPackageName = []byte("com.tencent.mobileqq")

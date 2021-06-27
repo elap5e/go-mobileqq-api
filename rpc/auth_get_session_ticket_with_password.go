@@ -3,8 +3,8 @@ package rpc
 import (
 	"context"
 	"crypto/md5"
-	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
@@ -13,23 +13,26 @@ import (
 )
 
 type AuthGetSessionTicketWithPasswordRequest struct {
-	Seq    uint32
-	Cookie []byte
-	T172   []byte
-	TGTQR  []byte
+	Seq            uint32
+	HashGUID       [16]byte
+	RandomPassword [16]byte
+	RandomSeed     []byte
+	LoginExtraData []byte
+	T172           []byte
+	TGTQR          []byte
 
 	Username string
 
 	DstAppID         uint64
 	SubDstAppID      uint64
-	AppClientVersion uint32
+	AppClientVersion uint32 // constant 0x00000000
 	Uin              uint64
-	I2               uint16
+	I2               uint16 // constant 0x0000
 	IPv4Address      net.IP
 	CurrentTime      uint32
 	PasswordMD5      [16]byte
-	TGTGTKey         [16]byte
-	LoginType        uint32
+	TGTGTKey         [16]byte // placeholder
+	LoginType        uint32   // 0x00, 0x01, 0x03
 	T106             []byte
 	T16A             []byte
 	MiscBitmap       uint32
@@ -37,34 +40,33 @@ type AuthGetSessionTicketWithPasswordRequest struct {
 	SubAppIDList     []uint64
 	MainSigMap       uint32
 	SrcAppID         uint64
-	I7               uint16
-	I8               uint8
-	I9               uint16
-	I10              uint8
+	I7               uint16 // constant 0x0000
+	I8               uint8  // constant 0x00
+	I9               uint16 // constant 0x0000
+	I10              uint8  // constant 0x01
 	KSID             []byte
-	T104             []byte
+	T104             []byte // placeholder
 	PackageName      []byte
 	Domains          []string
-
-	t9 []byte
 }
 
-func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *AuthGetSessionTicketWithPasswordRequest {
+func NewAuthGetSessionTicketWithPasswordRequest(username string, password string) *AuthGetSessionTicketWithPasswordRequest {
+	uin, _ := strconv.ParseInt(username, 10, 64)
 	return &AuthGetSessionTicketWithPasswordRequest{
-		Username: fmt.Sprintf("%d", uin),
+		Username: username,
 
 		DstAppID:         defaultClientDstAppID,
 		SubDstAppID:      defaultClientOpenAppID,
 		AppClientVersion: 0x00000000,
-		Uin:              uin,
+		Uin:              uint64(uin),
 		I2:               0x0000,
 		IPv4Address:      defaultDeviceIPv4Address,
 		CurrentTime:      util.GetServerCurrentTime(),
 		PasswordMD5:      md5.Sum([]byte(password)),
 		TGTGTKey:         [16]byte{},
 		LoginType:        0x00000001,
-		T106:             nil,
-		T16A:             nil,
+		T106:             nil, // nil
+		T16A:             nil, // nil
 		MiscBitmap:       clientMiscBitmap,
 		SubSigMap:        defaultClientSubSigMap,
 		SubAppIDList:     defaultClientSubAppIDList,
@@ -78,8 +80,6 @@ func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *Au
 		T104:             nil,
 		PackageName:      clientPackageName,
 		Domains:          defaultClientDomains,
-
-		t9: []byte{0x01, 0x00},
 	}
 }
 
@@ -132,8 +132,8 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 	if req.LoginType == 0x000000003 {
 		tlvs[0x0185] = tlv.NewT185(0x01)
 	}
-	if false {
-		tlvs[0x0400] = tlv.NewT400([16]byte{}, req.Uin, nil, [16]byte{}, req.DstAppID, req.SubDstAppID, nil)
+	if false { // TODO: code2d
+		tlvs[0x0400] = tlv.NewT400(req.HashGUID, req.Uin, deviceGUID, req.RandomPassword, req.DstAppID, req.SubDstAppID, req.RandomSeed)
 	}
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
@@ -143,19 +143,19 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
 	tlvs[0x0177] = tlv.NewT177(clientBuildTime, clientSDKVersion)
-	tlvs[0x0516] = tlv.NewTLV(0x0516, 0x0004, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00}))
-	tlvs[0x0521] = tlv.NewTLV(0x0521, 0x0006, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}))
-	if len(req.t9) != 0 {
+	tlvs[0x0516] = tlv.NewTLV(0x0516, 0x0004, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00}))             // SourceType
+	tlvs[0x0521] = tlv.NewTLV(0x0521, 0x0006, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00})) // ProductType
+	if len(req.LoginExtraData) != 0 {
 		buf := bytes.NewBuffer([]byte{})
 		buf.EncodeUint16(0x0001)
-		tlv.NewTLV(0x0536, 0x0002, bytes.NewBuffer(req.t9)).Encode(buf)
+		tlv.NewTLV(0x0536, 0x0002, bytes.NewBuffer(req.LoginExtraData)).Encode(buf)
 		tlvs[0x0525] = tlv.NewTLV(0x0525, 0x0000, buf)
 	}
-	if len(req.TGTQR) != 0 {
+	if len(req.TGTQR) != 0 { // TODO: code2d
 		tlvs[0x0318] = tlv.NewTLV(0x0318, 0x0000, bytes.NewBuffer(req.TGTQR))
 	}
 	// DISABLED: tgt
-	// tlvs[0x0544] = tlv.NewT544(req.Username, "810_9", nil)
+	// tlvs[0x0544] = tlv.NewT544(req.Uin, deviceGUID, clientSDKVersion, 0x0009)
 	// DISABLED: tgtgt qimei
 	// tlvs[0x0545] = tlv.NewT545(md5.Sum([]byte("qimei")))
 	// DISABLED: nativeGetTestData
@@ -165,7 +165,8 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 
 func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.Cookie = c.cookie[:]
+	req.HashGUID = c.hashGUID
+	req.T172 = c.t172
 	req.TGTGTKey = c.tgtgtKey
 	req.T104 = c.t104
 	tlvs, err := req.GetTLVs(ctx)
@@ -176,7 +177,7 @@ func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *Auth
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
-		EncryptMethod: 0x87,
+		EncryptMethod: oicq.EncryptMethodECDH,
 		RandomKey:     c.randomKey,
 		KeyVersion:    c.serverPublicKeyVersion,
 		PublicKey:     c.privateKey.Public().Bytes(),
@@ -188,11 +189,11 @@ func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *Auth
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", &ClientToServerMessage{
+	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,
-		Cookie:   req.Cookie,
+		Cookie:   c.cookie[:],
 		Buffer:   buf,
 		Simple:   false,
 	}, s2c); err != nil {
