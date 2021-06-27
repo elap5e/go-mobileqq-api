@@ -32,6 +32,9 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 			message2, _ := buf.DecodeString()
 			log.Printf("--> [recv] tlv 0x017d, type1 0x%04x, message1 %s, type2 0x%04x, message2 %s", type1, message1, type2, message2)
 
+		case 0x0508: // ???
+			log.Printf("--> [recv] tlv 0x0508, ???")
+
 		case 0x0178: // countryCode:mobile
 			countryCode, _ := buf.DecodeString()
 			mobile, _ := buf.DecodeString()
@@ -65,17 +68,33 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 			log.Printf("--> [recv] tlv 0x%04x(decrypt)", i)
 		case 0x0102: // clientCodecKeyA8
 			log.Printf("--> [recv] tlv 0x0102(decrypt), clientCodecKeyA8")
+		case 0x0103: // userSessionTicketWeb
+			log.Printf("--> [recv] tlv 0x0103(decrypt), userSessionTicketWeb")
 		case 0x0106: // _encryptA1=TGTGT
-			log.Printf("--> [recv] tlv 0x0106(decrypt), tgtgt:")
-		case 0x010c: // _encryptA1=GTKey
-			log.Printf("--> [recv] tlv 0x010c(decrypt), gtKey:")
+			log.Printf("--> [recv] tlv 0x0106(decrypt), tgtgt")
+		case 0x0108: // ksid
+			log.Printf("--> [recv] tlv 0x0108(decrypt), ksid")
 		case 0x010a: // clientCodecKeyA2
 			log.Printf("--> [recv] tlv 0x010a(decrypt), clientCodecKeyA2")
+		case 0x010c: // _encryptA1=GTKey
+			log.Printf("--> [recv] tlv 0x010c(decrypt), gtKey")
+		case 0x010d: // clientCodecKeyA2Key
+			log.Printf("--> [recv] tlv 0x010d(decrypt), clientCodecKeyA2Key")
+		case 0x010e: // userSessionTicketKey
+			log.Printf("--> [recv] tlv 0x010e(decrypt), userSessionTicketKey")
 		case 0x010b: // clientCodecKeyA5
 			log.Printf("--> [recv] tlv 0x010b(decrypt), clientCodecKeyA5")
+		case 0x0114: // userSessionTicket
+			log.Printf("--> [recv] tlv 0x0114(decrypt), userSessionTicket")
+		case 0x0118: // mainDisplayName
+			log.Printf("--> [recv] tlv 0x0118(decrypt), mainDisplayName")
+		case 0x011a: // face, age, gender, nick
+			log.Printf("--> [recv] tlv 0x011a(decrypt), face, age, gender, nick")
+		case 0x011c: // _lsKey
+			log.Printf("--> [recv] tlv 0x011c(decrypt), _lsKey")
 		case 0x011d: // sessionTicket
 			appId, _ := buf.DecodeUint32()
-			stKey, _ := buf.DecodeBytesN(0x0016)
+			stKey, _ := buf.DecodeBytesN(0x0010)
 			st, _ := buf.DecodeBytes()
 			log.Printf("--> [recv] tlv 0x011d(decrypt), appID 0x%08x", appId)
 			log.Printf("--> [recv] tlv 0x011d(decrypt), sessionTicketKey\n%s", hex.Dump(stKey))
@@ -83,21 +102,44 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 		case 0x011f: // tk_pri
 			chgt, _ := buf.DecodeUint32()
 			tk, _ := buf.DecodeUint32()
-			log.Printf("--> [recv] tlv 0x011f(decrypt), change time %s, tk_pri 0x%08x", time.Unix(int64(chgt), 0), tk)
+			log.Printf("--> [recv] tlv 0x011f(decrypt), change time %s, tk_pri 0x%08x", time.Unix(int64(util.GetServerCurrentTime()+chgt), 0), tk)
+		case 0x0120: // _sKey
+			log.Printf("--> [recv] tlv 0x0120(decrypt), _sKey %s", string(buf.Bytes()))
 		case 0x0130: // current server time, ip address
 			_, _ = buf.DecodeUint16()
 			sct, _ := buf.DecodeUint32()
 			util.SetServerCurrentTime(sct)
 			ip, _ := buf.DecodeBytesN(0x0004)
-			log.Printf("--> [recv] tlv 0x010a(decrypt), current server time %s, ip %s", time.Unix(int64(sct), 0), net.IPv4(ip[0], ip[1], ip[2], ip[3]))
+			log.Printf("--> [recv] tlv 0x0130(decrypt), current server time %s, ip %s", time.Unix(int64(sct), 0), net.IPv4(ip[0], ip[1], ip[2], ip[3]))
+		case 0x0133: // wtSessionTicket
+			log.Printf("--> [recv] tlv 0x0133(decrypt), wtSessionTicket")
 		case 0x0134: // wtSessionTicketKey
 			log.Printf("--> [recv] tlv 0x0134(decrypt), wtSessionTicketKey")
+		case 0x0138: // {a2, lsKey, sKey, vKey, a8, stWeb, d2, sid}ChangeTime
+			l, _ := buf.DecodeUint32()
+			chgt := map[uint16]uint32{}
+			for i := 0; i < int(l); i++ {
+				key, _ := buf.DecodeUint16()
+				chgt[key], _ = buf.DecodeUint32()
+				_, _ = buf.DecodeUint32()
+			}
+			log.Printf("--> [recv] tlv 0x0138(decrypt), {a2, lsKey, sKey, vKey, a8, stWeb, d2, sid}ChangeTime")
+			log.Printf("--> [recv] tlv 0x0138(decrypt),    a2 %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x010a]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt), lsKey %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x011c]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt),  sKey %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x0120]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt),  vKey %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x0136]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt),    a8 %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x0102]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt), stWeb %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x0103]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt),    d2 %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x0143]), 0))
+			log.Printf("--> [recv] tlv 0x0138(decrypt),   sig %s", time.Unix(int64(util.GetServerCurrentTime()+chgt[0x0164]), 0))
 		case 0x0143: // clientCodecKeyD2
 			log.Printf("--> [recv] tlv 0x0143(decrypt), clientCodecKeyD2")
 		case 0x016a: // _noPictureSignature
 			log.Printf("--> [recv] tlv 0x016a(decrypt), _noPictureSignature")
 		case 0x016d: // _superKey
 			log.Printf("--> [recv] tlv 0x016d(decrypt), _superKey %s", string(buf.Bytes()))
+		case 0x0305: // clientCodecKeyD2Key
+			log.Printf("--> [recv] tlv 0x0305(decrypt), clientCodecKeyD2Key")
 		case 0x0512: // domain tickets
 			l, _ := buf.DecodeUint16()
 			kv := map[string]string{}
@@ -114,23 +156,15 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 			log.Printf("--> [recv] tlv 0x0528(decrypt), _loginResultField1 %s", string(buf.Bytes()))
 
 		case 0x0005: // _psKey
-		case 0x0103: // userSessionTicketWeb
-		case 0x010d: // clientCodecKeyA2Key
-		case 0x010e: // userSessionTicketKey
-		case 0x0114: // userSessionTicket
-		case 0x011c: // _lsKey
-		case 0x0120: // _sKey
 		case 0x0121: // _userSig64
 		case 0x0125: // _openKey, _openID
 		case 0x0132: // _accessToken, _openID
-		case 0x0133: // wtSessionTicket
 		case 0x0136: // _vKey
 		case 0x0164: // _sid
 		case 0x0171: // _aqSig
 		case 0x0199: // _payToken, _openID
 		case 0x0200: // _pf, _pfKey
 		case 0x0203: // _da2
-		case 0x0305: // clientCodecKeyD2Key
 		case 0x0322: // _deviceToken
 		case 0x0403: // randseed
 			// bArr19[2] G
@@ -139,11 +173,7 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 			log.Printf("--> [recv] tlv 0x0530, _loginResultField2 %s", string(buf.Bytes()))
 
 		case 0x0186: // pwdFlag
-		case 0x0108: // ksid
-		case 0x0118: // mainDisplayName
-		case 0x011a: // face, age, gender, nick
 		case 0x0167: // reserveUinInfo
-		case 0x0138: // {a2, lsKey, sKey, vKey, a8, stWeb, d2, sid}ChangeTime
 
 		case 0x0179: // 2 bytes
 			log.Printf("--> [recv] tlv 0x0179, 2 bytes")

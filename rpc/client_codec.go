@@ -264,13 +264,13 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 	} else {
 		msg.Version = 0x0000000b
 	}
-	// log.Printf("  < [send] seq 0x%08x, uin %s, method %s, dump buffer:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
+	log.Printf("  < [send] seq 0x%08x, uin %s, method %s, dump buff:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
 	var data []byte
 	data, err = c.serializeData(msg)
 	if err != nil {
 		return err
 	}
-	// log.Printf(" <- [send] seq 0x%08x, uin %s, method %s, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(data))
+	log.Printf(" <- [send] seq 0x%08x, uin %s, method %s, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(data))
 	method := strings.ToLower(msg.ServiceMethod)
 	if method == "heartbeat.ping" ||
 		method == "heartbeat.alive" ||
@@ -312,7 +312,7 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 	if _, err = c.conn.Write(data); err != nil {
 		return err
 	}
-	// log.Printf(" <= [send] seq 0x%08x, uin %s, method %s, dump packet:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(append(head, data...)))
+	log.Printf(" <= [send] seq 0x%08x, uin %s, method %s, dump send:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(append(head, data...)))
 	log.Printf("<== [send] seq 0x%08x, uin %s, method %s", msg.Seq, msg.Username, msg.ServiceMethod)
 	return nil
 }
@@ -330,10 +330,10 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 	}
 	buf := bytes.NewBuffer(v)
 	if err = c.deserializeHead(buf, msg); err != nil {
-		log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, error %v, dump packet:\n%s", msg.Username, err, hex.Dump(v))
+		log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, error %v, dump recv:\n%s", msg.Username, err, hex.Dump(v))
 		return err
 	}
-	// log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, dump packet:\n%s", msg.Username, hex.Dump(v))
+	log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, dump recv:\n%s", msg.Username, hex.Dump(v))
 	switch msg.EncryptType {
 	case 0x00:
 	case 0x01:
@@ -351,8 +351,8 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 		log.Printf("->  [recv] seq 0x%08x, uin %s, method %s, error %v, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, err, hex.Dump(v))
 		return err
 	}
-	// log.Printf("->  [recv] seq 0x%08x, uin %s, method %s, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(v))
-	// log.Printf("=>  [recv] seq 0x%08x, uin %s, method %s, dump buffer:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
+	log.Printf("->  [recv] seq 0x%08x, uin %s, method %s, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(v))
+	log.Printf("=>  [recv] seq 0x%08x, uin %s, method %s, dump buff:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
 	log.Printf("==> [recv] seq 0x%08x, uin %s, method %s", msg.Seq, msg.Username, msg.ServiceMethod)
 	return nil
 }
