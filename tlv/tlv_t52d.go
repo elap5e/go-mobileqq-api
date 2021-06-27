@@ -22,7 +22,7 @@ func NewT52D(ctx context.Context) *T52D {
 }
 
 func (t *T52D) Encode(b *bytes.Buffer) {
-	v, _ := proto.Marshal(&pb.DeviceInfo{
+	v, _ := proto.Marshal(&pb.DeviceReport{
 		Bootloader:   deviceBootloader,
 		ProcVersion:  deviceProcVersion,
 		Codename:     deviceCodename,
@@ -45,7 +45,7 @@ func (t *T52D) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	deviceInfo := new(pb.DeviceInfo)
+	deviceInfo := new(pb.DeviceReport)
 	if err := proto.Unmarshal(v.Bytes(), deviceInfo); err != nil {
 		return err
 	}

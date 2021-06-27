@@ -166,6 +166,8 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.HashGUID = c.hashGUID
+	req.RandomPassword = c.randomPassword
+	req.LoginExtraData = c.loginExtraData
 	req.T172 = c.t172
 	req.TGTGTKey = c.tgtgtKey
 	req.T104 = c.t104

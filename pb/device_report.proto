@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option go_package = "./;pb";
 
-message DeviceInfo {
+message DeviceReport {
   bytes bootloader = 10;
   bytes proc_version = 18;
   bytes codename = 26;
