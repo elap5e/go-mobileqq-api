@@ -44,3 +44,12 @@ type ServerToClientMessage struct {
 	Cookie        []byte
 	Buffer        []byte
 }
+
+type ServerPublicKey struct {
+	QuerySpan         uint32 `json:"QuerySpan"`
+	PublicKeyMetaData struct {
+		KeyVersion    uint16 `json:"KeyVer"`
+		PublicKey     string `json:"PubKey"`
+		PublicKeySign string `json:"PubKeySign"`
+	} `json:"PubKeyMeta"`
+}

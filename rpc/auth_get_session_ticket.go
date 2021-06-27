@@ -13,9 +13,9 @@ import (
 )
 
 type AuthGetSessionTicketResponse struct {
-	Username string
-	Uin      uint64
 	Code     uint8
+	Uin      uint64
+	Username string
 
 	PictureSign  []byte
 	PictureData  []byte
@@ -38,66 +38,55 @@ type AuthGetSessionTicketResponse struct {
 	T546 []byte
 }
 
-func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []byte) error {
-	msg := &oicq.Message{
-		RandomKey: clientRandomKey,
-		PublicKey: ecdh.PublicKey,
-		ShareKey:  ecdh.ShareKey,
-	}
-	if err := oicq.Unmarshal(ctx, buf, msg); err != nil {
-		return err
-	}
-	resp.Username = strconv.Itoa(int(msg.Uin))
-	resp.Uin = msg.Uin
-	resp.Code = msg.Code
-	if v, ok := msg.TLVs[0x0104].(*tlv.TLV); ok {
+func (resp *AuthGetSessionTicketResponse) SetTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec) error {
+	if v, ok := tlvs[0x0104].(*tlv.TLV); ok {
 		resp.T104 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x0105].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0105].(*tlv.TLV); ok {
 		buf, _ := v.GetValue()
 		resp.PictureSign, _ = buf.DecodeBytes()
 		resp.PictureData, _ = buf.DecodeBytes()
 	}
-	if v, ok := msg.TLVs[0x0119].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0119].(*tlv.TLV); ok {
 		resp.T119 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x0174].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0174].(*tlv.TLV); ok {
 		resp.T174 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x017b].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x017b].(*tlv.TLV); ok {
 		resp.T17B = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x0192].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0192].(*tlv.TLV); ok {
 		resp.CaptchaSign = string(v.MustGetValue().Bytes())
 	}
-	if v, ok := msg.TLVs[0x0146].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0146].(*tlv.TLV); ok {
 		buf, _ := v.GetValue()
 		resp.ErrorCode, _ = buf.DecodeUint32()
 		resp.ErrorTitle, _ = buf.DecodeString()
 		resp.ErrorMessage, _ = buf.DecodeString()
 	}
-	if v, ok := msg.TLVs[0x0150].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0150].(*tlv.TLV); ok {
 		resp.T150 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x0161].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0161].(*tlv.TLV); ok {
 		resp.T161 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x017e].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x017e].(*tlv.TLV); ok {
 		resp.Message = string(v.MustGetValue().Bytes())
 	}
-	if v, ok := msg.TLVs[0x0178].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0178].(*tlv.TLV); ok {
 		buf, _ := v.GetValue()
 		_, _ = buf.DecodeString()
 		mobile, _ := buf.DecodeString()
 		resp.SMSMobile = mobile
 	}
-	if v, ok := msg.TLVs[0x0402].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0402].(*tlv.TLV); ok {
 		resp.T402 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x0403].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0403].(*tlv.TLV); ok {
 		resp.T403 = v.MustGetValue().Bytes()
 	}
-	if v, ok := msg.TLVs[0x0546].(*tlv.TLV); ok {
+	if v, ok := tlvs[0x0546].(*tlv.TLV); ok {
 		resp.T546 = v.MustGetValue().Bytes()
 	}
 	return nil
@@ -105,7 +94,19 @@ func (resp *AuthGetSessionTicketResponse) Unmarshal(ctx context.Context, buf []b
 
 func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMessage) (*AuthGetSessionTicketResponse, error) {
 	resp := new(AuthGetSessionTicketResponse)
-	if err := resp.Unmarshal(ctx, s2c.Buffer); err != nil {
+	msg := &oicq.Message{
+		RandomKey:  c.randomKey,
+		KeyVersion: c.serverPublicKeyVersion,
+		PublicKey:  c.privateKey.Public().Bytes(),
+		ShareKey:   c.privateKey.ShareKey(c.serverPublicKey),
+	}
+	if err := oicq.Unmarshal(ctx, s2c.Buffer, msg); err != nil {
+		return nil, err
+	}
+	resp.Code = msg.Code
+	resp.Uin = msg.Uin
+	resp.Username = strconv.Itoa(int(msg.Uin))
+	if err := resp.SetTLVs(ctx, msg.TLVs); err != nil {
 		return nil, err
 	}
 	switch resp.Code {

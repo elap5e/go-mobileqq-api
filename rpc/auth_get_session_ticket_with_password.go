@@ -13,12 +13,12 @@ import (
 )
 
 type AuthGetSessionTicketWithPasswordRequest struct {
-	Seq      uint32
+	Seq    uint32
+	Cookie []byte
+	T172   []byte
+	TGTQR  []byte
+
 	Username string
-	Cookie   []byte
-	T172     []byte
-	T9       []byte
-	TGTQR    []byte
 
 	DstAppID         uint64
 	SubDstAppID      uint64
@@ -45,12 +45,13 @@ type AuthGetSessionTicketWithPasswordRequest struct {
 	T104             []byte
 	PackageName      []byte
 	Domains          []string
+
+	t9 []byte
 }
 
 func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *AuthGetSessionTicketWithPasswordRequest {
 	return &AuthGetSessionTicketWithPasswordRequest{
 		Username: fmt.Sprintf("%d", uin),
-		T9:       []byte{0x01, 0x00},
 
 		DstAppID:         defaultClientDstAppID,
 		SubDstAppID:      defaultClientOpenAppID,
@@ -77,10 +78,12 @@ func NewAuthGetSessionTicketWithPasswordRequest(uin uint64, password string) *Au
 		T104:             nil,
 		PackageName:      clientPackageName,
 		Domains:          defaultClientDomains,
+
+		t9: []byte{0x01, 0x00},
 	}
 }
 
-func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx context.Context) (*oicq.Message, error) {
+func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.AppClientVersion, req.Uin, req.I2)
 	tlvs[0x0001] = tlv.NewT1(req.Uin, req.IPv4Address)
@@ -142,10 +145,10 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 	tlvs[0x0177] = tlv.NewT177(clientBuildTime, clientSDKVersion)
 	tlvs[0x0516] = tlv.NewTLV(0x0516, 0x0004, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00}))
 	tlvs[0x0521] = tlv.NewTLV(0x0521, 0x0006, bytes.NewBuffer([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}))
-	if len(req.T9) != 0 {
+	if len(req.t9) != 0 {
 		buf := bytes.NewBuffer([]byte{})
 		buf.EncodeUint16(0x0001)
-		tlv.NewTLV(0x0536, 0x0002, bytes.NewBuffer(req.T9)).Encode(buf)
+		tlv.NewTLV(0x0536, 0x0002, bytes.NewBuffer(req.t9)).Encode(buf)
 		tlvs[0x0525] = tlv.NewTLV(0x0525, 0x0000, buf)
 	}
 	if len(req.TGTQR) != 0 {
@@ -157,51 +160,42 @@ func (req *AuthGetSessionTicketWithPasswordRequest) EncodeOICQMessage(ctx contex
 	// tlvs[0x0545] = tlv.NewT545(md5.Sum([]byte("qimei")))
 	// DISABLED: nativeGetTestData
 	// tlvs[0x0548] = tlv.NewT548([]byte("nativeGetTestData"))
+	return tlvs, nil
+}
 
-	return &oicq.Message{
+func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (*AuthGetSessionTicketResponse, error) {
+	req.Seq = c.getNextSeq()
+	req.Cookie = c.cookie[:]
+	req.TGTGTKey = c.tgtgtKey
+	req.T104 = c.t104
+	tlvs, err := req.GetTLVs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	buf, err := oicq.Marshal(ctx, &oicq.Message{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,
 		Uin:           req.Uin,
 		EncryptMethod: 0x87,
-		RandomKey:     clientRandomKey,
-		KeyVersion:    ecdh.KeyVersion,
-		PublicKey:     ecdh.PublicKey,
-		ShareKey:      ecdh.ShareKey,
+		RandomKey:     c.randomKey,
+		KeyVersion:    c.serverPublicKeyVersion,
+		PublicKey:     c.privateKey.Public().Bytes(),
+		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
 		Type:          0x0009,
 		TLVs:          tlvs,
-	}, nil
-}
-
-func (req *AuthGetSessionTicketWithPasswordRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
-	msg, err := req.EncodeOICQMessage(ctx)
+	})
 	if err != nil {
 		return nil, err
 	}
-	buf, err := oicq.Marshal(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	return &ClientToServerMessage{
+	s2c := new(ServerToClientMessage)
+	if err := c.Call("wtlogin.login", &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,
 		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
-	}, nil
-}
-
-func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (*AuthGetSessionTicketResponse, error) {
-	req.Seq = c.getNextSeq()
-	req.TGTGTKey = c.tgtgtKey
-	req.Cookie = c.cookie[:]
-	req.T104 = c.t104
-	c2s, err := req.Encode(ctx)
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
+	}, s2c); err != nil {
 		return nil, err
 	}
 	return c.AuthGetSessionTicket(ctx, s2c)

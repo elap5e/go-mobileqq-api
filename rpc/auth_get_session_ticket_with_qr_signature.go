@@ -8,12 +8,12 @@ import (
 )
 
 type AuthGetSessionTicketWithQRSignatureRequest struct {
-	*AuthGetSessionTicketWithPasswordRequest
+	AuthGetSessionTicketWithPasswordRequest
 }
 
 func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) *AuthGetSessionTicketWithQRSignatureRequest {
 	return &AuthGetSessionTicketWithQRSignatureRequest{
-		&AuthGetSessionTicketWithPasswordRequest{
+		AuthGetSessionTicketWithPasswordRequest{
 			Username: fmt.Sprintf("%d", uin),
 
 			DstAppID:         defaultClientDstAppID,
@@ -45,37 +45,41 @@ func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) 
 	}
 }
 
-func (req *AuthGetSessionTicketWithQRSignatureRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
-	msg, err := req.EncodeOICQMessage(ctx)
+func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *AuthGetSessionTicketWithQRSignatureRequest) (*AuthGetSessionTicketResponse, error) {
+	req.Seq = c.getNextSeq()
+	req.Cookie = c.cookie[:]
+	req.TGTGTKey = c.tgtgtKey
+	req.T106 = []byte{}
+	req.T16A = []byte{}
+	req.T104 = c.t104
+	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	buf, err := oicq.Marshal(ctx, msg)
+	buf, err := oicq.Marshal(ctx, &oicq.Message{
+		Version:       0x1f41,
+		ServiceMethod: 0x0810,
+		Uin:           req.Uin,
+		EncryptMethod: 0x87,
+		RandomKey:     c.randomKey,
+		KeyVersion:    c.serverPublicKeyVersion,
+		PublicKey:     c.privateKey.Public().Bytes(),
+		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
+		Type:          0x0009,
+		TLVs:          tlvs,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return &ClientToServerMessage{
+	s2c := new(ServerToClientMessage)
+	if err := c.Call("wtlogin.login", &ClientToServerMessage{
 		Username: req.Username,
 		Seq:      req.Seq,
 		AppID:    clientAppID,
 		Cookie:   req.Cookie,
 		Buffer:   buf,
 		Simple:   false,
-	}, nil
-}
-
-func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *AuthGetSessionTicketWithQRSignatureRequest) (*AuthGetSessionTicketResponse, error) {
-	req.Seq = c.getNextSeq()
-	req.TGTGTKey = c.tgtgtKey
-	req.T106 = []byte{}
-	req.T16A = []byte{}
-	req.T104 = c.t104
-	c2s, err := req.Encode(ctx)
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
+	}, s2c); err != nil {
 		return nil, err
 	}
 	return c.AuthGetSessionTicket(ctx, s2c)

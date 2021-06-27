@@ -9,7 +9,9 @@ import (
 )
 
 type AuthUnlockDeviceRequest struct {
-	Seq      uint32
+	Seq    uint32
+	Cookie []byte
+
 	Uin      uint64
 	Username string
 
@@ -33,54 +35,47 @@ func NewAuthUnlockDeviceRequest(uin uint64) *AuthUnlockDeviceRequest {
 	}
 }
 
-func (req *AuthUnlockDeviceRequest) EncodeOICQMessage(ctx context.Context) (*oicq.Message, error) {
+func (req *AuthUnlockDeviceRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0401] = tlv.NewT401(req.T401)
-
-	return &oicq.Message{
-		Version:       0x1f41,
-		ServiceMethod: 0x0810,
-		Uin:           req.Uin,
-		EncryptMethod: 0x87,
-		RandomKey:     clientRandomKey,
-		KeyVersion:    ecdh.KeyVersion,
-		PublicKey:     ecdh.PublicKey,
-		ShareKey:      ecdh.ShareKey,
-		Type:          0x0014,
-		TLVs:          tlvs,
-	}, nil
-}
-
-func (req *AuthUnlockDeviceRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
-	msg, err := req.EncodeOICQMessage(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	return &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, nil
+	return tlvs, nil
 }
 
 func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.T104 = c.t104
 	req.T401 = c.t401
-	c2s, err := req.Encode(ctx)
+	tlvs, err := req.GetTLVs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	buf, err := oicq.Marshal(ctx, &oicq.Message{
+		Version:       0x1f41,
+		ServiceMethod: 0x0810,
+		Uin:           req.Uin,
+		EncryptMethod: 0x87,
+		RandomKey:     c.randomKey,
+		KeyVersion:    c.serverPublicKeyVersion,
+		PublicKey:     c.privateKey.Public().Bytes(),
+		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
+		Type:          0x0014,
+		TLVs:          tlvs,
+	})
 	if err != nil {
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
+	if err := c.Call("wtlogin.login", &ClientToServerMessage{
+		Username: req.Username,
+		Seq:      req.Seq,
+		AppID:    clientAppID,
+		Cookie:   req.Cookie,
+		Buffer:   buf,
+		Simple:   false,
+	}, s2c); err != nil {
 		return nil, err
 	}
 	return c.AuthGetSessionTicket(ctx, s2c)

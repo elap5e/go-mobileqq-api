@@ -1,110 +1,27 @@
 package rpc
 
 import (
-	"crypto/md5"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net"
+	"net/http"
 	"net/rpc"
 	"sync"
 	"sync/atomic"
+	"time"
 
-	"github.com/elap5e/go-mobileqq-api/crypto"
-	"github.com/elap5e/go-mobileqq-api/tlv"
+	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
 )
-
-var (
-	deviceGUID          = md5.Sum(append(defaultDeviceOSBuildID, defaultDeviceMACAddress...)) // []byte("%4;7t>;28<fclient.5*6")
-	deviceGUIDFlag      = uint32((1 << 24 & 0xFF000000) | (0 << 8 & 0xFF00))
-	deviceIsGUIDFileNil = false
-	deviceIsGUIDGenSucc = true
-	deviceIsGUIDChanged = false
-	deviceDPWD          = []byte{}
-
-	clientVerifyMethod = uint8(0x82) // 0x00, 0x82
-	clientRandomKey    = [16]byte{}
-)
-
-var ecdh = crypto.NewECDH()
-
-var (
-	clientPackageName  = []byte("com.tencent.mobileqq")
-	clientVersionName  = []byte("8.8.3")
-	clientRevision     = "8.8.3.b2791edc"
-	clientSignatureMD5 = [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d}
-
-	clientAppID      = uint32(0x20030cb2)
-	clientBuildTime  = uint64(0x00000000609b85ad)
-	clientSDKVersion = "6.0.0.2476"
-	clientSSOVersion = uint32(0x00000011)
-
-	clientCodecAppIDDebug   = []byte("736350642")
-	clientCodecAppIDRelease = []byte("736350642")
-)
-
-var (
-	clientImageType  = uint8(0x01)
-	clientMiscBitmap = uint32(0x08f7ff7c)
-)
-
-func init() {
-	deviceDPWD = func(n int) []byte {
-		b := make([]byte, n)
-		for i := range b {
-			b[i] = byte(0x41 + rand.Intn(1)*0x20 + rand.Intn(26))
-		}
-		return b
-	}(16)
-	log.Printf("--> [init] dump device dpwd\n%s", hex.Dump(deviceDPWD))
-	clientRandomKey = func() [16]byte { var v [16]byte; rand.Read(v[:]); return v }()
-	log.Printf("--> [init] dump client random key\n%s", hex.Dump(clientRandomKey[:]))
-	log.Printf("==> [init] update ecdh share key")
-	if err := ecdh.UpdateShareKey(); err != nil {
-		log.Fatalf("x_x [init] failed to init ecdh, error: %s", err.Error())
-	}
-}
-
-func SetClientForAndroidPhone() {
-	clientPackageName = []byte("com.tencent.mobileqq")
-	clientVersionName = []byte("8.8.3")
-	clientRevision = "8.8.3.b2791edc"
-	clientSignatureMD5 = [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d}
-
-	clientAppID = uint32(0x20030cb2)
-	clientBuildTime = uint64(0x00000000609b85ad)
-	clientSDKVersion = "6.0.0.2476"
-	clientSSOVersion = uint32(0x00000011)
-
-	clientCodecAppIDDebug = []byte("736350642")
-	clientCodecAppIDRelease = []byte("736350642")
-	tlv.SetSSOVersion(clientSSOVersion)
-}
-
-func SetClientForAndroidPad() {
-	clientPackageName = []byte("com.tencent.minihd.qq")
-	clientVersionName = []byte("5.9.2")
-	clientRevision = "5.9.2.3baec0"
-	clientSignatureMD5 = [16]byte{0xaa, 0x39, 0x78, 0xf4, 0x1f, 0xd9, 0x6f, 0xf9, 0x91, 0x4a, 0x66, 0x9e, 0x18, 0x64, 0x74, 0xc7}
-
-	clientAppID = uint32(0x2002fdd5)
-	clientBuildTime = uint64(0x000000005f1e8730)
-	clientSDKVersion = "6.0.0.2433"
-	clientSSOVersion = uint32(0x0000000c)
-
-	clientCodecAppIDDebug = []byte("73636270;")
-	clientCodecAppIDRelease = []byte("736346857")
-	tlv.SetSSOVersion(clientSSOVersion)
-}
-
-func SetClientForiPhone() {
-	panic("not implement")
-}
-
-func SetClientForiPad() {
-	panic("not implement")
-}
 
 type ClientCodec interface {
 	Encode(msg *ClientToServerMessage) error
@@ -116,14 +33,20 @@ type ClientCodec interface {
 type Client struct {
 	codec ClientCodec
 
-	c2sMutex sync.Mutex
-	c2s      *ClientToServerMessage
+	c2s    *ClientToServerMessage
+	c2sMux sync.Mutex
 
 	mutex    sync.Mutex
 	seq      uint32
 	pending  map[uint32]*ClientCall
 	closing  bool
 	shutdown bool
+
+	rand                   *rand.Rand
+	randomKey              [16]byte
+	serverPublicKey        ecdh.PublicKey
+	serverPublicKeyVersion uint16
+	privateKey             ecdh.PrivateKey
 
 	tgtgtKey [16]byte
 	cookie   [4]byte
@@ -136,6 +59,83 @@ type Client struct {
 	t402 []byte
 	t403 []byte
 	t547 []byte
+
+	logger log.Logger
+}
+
+func (c *Client) init() {
+	c.initLogger()
+	c.initRandomKey()
+	c.initServerPublicKey()
+	c.initPrivateKey()
+}
+
+func (c *Client) initLogger() {
+	c.logger = log.Logger{}
+}
+
+func (c *Client) initRandomKey() {
+	c.randomKey = [16]byte{}
+	c.rand.Read(c.randomKey[:])
+	log.Printf("--> [init] dump client random key\n%s", hex.Dump(c.randomKey[:]))
+}
+
+func (c *Client) initServerPublicKey() {
+	if err := c.setServerPublicKey(defaultServerECDHPublicKey, 0x0001); err != nil {
+		c.logger.Fatalf("==> [init] failed to init default server public key, error: %s", err.Error())
+	}
+	if err := c.updateServerPublicKey(); err != nil {
+		c.logger.Printf("==> [init] failed to init updated server public key, error: %s", err.Error())
+	}
+}
+
+func (c *Client) setServerPublicKey(key []byte, ver uint16) error {
+	pub, err := x509.ParsePKIXPublicKey(append(ecdh.X509Prefix, key...))
+	if err != nil {
+		return err
+	}
+	c.serverPublicKey = ecdh.PublicKey{
+		Curve: pub.(*ecdsa.PublicKey).Curve,
+		X:     pub.(*ecdsa.PublicKey).X,
+		Y:     pub.(*ecdsa.PublicKey).Y,
+	}
+	c.serverPublicKeyVersion = ver
+	return nil
+}
+
+func (c *Client) updateServerPublicKey() error {
+	resp, err := http.Get("https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	data := new(ServerPublicKey)
+	err = json.NewDecoder(resp.Body).Decode(data)
+	if err != nil {
+		return err
+	}
+	rsaPub, err := x509.ParsePKIXPublicKey(defaultServerRSAPublicKey)
+	if err != nil {
+		return err
+	}
+	hashed := sha256.Sum256([]byte(fmt.Sprintf("%d%d%s", 305, data.PublicKeyMetaData.KeyVersion, data.PublicKeyMetaData.PublicKey)))
+	sig, _ := base64.StdEncoding.DecodeString(data.PublicKeyMetaData.PublicKeySign)
+	if err := rsa.VerifyPKCS1v15(rsaPub.(*rsa.PublicKey), crypto.SHA256, hashed[:], sig); err != nil {
+		return err
+	}
+	key, _ := hex.DecodeString(data.PublicKeyMetaData.PublicKey)
+	if err := c.setServerPublicKey(key, data.PublicKeyMetaData.KeyVersion); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) initPrivateKey() {
+	priv, err := ecdh.GenerateKey(c.rand)
+	if err != nil {
+		c.logger.Fatalf("==> [init] failed to init private key, error: %s", err.Error())
+	}
+	c.privateKey = *priv
 }
 
 func (c *Client) getNextSeq() uint32 {
@@ -147,8 +147,8 @@ func (c *Client) getNextSeq() uint32 {
 }
 
 func (c *Client) send(call *ClientCall) {
-	c.c2sMutex.Lock()
-	defer c.c2sMutex.Unlock()
+	c.c2sMux.Lock()
+	defer c.c2sMux.Unlock()
 
 	// Register this call.
 	c.mutex.Lock()
@@ -210,7 +210,7 @@ func (c *Client) revc() {
 		}
 	}
 	// Terminate pending calls.
-	c.c2sMutex.Lock()
+	c.c2sMux.Lock()
 	c.mutex.Lock()
 	c.shutdown = true
 	closing := c.closing
@@ -226,7 +226,7 @@ func (c *Client) revc() {
 		call.done()
 	}
 	c.mutex.Unlock()
-	c.c2sMutex.Unlock()
+	c.c2sMux.Unlock()
 	if err != io.EOF && !closing {
 		log.Println("rpc: client protocol error:", err)
 	}
@@ -252,11 +252,13 @@ func NewClientWithCodec(codec ClientCodec) *Client {
 		codec:   codec,
 		seq:     uint32(rand.Int31n(100000)) + 60000,
 		pending: make(map[uint32]*ClientCall),
+		rand:    rand.New(rand.NewSource(time.Now().Unix())),
 	}
 	rand.Read(c.tgtgtKey[:])
 	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
 	rand.Read(c.cookie[:])
 	log.Printf("--> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
+	c.init()
 	go c.revc()
 	return c
 }

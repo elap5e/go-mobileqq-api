@@ -8,15 +8,14 @@ import (
 )
 
 type AuthCheckPictureAndGetSessionTicketRequest struct {
-	*AuthCheckCaptchaAndGetSessionTicketRequest
+	AuthCheckCaptchaAndGetSessionTicketRequest
 }
 
 func NewAuthCheckPictureAndGetSessionTicketRequest(uin uint64, code, sign []byte) *AuthCheckPictureAndGetSessionTicketRequest {
 	return &AuthCheckPictureAndGetSessionTicketRequest{
-		&AuthCheckCaptchaAndGetSessionTicketRequest{
+		AuthCheckCaptchaAndGetSessionTicketRequest{
 			Uin:      uin,
 			Username: fmt.Sprintf("%d", uin),
-			CheckWeb: false,
 
 			T104:         nil,
 			Code:         code,
@@ -25,39 +24,44 @@ func NewAuthCheckPictureAndGetSessionTicketRequest(uin uint64, code, sign []byte
 			SubSigMap:    defaultClientSubSigMap,
 			SubAppIDList: defaultClientSubAppIDList,
 			T547:         nil,
+
+			checkWeb: false,
 		},
 	}
-}
-
-func (req *AuthCheckPictureAndGetSessionTicketRequest) Encode(ctx context.Context) (*ClientToServerMessage, error) {
-	msg, err := req.EncodeOICQMessage(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-	return &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		AppID:    clientAppID,
-		Cookie:   req.Cookie,
-		Buffer:   buf,
-		Simple:   false,
-	}, nil
 }
 
 func (c *Client) AuthCheckPictureAndGetSessionTicket(ctx context.Context, req *AuthCheckPictureAndGetSessionTicketRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
 	req.T104 = c.t104
-	c2s, err := req.Encode(ctx)
+	tlvs, err := req.GetTLVs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	buf, err := oicq.Marshal(ctx, &oicq.Message{
+		Version:       0x1f41,
+		ServiceMethod: 0x0810,
+		Uin:           req.Uin,
+		EncryptMethod: 0x87,
+		RandomKey:     c.randomKey,
+		KeyVersion:    c.serverPublicKeyVersion,
+		PublicKey:     c.privateKey.Public().Bytes(),
+		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
+		Type:          0x0002,
+		TLVs:          tlvs,
+	})
 	if err != nil {
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call("wtlogin.login", c2s, s2c); err != nil {
+	if err := c.Call("wtlogin.login", &ClientToServerMessage{
+		Username: req.Username,
+		Seq:      req.Seq,
+		AppID:    clientAppID,
+		Cookie:   req.Cookie,
+		Buffer:   buf,
+		Simple:   false,
+	}, s2c); err != nil {
 		return nil, err
 	}
 	return c.AuthGetSessionTicket(ctx, s2c)
