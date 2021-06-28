@@ -40,13 +40,6 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 		case 0x0508: // ???
 			log.Printf("--> [recv] tlv 0x0508, ???")
 
-		case 0x0178: // countryCode:mobile
-			countryCode, _ := buf.DecodeString()
-			mobile, _ := buf.DecodeString()
-			status, _ := buf.DecodeUint32()
-			counts, _ := buf.DecodeUint16()
-			timeLimit, _ := buf.DecodeUint16()
-			log.Printf("--> [recv] tlv 0x0178, country code %s, mobile %s, status 0x%08x, counts 0x%04x, timeLimit 0x%04x", countryCode, mobile, status, counts, timeLimit)
 		case 0x0105: // picture
 			sign, _ := buf.DecodeBytes()
 			data, _ := buf.DecodeBytes()
@@ -58,6 +51,13 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 			_, _ = buf.DecodeUint16()
 			message, _ := buf.DecodeString()
 			log.Printf("--> [recv] tlv 0x0165, code %s, message %s", code, message)
+		case 0x0178: // countryCode:mobile
+			countryCode, _ := buf.DecodeString()
+			mobile, _ := buf.DecodeString()
+			status, _ := buf.DecodeUint32()
+			counts, _ := buf.DecodeUint16()
+			timeLimit, _ := buf.DecodeUint16()
+			log.Printf("--> [recv] tlv 0x0178, country code %s, mobile %s, status 0x%08x, counts 0x%04x, timeLimit 0x%04x", countryCode, mobile, status, counts, timeLimit)
 		case 0x0192: // captcha
 			log.Printf("--> [recv] tlv 0x0192, url %s", string(buf.Bytes()))
 

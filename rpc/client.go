@@ -48,7 +48,7 @@ type Client struct {
 	rand *rand.Rand
 
 	cookie         [4]byte
-	tgtgtKey       [16]byte
+	userA1Key      [16]byte
 	randomKey      [16]byte
 	randomPassword [16]byte
 
@@ -57,7 +57,6 @@ type Client struct {
 	privateKey             ecdh.PrivateKey
 
 	// tlvs
-	t104 []byte
 	t119 []byte
 	t172 []byte // from t161
 	t173 []byte // from t161
@@ -72,9 +71,10 @@ type Client struct {
 	t403 []byte
 	t547 []byte
 
-	hashGUID       [16]byte // t401
+	session        []byte   // t104
+	ksid           []byte   // t108
+	hashedGUID     [16]byte // t401
 	loginExtraData []byte   // from t537
-	ksid           []byte   // 0x0108
 
 	// logger
 	logger log.Logger
@@ -84,7 +84,7 @@ func (c *Client) init() {
 	c.initLogger()
 
 	c.initCookie()
-	c.initTGTGTKey()
+	c.initUserA1Key()
 	c.initRandomKey()
 	c.initRandomPassword()
 
@@ -101,9 +101,9 @@ func (c *Client) initCookie() {
 	log.Printf("--> [init] dump cookie\n%s", hex.Dump(c.cookie[:]))
 }
 
-func (c *Client) initTGTGTKey() {
-	rand.Read(c.tgtgtKey[:])
-	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.tgtgtKey[:]))
+func (c *Client) initUserA1Key() {
+	rand.Read(c.userA1Key[:])
+	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.userA1Key[:]))
 }
 
 func (c *Client) initRandomKey() {
@@ -320,6 +320,9 @@ func (c *Client) Close() error {
 func (c *Client) Go(serviceMethod string, c2s *ClientToServerMessage, s2c *ServerToClientMessage, done chan *ClientCall) *ClientCall {
 	call := new(ClientCall)
 	call.ServiceMethod = serviceMethod
+	c2s.AppID = clientAppID
+	c2s.Cookie = c.cookie[:]
+	c2s.ReserveField = c.ksid
 	call.ClientToServerMessage = c2s
 	call.ServerToClientMessage = s2c
 	if done == nil {

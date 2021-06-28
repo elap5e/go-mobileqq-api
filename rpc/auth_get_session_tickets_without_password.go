@@ -20,12 +20,12 @@ type AuthGetSessionTicketsWithoutPasswordRequest struct {
 	SrcAppID         uint64
 	AppClientVersion uint32
 	MainSigMap       uint32
-	T10A             []byte
+	UserA2           []byte
 	MiscBitmap       uint32
 	SubSigMap        uint32
 	SubAppIDList     []uint64
 	KSID             []byte
-	T143             []byte
+	UserD2           []byte
 	Domains          []string
 }
 
@@ -38,12 +38,12 @@ func NewAuthGetSessionTicketsWithoutPasswordRequest(uin uint64) *AuthGetSessionT
 		SrcAppID:         defaultClientOpenAppID,
 		AppClientVersion: 0x00000000,
 		MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
-		T10A:             nil,
+		UserA2:           nil,
 		MiscBitmap:       clientMiscBitmap,
 		SubSigMap:        defaultClientSubSigMap,
 		SubAppIDList:     defaultClientSubAppIDList,
 		KSID:             GetClientCodecKSID(),
-		T143:             nil,
+		UserD2:           nil,
 		Domains:          defaultClientDomains,
 	}
 }
@@ -52,7 +52,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(ctx context.Cont
 	key := SelectClientCodecKey(req.Username)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0100] = tlv.NewT100(req.DstAppID, req.SrcAppID, req.AppClientVersion, req.MainSigMap)
-	tlvs[0x010a] = tlv.NewT10A(key.A2)
+	tlvs[0x010a] = tlv.NewT10A(req.UserA2)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0108] = tlv.NewT108(req.KSID)
 	tlvs[0x0144] = tlv.NewT144(md5.Sum(key.D2Key[:]),
@@ -62,7 +62,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(ctx context.Cont
 		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, []byte(defaultDeviceOSBuildModel), deviceGUID[:], defaultDeviceOSBuildBrand),
 		tlv.NewT16E([]byte(defaultDeviceOSBuildModel)),
 	)
-	tlvs[0x0143] = tlv.NewT143(key.D2)
+	tlvs[0x0143] = tlv.NewT143(req.UserD2)
 	tlvs[0x0142] = tlv.NewT142(clientPackageName)
 	tlvs[0x0154] = tlv.NewT154(req.Seq)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.MainSigMap, req.Uin, 0x0000)
@@ -110,13 +110,10 @@ func (c *Client) AuthGetSessionTicketsWithoutPassword(ctx context.Context, req *
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthExchangeAccount, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       c.cookie[:],
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

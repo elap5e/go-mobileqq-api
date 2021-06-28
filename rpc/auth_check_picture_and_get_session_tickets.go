@@ -17,7 +17,7 @@ func NewAuthCheckPictureAndGetSessionTicketsRequest(uin uint64, code, sign []byt
 			Uin:      uin,
 			Username: fmt.Sprintf("%d", uin),
 
-			T104:         nil,
+			Session:      nil,
 			Code:         code,
 			Sign:         sign,
 			MiscBitmap:   clientMiscBitmap,
@@ -33,7 +33,7 @@ func NewAuthCheckPictureAndGetSessionTicketsRequest(uin uint64, code, sign []byt
 func (c *Client) AuthCheckPictureAndGetSessionTickets(ctx context.Context, req *AuthCheckPictureAndGetSessionTicketsRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
-	req.T104 = c.t104
+	req.Session = c.session
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -55,13 +55,10 @@ func (c *Client) AuthCheckPictureAndGetSessionTickets(ctx context.Context, req *
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       req.Cookie,
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

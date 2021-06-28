@@ -26,23 +26,23 @@ type AuthGetSessionTicketsResponse struct {
 	Message      string
 	SMSMobile    string
 
-	T104 []byte
-	T119 []byte
-	T150 []byte
-	T161 []byte
-	T174 []byte
-	T17B []byte
-	T401 [16]byte
-	T402 []byte
-	T403 []byte
-	T546 []byte
+	Session []byte
+	T119    []byte
+	T150    []byte
+	T161    []byte
+	T174    []byte
+	T17B    []byte
+	T401    [16]byte
+	T402    []byte
+	T403    []byte
+	T546    []byte
 
 	LoginExtraData []byte
 }
 
 func (resp *AuthGetSessionTicketsResponse) SetTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec) error {
 	if v, ok := tlvs[0x0104].(*tlv.TLV); ok {
-		resp.T104 = v.MustGetValue().Bytes()
+		resp.Session = v.MustGetValue().Bytes()
 	}
 	if v, ok := tlvs[0x0105].(*tlv.TLV); ok {
 		buf, _ := v.GetValue()
@@ -120,7 +120,7 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 		c.loginExtraData = resp.LoginExtraData
 
 		// decode t119
-		t119 := crypto.NewCipher(c.tgtgtKey).Decrypt(resp.T119)
+		t119 := crypto.NewCipher(c.userA1Key).Decrypt(resp.T119)
 		tlvs := map[uint16]tlv.TLVCodec{}
 		{
 			buf := bytes.NewBuffer(t119)
@@ -143,7 +143,7 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
 		// captcha
-		c.t104 = resp.T104
+		c.session = resp.Session
 		c.t547 = resp.T546 // TODO: check
 		if resp.CaptchaSign != "" {
 			log.Printf(">_x [warn] need captcha verify, uin %s, url %s, code 0x02", resp.Username, resp.CaptchaSign)
@@ -152,16 +152,16 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 		}
 	case 0xa0:
 		// device lock
-		c.t104 = resp.T104
+		c.session = resp.Session
 		c.t17b = resp.T17B
 		log.Printf(">_x [warn] need sms mobile verify response, uin %s, code 0xa0", resp.Username)
 	case 0xef:
 		// device lock
-		c.t104 = resp.T104
+		c.session = resp.Session
 		c.t174 = resp.T174
 		c.t402 = resp.T402
 		c.t403 = resp.T403
-		c.hashGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
+		c.hashedGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
 		log.Printf(">_x [warn] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s, code 0xef", resp.Username, resp.SMSMobile, resp.Code, resp.Message)
 	case 0x01:
 		log.Printf("x_x [fail] invalid login, uin %s, code 0x01, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
@@ -172,10 +172,10 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 	case 0xed:
 		log.Printf("x_x [fail] invalid device, uin %s, code 0xed, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
 	case 0xcc:
-		c.t104 = resp.T104
+		c.session = resp.Session
 		c.t402 = resp.T402
 		c.t403 = resp.T403
-		c.hashGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
+		c.hashedGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
 		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(resp.Uin))
 	}
 	return resp, nil

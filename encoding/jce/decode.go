@@ -1,32 +1,38 @@
 package jce
 
 import (
+	"log"
 	"math"
 	"reflect"
 )
 
-func Unmarshal(data []byte, v interface{}) error {
-	d := decoder{}
-	d.init(data)
-	return d.unmarshal(v)
+func Unmarshal(data []byte, v interface{}, opts ...bool) error {
+	simple := false
+	if len(opts) != 0 && opts[0] {
+		simple = true
+	}
+
+	d := decoder{
+		data:   data,
+		off:    0,
+		length: len(data),
+	}
+
+	return d.unmarshal(v, simple)
 }
 
 type decoder struct {
-	data []byte
-	off  int
+	data   []byte
+	off    int
+	length int
+	typ    uint8
 }
 
-func (d *decoder) init(data []byte) *decoder {
-	d.data = data
-	d.off = 0
-	return d
-}
-
-func (d *decoder) unmarshal(v interface{}) error {
-	rv := reflect.ValueOf(v)
-	_ = rv
-
-	return nil
+func (d *decoder) unmarshal(v interface{}, simple bool) error {
+	if !simple {
+		_, _ = d.decodeHead()
+	}
+	return d.decodeValue(reflect.ValueOf(v))
 }
 
 func (d *decoder) decodeHead() (uint8, uint8) {
@@ -42,173 +48,192 @@ func (d *decoder) decodeHead() (uint8, uint8) {
 	return typ, tag
 }
 
-func (d *decoder) valueInterface(typ uint8) (val interface{}) {
-	switch typ {
-	default:
-		panic("not implement")
-	case 0x0c, 0x00, 0x01, 0x02, 0x03:
-		val = d.uintInterface(typ)
-	case 0x04:
-		val = d.float32Interface()
-	case 0x05:
-		val = d.float64Interface()
-	case 0x06, 0x07:
-		val = d.stringInterface(typ)
-	case 0x08:
-		val = d.mapInterface()
-	case 0x09:
-		val = d.arrayInterface()
-	case 0x0a, 0x0b:
-		val = d.structInterface()
-	case 0x0d:
-		val = d.bytesInterface()
-		// 	val = d.arrayInterface()
-		// 	d.scanNext()
-		// case scanBeginObject:
-		// 	val = d.objectInterface()
-		// 	d.scanNext()
-		// case scanBeginLiteral:
-		// 	val = d.literalInterface()
-	}
-	return
-}
-
-func (d *decoder) uintInterface(typ uint8) interface{} {
-	switch typ {
-	case 0x0c:
-		return uint8(0x00)
-	case 0x00:
-		val := d.data[d.off]
-		d.off++
-		return val
-	case 0x01:
-		val := uint16(d.data[d.off]) << 8
-		d.off++
-		val += uint16(d.data[d.off])
-		d.off++
-		return val
-	case 0x02:
-		val := uint32(d.data[d.off]) << 24
-		d.off++
-		val += uint32(d.data[d.off]) << 16
-		d.off++
-		val += uint32(d.data[d.off]) << 8
-		d.off++
-		val += uint32(d.data[d.off])
-		d.off++
-		return val
-	case 0x03:
-		val := uint64(d.data[d.off]) << 56
-		d.off++
-		val += uint64(d.data[d.off]) << 48
-		d.off++
-		val += uint64(d.data[d.off]) << 40
-		d.off++
-		val += uint64(d.data[d.off]) << 32
-		d.off++
-		val += uint64(d.data[d.off]) << 24
-		d.off++
-		val += uint64(d.data[d.off]) << 16
-		d.off++
-		val += uint64(d.data[d.off]) << 8
-		d.off++
-		val += uint64(d.data[d.off])
-		d.off++
-		return val
-	}
-	panic("not implement")
-}
-
-func (d *decoder) float32Interface() interface{} {
-	val := uint32(d.data[d.off]) << 24
-	d.off++
-	val += uint32(d.data[d.off]) << 16
-	d.off++
-	val += uint32(d.data[d.off]) << 8
-	d.off++
-	val += uint32(d.data[d.off])
-	d.off++
-	return math.Float32frombits(val)
-}
-
-func (d *decoder) float64Interface() interface{} {
-	val := uint64(d.data[d.off]) << 56
-	d.off++
-	val += uint64(d.data[d.off]) << 48
-	d.off++
-	val += uint64(d.data[d.off]) << 40
-	d.off++
-	val += uint64(d.data[d.off]) << 32
-	d.off++
-	val += uint64(d.data[d.off]) << 24
-	d.off++
-	val += uint64(d.data[d.off]) << 16
-	d.off++
-	val += uint64(d.data[d.off]) << 8
-	d.off++
-	val += uint64(d.data[d.off])
-	d.off++
-	return math.Float64frombits(val)
-}
-
-func (d *decoder) stringInterface(typ uint8) interface{} {
-	switch typ {
-	case 0x06:
-		l := int(d.data[d.off])
-		d.off++
-		val := d.data[d.off : d.off+l]
-		d.off += l
-		return val
-	case 0x07:
-		ttyp, _ := d.decodeHead()
-		l := int(reflect.ValueOf(d.uintInterface(ttyp)).Uint())
-		d.off++
-		val := d.data[d.off : d.off+l]
-		d.off += l
-		return val
-	}
-	panic("not implement")
-}
-
-func (d *decoder) mapInterface() map[string]interface{} {
-	m := make(map[string]interface{})
-	ttyp, _ := d.decodeHead()
-	l := int(reflect.ValueOf(d.uintInterface(ttyp)).Uint())
-	for i := 0; i < l; i++ {
-		ttyp, _ := d.decodeHead()
-		key := d.stringInterface(ttyp).(string)
-		ttyp, _ = d.decodeHead()
-		m[key] = d.valueInterface(ttyp)
-	}
-	return m
-}
-
-func (d *decoder) arrayInterface() []interface{} {
-	v := make([]interface{}, 0)
-	ttyp, _ := d.decodeHead()
-	l := int(reflect.ValueOf(d.uintInterface(ttyp)).Uint())
-	for i := 0; i < l; i++ {
-		ttyp, _ := d.decodeHead()
-		v = append(v, d.valueInterface(ttyp))
-	}
-	return v
-}
-
-func (d *decoder) structInterface() interface{} {
-	typ, _ := d.decodeHead()
-	for typ != 0x0b {
-		val := d.valueInterface(typ)
-		_ = val
-		typ, _ = d.decodeHead()
+func (d *decoder) decodeValue(v reflect.Value) error {
+	switch v.Kind() {
+	case reflect.Interface:
+	case reflect.Ptr:
+	case reflect.Slice:
+		return d.decodeSlice(v)
+	case reflect.Struct:
+		return d.decodeStruct(v)
+	case reflect.Array:
+	case reflect.Map:
+	case reflect.String:
+		v.SetString(d.decodeString(d.typ))
+	case reflect.Float64, reflect.Float32:
+		v.SetFloat(d.decodeFloat(d.typ))
+	case reflect.Uint64, reflect.Uint32, reflect.Uint, reflect.Uint16, reflect.Uint8:
+		v.SetUint(d.decodeUint(d.typ))
+	case reflect.Bool:
+		v.SetBool(d.decodeUint(d.typ) != 0)
 	}
 	return nil
 }
 
-func (d *decoder) bytesInterface() interface{} {
-	_, _ = d.decodeHead()
+func (d *decoder) decodeBytes(v reflect.Value) error {
 	ttyp, _ := d.decodeHead()
-	n := int(reflect.ValueOf(d.uintInterface(ttyp)).Uint())
-	val := d.data[d.off : d.off+n]
+	n := int(d.decodeUint(ttyp))
+	v.SetBytes(d.data[d.off : d.off+n])
 	d.off += n
+	return nil
+}
+
+func (d *decoder) decodeSlice(v reflect.Value) error {
+	if v.Elem().Kind() == reflect.Uint8 {
+		return d.decodeBytes(v)
+	}
+	return nil
+}
+
+func (d *decoder) decodeStruct(v reflect.Value) error {
+	tv := v.Type()
+
+	var fields structFields
+
+	switch v.Kind() {
+	case reflect.Struct:
+		fields = typeFields(tv)
+	}
+
+	var subv reflect.Value
+
+	typ, tag := d.decodeHead()
+	for {
+		var f *field
+		if i, ok := fields.tagIndex[tag]; ok {
+			f = &fields.list[i]
+		}
+		if f != nil {
+			subv = v
+			for _, i := range f.index {
+				if subv.Kind() == reflect.Ptr {
+					if subv.IsNil() {
+						subv.Set(reflect.New(subv.Type().Elem()))
+					}
+					subv = subv.Elem()
+				}
+				subv = subv.Field(i)
+			}
+		}
+		d.typ = typ
+		if err := d.decodeValue(subv); err != nil {
+			return err
+		}
+		if d.off == d.length {
+			break
+		} else {
+			typ, tag = d.decodeHead()
+			if tag == 0x0b {
+				break
+			}
+		}
+	}
+	return nil
+}
+
+// func (d *decoder) arrayInterface() []interface{} {
+// 	v := make([]interface{}, 0)
+// 	ttyp, _ := d.decodeHead()
+// 	l := int(reflect.ValueOf(d.uintInterface(ttyp)).Uint())
+// 	for i := 0; i < l; i++ {
+// 		ttyp, _ := d.decodeHead()
+// 		v = append(v, d.valueInterface(ttyp))
+// 	}
+// 	return v
+// }
+
+func (d *decoder) decodeMap(typ uint8) map[string]interface{} {
+	if typ != 0x08 {
+		log.Panicf("unexpected type 0x%02x (decode map)", typ)
+	}
+	m := make(map[string]interface{})
+	ttyp, _ := d.decodeHead()
+	l := int(d.decodeUint(ttyp))
+	for i := 0; i < l; i++ {
+		ttyp, _ = d.decodeHead()
+		key := d.decodeString(ttyp)
+		ttyp, _ = d.decodeHead()
+		m[key] = d.decodeString(ttyp)
+	}
+	return m
+}
+
+func (d *decoder) decodeString(typ uint8) string {
+	var l int
+	switch typ {
+	default:
+		log.Panicf("unexpected type 0x%02x (decode string)", typ)
+	case 0x07:
+		ttyp, _ := d.decodeHead()
+		l = int(d.decodeUint(ttyp))
+		d.off++
+	case 0x06:
+		l = int(d.data[d.off])
+		d.off++
+	}
+	val := string(d.data[d.off : d.off+l])
+	d.off += l
+	return val
+}
+
+func (d *decoder) decodeFloat(typ uint8) float64 {
+	var val uint64
+	switch typ {
+	default:
+		log.Panicf("unexpected type 0x%02x (decode float)", typ)
+	case 0x05:
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		fallthrough
+	case 0x04:
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+	}
+	return math.Float64frombits(val)
+}
+
+func (d *decoder) decodeUint(typ uint8) uint64 {
+	var val uint64
+	switch typ {
+	default:
+		log.Panicf("unexpected type 0x%02x (decode uint)", typ)
+	case 0x03:
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		fallthrough
+	case 0x02:
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		fallthrough
+	case 0x01:
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		fallthrough
+	case 0x00:
+		val = val<<8 + uint64(d.data[d.off])
+		d.off++
+		fallthrough
+	case 0x0c:
+	}
 	return val
 }

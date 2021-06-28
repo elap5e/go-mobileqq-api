@@ -138,13 +138,10 @@ func (c *Client) PushServiceRegister(ctx context.Context, req *AccountUpdateStat
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodPushServiceRegister, &ClientToServerMessage{
-		Username:     strconv.FormatInt(int64(req.Uin), 10),
-		Seq:          c.getNextSeq(),
-		AppID:        clientAppID,
-		Cookie:       c.cookie[:],
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: strconv.FormatInt(int64(req.Uin), 10),
+		Seq:      c.getNextSeq(),
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

@@ -21,12 +21,12 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string)
 			AppClientVersion: 0x00000000,
 			Uin:              uin,
 			I2:               0x0000,
-			IPv4Address:      defaultDeviceIPv4Address,
-			ServerTime:       0,
-			PasswordMD5:      [16]byte{},
-			TGTGTKey:         [16]byte{},
+			IPv4Address:      defaultDeviceIPv4Address, // nil
+			ServerTime:       0,                        // nil
+			PasswordMD5:      [16]byte{},               // nil
+			UserA1Key:        [16]byte{},               // nil
 			LoginType:        0x00000000,
-			T106:             nil,
+			UserA1:           nil,
 			T16A:             nil,
 			MiscBitmap:       clientMiscBitmap,
 			SubSigMap:        defaultClientSubSigMap,
@@ -38,7 +38,7 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string)
 			I9:               0x0000,
 			I10:              0x01,
 			KSID:             GetClientCodecKSID(),
-			T104:             nil,
+			Session:          nil,
 			PackageName:      clientPackageName,
 			Domains:          defaultClientDomains,
 		},
@@ -47,10 +47,10 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string)
 
 func (c *Client) AuthGetSessionTicketsWithQRSignature(ctx context.Context, req *AuthGetSessionTicketsWithQRSignatureRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.TGTGTKey = c.tgtgtKey
-	req.T106 = []byte{}
+	req.UserA1Key = c.userA1Key
+	req.UserA1 = []byte{}
 	req.T16A = []byte{}
-	req.T104 = c.t104
+	req.Session = c.session
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -72,13 +72,10 @@ func (c *Client) AuthGetSessionTicketsWithQRSignature(ctx context.Context, req *
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       c.cookie[:],
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

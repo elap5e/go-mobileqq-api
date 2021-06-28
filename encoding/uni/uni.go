@@ -29,11 +29,11 @@ func Marshal(ctx context.Context, msg *Message, opts map[string]interface{}) ([]
 		}
 		msg.Buffer = map[string][]byte{key: buf}
 	}
-	return jce.Marshal(msg)
+	return jce.Marshal(msg, true)
 }
 
 func Unmarshal(ctx context.Context, data []byte, msg *Message, opts map[string]interface{}) error {
-	if err := jce.Unmarshal(data, msg); err != nil {
+	if err := jce.Unmarshal(data, msg, true); err != nil {
 		return err
 	}
 	for key, buf := range msg.Buffer {

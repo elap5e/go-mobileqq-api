@@ -14,7 +14,7 @@ import (
 
 type AuthGetSessionTicketsWithPasswordRequest struct {
 	Seq            uint32
-	HashGUID       [16]byte
+	HashedGUID     [16]byte
 	RandomPassword [16]byte
 	RandomSeed     []byte
 	LoginExtraData []byte
@@ -31,9 +31,9 @@ type AuthGetSessionTicketsWithPasswordRequest struct {
 	IPv4Address      net.IP
 	ServerTime       uint32
 	PasswordMD5      [16]byte
-	TGTGTKey         [16]byte // placeholder
+	UserA1Key        [16]byte // placeholder
 	LoginType        uint32   // 0x00, 0x01, 0x03
-	T106             []byte
+	UserA1           []byte
 	T16A             []byte
 	MiscBitmap       uint32
 	SubSigMap        uint32
@@ -45,7 +45,7 @@ type AuthGetSessionTicketsWithPasswordRequest struct {
 	I9               uint16 // constant 0x0000
 	I10              uint8  // constant 0x01
 	KSID             []byte
-	T104             []byte // placeholder
+	Session          []byte // placeholder
 	PackageName      []byte
 	Domains          []string
 }
@@ -63,9 +63,9 @@ func NewAuthGetSessionTicketsWithPasswordRequest(username string, password strin
 		IPv4Address:      defaultDeviceIPv4Address,
 		ServerTime:       util.GetServerTime(),
 		PasswordMD5:      md5.Sum([]byte(password)),
-		TGTGTKey:         [16]byte{},
+		UserA1Key:        [16]byte{},
 		LoginType:        0x00000001,
-		T106:             nil, // nil
+		UserA1:           nil, // nil
 		T16A:             nil, // nil
 		MiscBitmap:       clientMiscBitmap,
 		SubSigMap:        defaultClientSubSigMap,
@@ -77,7 +77,7 @@ func NewAuthGetSessionTicketsWithPasswordRequest(username string, password strin
 		I9:               0x0000,
 		I10:              0x01,
 		KSID:             GetClientCodecKSID(),
-		T104:             nil,
+		Session:          nil,
 		PackageName:      clientPackageName,
 		Domains:          defaultClientDomains,
 	}
@@ -87,10 +87,10 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(ctx context.Context
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.AppClientVersion, req.Uin, req.I2)
 	tlvs[0x0001] = tlv.NewT1(req.Uin, req.IPv4Address)
-	if len(req.T106) == 0 {
-		tlvs[0x0106] = tlv.NewT106(req.DstAppID, req.SubDstAppID, req.AppClientVersion, req.Uin, req.ServerTime, req.IPv4Address, true, req.PasswordMD5, 0, req.Username, req.TGTGTKey, true, deviceGUID[:], req.LoginType)
+	if len(req.UserA1) == 0 {
+		tlvs[0x0106] = tlv.NewT106(req.DstAppID, req.SubDstAppID, req.AppClientVersion, req.Uin, req.ServerTime, req.IPv4Address, true, req.PasswordMD5, 0, req.Username, req.UserA1Key, true, deviceGUID[:], req.LoginType)
 	} else {
-		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(req.T106))
+		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(req.UserA1))
 	}
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0100] = tlv.NewT100(req.DstAppID, req.SrcAppID, req.AppClientVersion, req.MainSigMap)
@@ -98,14 +98,14 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(ctx context.Context
 	if len(req.KSID) != 0 {
 		tlvs[0x0108] = tlv.NewT108(req.KSID)
 	}
-	if len(req.T104) != 0 {
-		tlvs[0x0104] = tlv.NewT104(req.T104)
+	if len(req.Session) != 0 {
+		tlvs[0x0104] = tlv.NewT104(req.Session)
 	}
 	tlvs[0x0142] = tlv.NewT142(req.PackageName)
 	if !util.CheckUsername(req.Username) {
 		tlvs[0x0112] = tlv.NewT112([]byte(req.Username))
 	}
-	tlvs[0x0144] = tlv.NewT144(req.TGTGTKey,
+	tlvs[0x0144] = tlv.NewT144(req.UserA1Key,
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(ctx),
 		tlv.NewT124([]byte(defaultDeviceOSType), []byte(defaultDeviceOSVersion), defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
@@ -133,7 +133,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(ctx context.Context
 		tlvs[0x0185] = tlv.NewT185(0x01)
 	}
 	if false { // TODO: code2d
-		tlvs[0x0400] = tlv.NewT400(req.HashGUID, req.Uin, deviceGUID, req.RandomPassword, req.DstAppID, req.SubDstAppID, req.RandomSeed)
+		tlvs[0x0400] = tlv.NewT400(req.HashedGUID, req.Uin, deviceGUID, req.RandomPassword, req.DstAppID, req.SubDstAppID, req.RandomSeed)
 	}
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
@@ -165,12 +165,12 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(ctx context.Context
 
 func (c *Client) AuthGetSessionTicketsWithPassword(ctx context.Context, req *AuthGetSessionTicketsWithPasswordRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.HashGUID = c.hashGUID
+	req.HashedGUID = c.hashedGUID
 	req.RandomPassword = c.randomPassword
 	req.LoginExtraData = c.loginExtraData
 	req.T172 = c.t172
-	req.TGTGTKey = c.tgtgtKey
-	req.T104 = c.t104
+	req.UserA1Key = c.userA1Key
+	req.Session = c.session
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -192,13 +192,10 @@ func (c *Client) AuthGetSessionTicketsWithPassword(ctx context.Context, req *Aut
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       c.cookie[:],
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

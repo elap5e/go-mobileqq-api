@@ -10,13 +10,12 @@ import (
 )
 
 type AuthRefreshSMSDataRequest struct {
-	Seq    uint32
-	Cookie []byte
+	Seq uint32
 
 	Uin      uint64
 	Username string
 
-	T104         []byte
+	Session      []byte
 	SMSAppID     uint64
 	T174         []byte
 	MiscBitmap   uint32
@@ -32,7 +31,7 @@ func NewAuthRefreshSMSDataRequest(uin uint64) *AuthRefreshSMSDataRequest {
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 
-		T104:         nil,
+		Session:      nil,
 		SMSAppID:     defaultClientSMSAppID,
 		T174:         nil,
 		MiscBitmap:   clientMiscBitmap,
@@ -47,7 +46,7 @@ func NewAuthRefreshSMSDataRequest(uin uint64) *AuthRefreshSMSDataRequest {
 func (req *AuthRefreshSMSDataRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(req.T104)
+	tlvs[0x0104] = tlv.NewT104(req.Session)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0174] = tlv.NewT174(req.T174)
 	tlvs[0x017a] = tlv.NewT17A(req.SMSAppID)
@@ -58,8 +57,7 @@ func (req *AuthRefreshSMSDataRequest) GetTLVs(ctx context.Context) (map[uint16]t
 
 func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.Cookie = c.cookie[:]
-	req.T104 = c.t104
+	req.Session = c.session
 	req.T174 = c.t174
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
@@ -82,13 +80,10 @@ func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSData
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       req.Cookie,
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

@@ -15,7 +15,7 @@ type AuthCheckCaptchaAndGetSessionTicketsRequest struct {
 	Uin      uint64
 	Username string
 
-	T104         []byte
+	Session      []byte
 	Code         []byte
 	Sign         []byte
 	MiscBitmap   uint32
@@ -31,7 +31,7 @@ func NewAuthCheckCaptchaAndGetSessionTicketsRequest(uin uint64, code []byte) *Au
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 
-		T104:         nil,
+		Session:      nil,
 		Code:         code,
 		Sign:         nil,
 		MiscBitmap:   clientMiscBitmap,
@@ -51,7 +51,7 @@ func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(ctx context.Cont
 		tlvs[0x0002] = tlv.NewT2(req.Code, req.Sign)
 	}
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(req.T104)
+	tlvs[0x0104] = tlv.NewT104(req.Session)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0547] = tlv.NewT547(req.T547)
 	return tlvs, nil
@@ -60,7 +60,7 @@ func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(ctx context.Cont
 func (c *Client) AuthCheckCaptchaAndGetSessionTickets(ctx context.Context, req *AuthCheckCaptchaAndGetSessionTicketsRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
-	req.T104 = c.t104
+	req.Session = c.session
 	req.T547 = c.t547
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
@@ -83,13 +83,10 @@ func (c *Client) AuthCheckCaptchaAndGetSessionTickets(ctx context.Context, req *
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       req.Cookie,
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

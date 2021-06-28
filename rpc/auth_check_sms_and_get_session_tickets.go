@@ -16,13 +16,13 @@ type AuthCheckSMSAndGetSessionTicketsRequest struct {
 	Uin      uint64
 	Username string
 
-	T104         []byte
+	Session      []byte
 	Code         []byte
 	T174         []byte
 	MiscBitmap   uint32
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	T401         [16]byte
+	HashedGUID   [16]byte
 	SMSExtraData []byte
 
 	lockType uint8
@@ -33,13 +33,13 @@ func NewAuthCheckSMSAndGetSessionTicketsRequest(uin uint64, code []byte) *AuthCh
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 
-		T104:         nil,
+		Session:      nil,
 		Code:         code,
 		T174:         nil,
 		MiscBitmap:   clientMiscBitmap,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		T401:         [16]byte{},
+		HashedGUID:   [16]byte{},
 		SMSExtraData: nil,
 
 		lockType: 0x00,
@@ -49,11 +49,11 @@ func NewAuthCheckSMSAndGetSessionTicketsRequest(uin uint64, code []byte) *AuthCh
 func (req *AuthCheckSMSAndGetSessionTicketsRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(req.T104)
+	tlvs[0x0104] = tlv.NewT104(req.Session)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0174] = tlv.NewT174(req.T174)
 	tlvs[0x017c] = tlv.NewT17C(req.Code)
-	tlvs[0x0401] = tlv.NewT401(req.T401)
+	tlvs[0x0401] = tlv.NewT401(req.HashedGUID)
 	tlvs[0x0197] = tlv.NewTLV(0x0198, 0x0000, bytes.NewBuffer([]byte{req.lockType}))
 	tlvs[0x0542] = tlv.NewT542(req.SMSExtraData)
 	return tlvs, nil
@@ -62,9 +62,9 @@ func (req *AuthCheckSMSAndGetSessionTicketsRequest) GetTLVs(ctx context.Context)
 func (c *Client) AuthCheckSMSAndGetSessionTickets(ctx context.Context, req *AuthCheckSMSAndGetSessionTicketsRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
-	req.T104 = c.t104
+	req.Session = c.session
 	req.T174 = c.t174
-	req.T401 = c.hashGUID
+	req.HashedGUID = c.hashedGUID
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -86,13 +86,10 @@ func (c *Client) AuthCheckSMSAndGetSessionTickets(ctx context.Context, req *Auth
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username:     req.Username,
-		Seq:          req.Seq,
-		AppID:        clientAppID,
-		Cookie:       req.Cookie,
-		Buffer:       buf,
-		ReserveField: c.ksid,
-		Simple:       false,
+		Username: req.Username,
+		Seq:      req.Seq,
+		Buffer:   buf,
+		Simple:   false,
 	}, s2c); err != nil {
 		return nil, err
 	}

@@ -7,10 +7,14 @@ import (
 	"github.com/elap5e/go-mobileqq-api/bytes"
 )
 
-func Marshal(v interface{}) ([]byte, error) {
-	e := encoder{}
+func Marshal(v interface{}, opts ...bool) ([]byte, error) {
+	simple := false
+	if len(opts) != 0 && opts[0] {
+		simple = true
+	}
 
-	err := e.marshal(v)
+	e := encoder{}
+	err := e.marshal(v, simple)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +27,12 @@ type encoder struct {
 	bytes.Buffer
 }
 
-func (e *encoder) marshal(v interface{}) error {
-	e.reflectValue(reflect.ValueOf(v), 0x00)
+func (e *encoder) marshal(v interface{}, simple bool) error {
+	if !simple {
+		e.reflectValue(reflect.ValueOf(v), 0x00)
+	} else {
+		e.reflectValue(reflect.ValueOf(v), 0xff)
+	}
 	return nil
 }
 
@@ -123,8 +131,8 @@ type field struct {
 }
 
 type structFields struct {
-	list      []field
-	nameIndex map[string]int
+	list     []field
+	tagIndex map[uint8]int
 }
 
 func typeFields(t reflect.Type) structFields {
@@ -184,11 +192,11 @@ func typeFields(t reflect.Type) structFields {
 		f := &fields[i]
 		f.encoder = typeEncoder(typeByIndex(t, f.index))
 	}
-	nameIndex := make(map[string]int, len(fields))
+	tagIndex := make(map[uint8]int, len(fields))
 	for i, field := range fields {
-		nameIndex[field.name] = i
+		tagIndex[field.tag] = i
 	}
-	return structFields{fields, nameIndex}
+	return structFields{fields, tagIndex}
 }
 
 func typeByIndex(t reflect.Type, index []int) reflect.Type {
@@ -206,7 +214,7 @@ type structEncoder struct {
 }
 
 func (se structEncoder) encode(e *encoder, v reflect.Value, t uint8) {
-	if t != 0x00 {
+	if t != 0xff {
 		e.EncodeHead(0x0a, t)
 		defer e.EncodeHead(0x0b, 0x00)
 	}
