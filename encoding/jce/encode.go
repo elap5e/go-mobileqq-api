@@ -61,6 +61,8 @@ func typeEncoder(t reflect.Type) encoderFunc {
 		return stringEncoder
 	case reflect.Float64, reflect.Float32:
 		return floatEncoder
+	case reflect.Int64, reflect.Int32, reflect.Int, reflect.Int16, reflect.Int8:
+		return intEncoder
 	case reflect.Uint64, reflect.Uint32, reflect.Uint, reflect.Uint16, reflect.Uint8:
 		return uintEncoder
 	case reflect.Bool:
@@ -281,6 +283,41 @@ func floatEncoder(e *encoder, v reflect.Value, t uint8) {
 	case reflect.Float32:
 		e.EncodeHead(0x04, t)
 		e.EncodeFloat32(float32(b))
+	}
+}
+
+func intEncoder(e *encoder, v reflect.Value, t uint8) {
+	k := v.Kind()
+	b := v.Int()
+	switch k {
+	case reflect.Int64:
+		if b>>32 != 0 {
+			e.EncodeHead(0x03, t)
+			e.EncodeInt64(b)
+			return
+		}
+		fallthrough
+	case reflect.Int32, reflect.Int:
+		if b>>16 != 0 {
+			e.EncodeHead(0x02, t)
+			e.EncodeInt32(int32(b))
+			return
+		}
+		fallthrough
+	case reflect.Int16:
+		if b>>8 != 0 {
+			e.EncodeHead(0x01, t)
+			e.EncodeInt16(int16(b))
+			return
+		}
+		fallthrough
+	case reflect.Int8:
+		if b != 0 {
+			e.EncodeHead(0x00, t)
+			e.EncodeInt8(int8(b))
+			return
+		}
+		e.EncodeHead(0x0c, t)
 	}
 }
 

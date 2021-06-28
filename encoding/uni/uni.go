@@ -2,6 +2,8 @@ package uni
 
 import (
 	"context"
+	"encoding/hex"
+	"log"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
 )
@@ -31,5 +33,17 @@ func Marshal(ctx context.Context, msg *Message, opts map[string]interface{}) ([]
 }
 
 func Unmarshal(ctx context.Context, data []byte, msg *Message, opts map[string]interface{}) error {
-	return jce.Unmarshal(data, msg)
+	if err := jce.Unmarshal(data, msg); err != nil {
+		return err
+	}
+	for key, buf := range msg.Buffer {
+		log.Printf("--> [recv] dump jce, key %s\n%s", key, hex.Dump(buf))
+		if opt, ok := opts[key]; ok {
+			err := jce.Unmarshal(buf, opt)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
