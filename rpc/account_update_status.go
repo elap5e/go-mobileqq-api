@@ -54,6 +54,24 @@ type AccountUpdateStatusRequest struct {
 	LargeSeq     uint32 `jce:",23"`
 }
 
+type AccountUpdateStatusResponse struct {
+	Uin            uint64 `jce:",0"`
+	Bid            uint64 `jce:",1"`
+	ReplyCode      uint8  `jce:",2"`
+	Result         string `jce:",3"`
+	ServerTime     uint64 `jce:",4"`
+	LogQQ          bool   `jce:",5"`
+	NeedKik        bool   `jce:",6"`
+	UpdateFlag     bool   `jce:",7"`
+	Timestamp      uint64 `jce:",8"`
+	CrashFlag      bool   `jce:",9"`
+	ClientIP       string `jce:",10"`
+	ClientPort     uint32 `jce:",11"`
+	HelloInterval  uint32 `jce:",12"`
+	LargeSeq       uint32 `jce:",13"`
+	LargeSeqUpdate bool   `jce:",14"`
+}
+
 func NewAccountUpdateStatusRequest(uin uint64, status PushRegisterInfoStatusType, kick bool) *AccountUpdateStatusRequest {
 	ids := []uint64{0x01, 0x02, 0x04}
 	bid := uint64(0x0000000000000000)
@@ -100,7 +118,7 @@ func NewAccountUpdateStatusRequest(uin uint64, status PushRegisterInfoStatusType
 	}
 }
 
-func (c *Client) PushServiceRegister(ctx context.Context, req *AccountUpdateStatusRequest) (interface{}, error) {
+func (c *Client) PushServiceRegister(ctx context.Context, req *AccountUpdateStatusRequest) (*AccountUpdateStatusResponse, error) {
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
 		PacketType:  0x00,
@@ -108,10 +126,12 @@ func (c *Client) PushServiceRegister(ctx context.Context, req *AccountUpdateStat
 		RequestID:   0x00000000,
 		ServantName: "PushService",
 		FuncName:    "SvcReqRegister",
-		Buffer:      map[string]interface{}{"SvcReqRegister": req},
+		Buffer:      map[string][]byte{},
 		Timeout:     0x00000000,
 		Context:     map[string]string{},
 		Status:      map[string]string{},
+	}, map[string]interface{}{
+		"SvcReqRegister": req,
 	})
 	if err != nil {
 		return nil, err
@@ -128,5 +148,12 @@ func (c *Client) PushServiceRegister(ctx context.Context, req *AccountUpdateStat
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return nil, nil
+	msg := new(uni.Message)
+	resp := new(AccountUpdateStatusResponse)
+	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
+		"SvcRespRegister": resp,
+	}); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
