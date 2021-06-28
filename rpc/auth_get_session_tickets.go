@@ -12,7 +12,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthGetSessionTicketResponse struct {
+type AuthGetSessionTicketsResponse struct {
 	Code     uint8
 	Uin      uint64
 	Username string
@@ -40,7 +40,7 @@ type AuthGetSessionTicketResponse struct {
 	LoginExtraData []byte
 }
 
-func (resp *AuthGetSessionTicketResponse) SetTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec) error {
+func (resp *AuthGetSessionTicketsResponse) SetTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec) error {
 	if v, ok := tlvs[0x0104].(*tlv.TLV); ok {
 		resp.T104 = v.MustGetValue().Bytes()
 	}
@@ -97,8 +97,8 @@ func (resp *AuthGetSessionTicketResponse) SetTLVs(ctx context.Context, tlvs map[
 	return nil
 }
 
-func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMessage) (*AuthGetSessionTicketResponse, error) {
-	resp := new(AuthGetSessionTicketResponse)
+func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientMessage) (*AuthGetSessionTicketsResponse, error) {
+	resp := new(AuthGetSessionTicketsResponse)
 	msg := &oicq.Message{
 		RandomKey:  c.randomKey,
 		KeyVersion: c.serverPublicKeyVersion,

@@ -7,13 +7,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 )
 
-type AuthCheckPictureAndGetSessionTicketRequest struct {
-	AuthCheckCaptchaAndGetSessionTicketRequest
+type AuthCheckPictureAndGetSessionTicketsRequest struct {
+	AuthCheckCaptchaAndGetSessionTicketsRequest
 }
 
-func NewAuthCheckPictureAndGetSessionTicketRequest(uin uint64, code, sign []byte) *AuthCheckPictureAndGetSessionTicketRequest {
-	return &AuthCheckPictureAndGetSessionTicketRequest{
-		AuthCheckCaptchaAndGetSessionTicketRequest{
+func NewAuthCheckPictureAndGetSessionTicketsRequest(uin uint64, code, sign []byte) *AuthCheckPictureAndGetSessionTicketsRequest {
+	return &AuthCheckPictureAndGetSessionTicketsRequest{
+		AuthCheckCaptchaAndGetSessionTicketsRequest{
 			Uin:      uin,
 			Username: fmt.Sprintf("%d", uin),
 
@@ -30,7 +30,7 @@ func NewAuthCheckPictureAndGetSessionTicketRequest(uin uint64, code, sign []byte
 	}
 }
 
-func (c *Client) AuthCheckPictureAndGetSessionTicket(ctx context.Context, req *AuthCheckPictureAndGetSessionTicketRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthCheckPictureAndGetSessionTickets(ctx context.Context, req *AuthCheckPictureAndGetSessionTicketsRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
 	req.T104 = c.t104
@@ -65,5 +65,5 @@ func (c *Client) AuthCheckPictureAndGetSessionTicket(ctx context.Context, req *A
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }

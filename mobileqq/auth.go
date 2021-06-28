@@ -54,7 +54,7 @@ const tmplAuthCaptcha = `<!DOCTYPE html>
 
 var reader = bufio.NewReader(os.Stdin)
 
-func (c *Client) handleAuthResponse(resp *rpc.AuthGetSessionTicketResponse) (*rpc.AuthGetSessionTicketResponse, error) {
+func (c *Client) handleAuthResponse(resp *rpc.AuthGetSessionTicketsResponse) (*rpc.AuthGetSessionTicketsResponse, error) {
 	switch resp.Code {
 	case 0x00:
 		return resp, nil
@@ -109,13 +109,13 @@ func (c *Client) handleAuthResponse(resp *rpc.AuthGetSessionTicketResponse) (*rp
 			if err := srv.Shutdown(ctxShutDown); err != nil {
 				log.Fatalf("server Shutdown Failed:%+s", err)
 			}
-			return c.rpc.AuthCheckCaptchaAndGetSessionTicket(c.ctx, rpc.NewAuthCheckCaptchaAndGetSessionTicketRequest(resp.Uin, []byte(ticket)))
+			return c.rpc.AuthCheckCaptchaAndGetSessionTickets(c.ctx, rpc.NewAuthCheckCaptchaAndGetSessionTicketsRequest(resp.Uin, []byte(ticket)))
 		} else {
 			log.Printf(">_< [info] picture verify:\n\033]1337;File=name=picture.jpg;inline=1;width=11;height=2:%s\a(please check out picture.jpg)\n", base64.StdEncoding.EncodeToString(resp.PictureData))
 			_ = ioutil.WriteFile("picture.jpg", resp.PictureData, 0644)
 			fmt.Printf(".......... ........ >_< [info] picture verify code: ")
 			code, _ := util.ReadLine(reader)
-			return c.rpc.AuthCheckPictureAndGetSessionTicket(c.ctx, rpc.NewAuthCheckPictureAndGetSessionTicketRequest(resp.Uin, []byte(code), resp.PictureSign))
+			return c.rpc.AuthCheckPictureAndGetSessionTickets(c.ctx, rpc.NewAuthCheckPictureAndGetSessionTicketsRequest(resp.Uin, []byte(code), resp.PictureSign))
 		}
 	case 0x01:
 		return nil, fmt.Errorf("invalid password(0x01)")
@@ -124,7 +124,7 @@ func (c *Client) handleAuthResponse(resp *rpc.AuthGetSessionTicketResponse) (*rp
 	case 0xa0:
 		fmt.Printf(".......... ........ >_< [info] sms mobile verify code: ")
 		code, _ := util.ReadLine(reader)
-		return c.rpc.AuthCheckSMSAndGetSessionTicket(c.ctx, rpc.NewAuthCheckSMSAndGetSessionTicketRequest(resp.Uin, []byte(code)))
+		return c.rpc.AuthCheckSMSAndGetSessionTickets(c.ctx, rpc.NewAuthCheckSMSAndGetSessionTicketsRequest(resp.Uin, []byte(code)))
 	case 0xa1:
 		return nil, fmt.Errorf("too many sms verify requests(0xa1)")
 	case 0xa2:
@@ -143,7 +143,7 @@ func (c *Client) handleAuthResponse(resp *rpc.AuthGetSessionTicketResponse) (*rp
 }
 
 func (c *Client) Auth(username, password string) error {
-	resp, err := c.rpc.AuthGetSessionTicketWithPassword(c.ctx, rpc.NewAuthGetSessionTicketWithPasswordRequest(username, password))
+	resp, err := c.rpc.AuthGetSessionTicketsWithPassword(c.ctx, rpc.NewAuthGetSessionTicketsWithPasswordRequest(username, password))
 	if err != nil {
 		return err
 	}

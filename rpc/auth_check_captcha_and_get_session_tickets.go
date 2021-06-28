@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthCheckSMSAndGetSessionTicketRequest struct {
+type AuthCheckCaptchaAndGetSessionTicketsRequest struct {
 	Seq    uint32
 	Cookie []byte
 
@@ -18,53 +17,51 @@ type AuthCheckSMSAndGetSessionTicketRequest struct {
 
 	T104         []byte
 	Code         []byte
-	T174         []byte
+	Sign         []byte
 	MiscBitmap   uint32
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	T401         [16]byte
-	SMSExtraData []byte
+	T547         []byte
 
-	lockType uint8
+	checkWeb bool
 }
 
-func NewAuthCheckSMSAndGetSessionTicketRequest(uin uint64, code []byte) *AuthCheckSMSAndGetSessionTicketRequest {
-	return &AuthCheckSMSAndGetSessionTicketRequest{
+func NewAuthCheckCaptchaAndGetSessionTicketsRequest(uin uint64, code []byte) *AuthCheckCaptchaAndGetSessionTicketsRequest {
+	return &AuthCheckCaptchaAndGetSessionTicketsRequest{
 		Uin:      uin,
 		Username: fmt.Sprintf("%d", uin),
 
 		T104:         nil,
 		Code:         code,
-		T174:         nil,
+		Sign:         nil,
 		MiscBitmap:   clientMiscBitmap,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		T401:         [16]byte{},
-		SMSExtraData: nil,
+		T547:         nil,
 
-		lockType: 0x00,
+		checkWeb: true,
 	}
 }
 
-func (req *AuthCheckSMSAndGetSessionTicketRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
+	if req.checkWeb {
+		tlvs[0x0193] = tlv.NewT193(req.Code)
+	} else {
+		tlvs[0x0002] = tlv.NewT2(req.Code, req.Sign)
+	}
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(req.T104)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0174] = tlv.NewT174(req.T174)
-	tlvs[0x017c] = tlv.NewT17C(req.Code)
-	tlvs[0x0401] = tlv.NewT401(req.T401)
-	tlvs[0x0197] = tlv.NewTLV(0x0198, 0x0000, bytes.NewBuffer([]byte{req.lockType}))
-	tlvs[0x0542] = tlv.NewT542(req.SMSExtraData)
+	tlvs[0x0547] = tlv.NewT547(req.T547)
 	return tlvs, nil
 }
 
-func (c *Client) AuthCheckSMSAndGetSessionTicket(ctx context.Context, req *AuthCheckSMSAndGetSessionTicketRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthCheckCaptchaAndGetSessionTickets(ctx context.Context, req *AuthCheckCaptchaAndGetSessionTicketsRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
 	req.T104 = c.t104
-	req.T174 = c.t174
-	req.T401 = c.hashGUID
+	req.T547 = c.t547
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -78,7 +75,7 @@ func (c *Client) AuthCheckSMSAndGetSessionTicket(ctx context.Context, req *AuthC
 		KeyVersion:    c.serverPublicKeyVersion,
 		PublicKey:     c.privateKey.Public().Bytes(),
 		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
-		Type:          0x0007,
+		Type:          0x0002,
 		TLVs:          tlvs,
 	})
 	if err != nil {
@@ -96,5 +93,5 @@ func (c *Client) AuthCheckSMSAndGetSessionTicket(ctx context.Context, req *AuthC
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }

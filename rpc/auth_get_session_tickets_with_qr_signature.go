@@ -7,13 +7,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 )
 
-type AuthGetSessionTicketWithQRSignatureRequest struct {
-	AuthGetSessionTicketWithPasswordRequest
+type AuthGetSessionTicketsWithQRSignatureRequest struct {
+	AuthGetSessionTicketsWithPasswordRequest
 }
 
-func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) *AuthGetSessionTicketWithQRSignatureRequest {
-	return &AuthGetSessionTicketWithQRSignatureRequest{
-		AuthGetSessionTicketWithPasswordRequest{
+func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string) *AuthGetSessionTicketsWithQRSignatureRequest {
+	return &AuthGetSessionTicketsWithQRSignatureRequest{
+		AuthGetSessionTicketsWithPasswordRequest{
 			Username: fmt.Sprintf("%d", uin),
 
 			DstAppID:         defaultClientDstAppID,
@@ -45,7 +45,7 @@ func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) 
 	}
 }
 
-func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *AuthGetSessionTicketWithQRSignatureRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthGetSessionTicketsWithQRSignature(ctx context.Context, req *AuthGetSessionTicketsWithQRSignatureRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.TGTGTKey = c.tgtgtKey
 	req.T106 = []byte{}
@@ -82,5 +82,5 @@ func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *A
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }

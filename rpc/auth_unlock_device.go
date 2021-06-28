@@ -44,7 +44,7 @@ func (req *AuthUnlockDeviceRequest) GetTLVs(ctx context.Context) (map[uint16]tlv
 	return tlvs, nil
 }
 
-func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.T104 = c.t104
 	req.T401 = c.hashGUID
@@ -79,5 +79,5 @@ func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequ
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }

@@ -56,7 +56,7 @@ func (req *AuthRefreshSMSDataRequest) GetTLVs(ctx context.Context) (map[uint16]t
 	return tlvs, nil
 }
 
-func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.Cookie = c.cookie[:]
 	req.T104 = c.t104
@@ -92,5 +92,5 @@ func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSData
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }

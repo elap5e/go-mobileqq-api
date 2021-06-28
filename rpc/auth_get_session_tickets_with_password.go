@@ -12,7 +12,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/util"
 )
 
-type AuthGetSessionTicketWithPasswordRequest struct {
+type AuthGetSessionTicketsWithPasswordRequest struct {
 	Seq            uint32
 	HashGUID       [16]byte
 	RandomPassword [16]byte
@@ -50,9 +50,9 @@ type AuthGetSessionTicketWithPasswordRequest struct {
 	Domains          []string
 }
 
-func NewAuthGetSessionTicketWithPasswordRequest(username string, password string) *AuthGetSessionTicketWithPasswordRequest {
+func NewAuthGetSessionTicketsWithPasswordRequest(username string, password string) *AuthGetSessionTicketsWithPasswordRequest {
 	uin, _ := strconv.ParseInt(username, 10, 64)
-	return &AuthGetSessionTicketWithPasswordRequest{
+	return &AuthGetSessionTicketsWithPasswordRequest{
 		Username: username,
 
 		DstAppID:         defaultClientDstAppID,
@@ -83,7 +83,7 @@ func NewAuthGetSessionTicketWithPasswordRequest(username string, password string
 	}
 }
 
-func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.AppClientVersion, req.Uin, req.I2)
 	tlvs[0x0001] = tlv.NewT1(req.Uin, req.IPv4Address)
@@ -163,7 +163,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 	return tlvs, nil
 }
 
-func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *AuthGetSessionTicketWithPasswordRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthGetSessionTicketsWithPassword(ctx context.Context, req *AuthGetSessionTicketsWithPasswordRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	req.HashGUID = c.hashGUID
 	req.RandomPassword = c.randomPassword
@@ -202,5 +202,5 @@ func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *Auth
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }

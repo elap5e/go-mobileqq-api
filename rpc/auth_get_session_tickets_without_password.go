@@ -9,7 +9,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthGetSessionTicketWithoutPasswordRequest struct {
+type AuthGetSessionTicketsWithoutPasswordRequest struct {
 	Seq  uint32
 	T172 []byte
 
@@ -29,8 +29,8 @@ type AuthGetSessionTicketWithoutPasswordRequest struct {
 	Domains          []string
 }
 
-func NewAuthGetSessionTicketWithoutPasswordRequest(uin uint64) *AuthGetSessionTicketWithoutPasswordRequest {
-	return &AuthGetSessionTicketWithoutPasswordRequest{
+func NewAuthGetSessionTicketsWithoutPasswordRequest(uin uint64) *AuthGetSessionTicketsWithoutPasswordRequest {
+	return &AuthGetSessionTicketsWithoutPasswordRequest{
 		Username: fmt.Sprintf("%d", uin),
 
 		Uin:              uin,
@@ -48,7 +48,7 @@ func NewAuthGetSessionTicketWithoutPasswordRequest(uin uint64) *AuthGetSessionTi
 	}
 }
 
-func (req *AuthGetSessionTicketWithoutPasswordRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
 	key := SelectClientCodecKey(req.Username)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0100] = tlv.NewT100(req.DstAppID, req.SrcAppID, req.AppClientVersion, req.MainSigMap)
@@ -87,7 +87,7 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) GetTLVs(ctx context.Conte
 	return tlvs, nil
 }
 
-func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *AuthGetSessionTicketWithoutPasswordRequest) (*AuthGetSessionTicketResponse, error) {
+func (c *Client) AuthGetSessionTicketsWithoutPassword(ctx context.Context, req *AuthGetSessionTicketsWithoutPasswordRequest) (*AuthGetSessionTicketsResponse, error) {
 	req.Seq = c.getNextSeq()
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
@@ -120,5 +120,5 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 	}, s2c); err != nil {
 		return nil, err
 	}
-	return c.AuthGetSessionTicket(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, s2c)
 }
