@@ -74,6 +74,7 @@ type Client struct {
 
 	hashGUID       [16]byte // t401
 	loginExtraData []byte   // from t537
+	ksid           []byte   // 0x0108
 
 	// logger
 	logger log.Logger

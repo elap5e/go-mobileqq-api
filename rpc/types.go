@@ -1,9 +1,24 @@
 package rpc
 
+type UserSignature struct {
+	Username    string
+	DeviceToken []byte `json:",omitempty"`
+	Domains     map[string]string
+	Tickets     map[string]Ticket
+}
+
+type Ticket struct {
+	Sig []byte
+	Key []byte `json:",omitempty"`
+	Iss int64
+	Exp int64
+}
+
 type ClientCodecKey struct {
-	A1     []byte
-	A2     []byte
-	A2Key  [16]byte
+	A1     []byte   // tgtgt
+	A1Key  []byte   // tgtgtKey
+	A2     []byte   // tgt
+	A2Key  [16]byte // tgtkey
 	A3     []byte
 	D1     []byte
 	D2     []byte

@@ -117,17 +117,29 @@ func (c *Client) AuthGetSessionTicket(ctx context.Context, s2c *ServerToClientMe
 	switch resp.Code {
 	case 0x00:
 		// success
-		c.t119 = crypto.NewCipher(c.tgtgtKey).Decrypt(resp.T119)
-		buf := bytes.NewBuffer(c.t119)
-		l, _ := buf.DecodeUint16()
-		tlvs := map[uint16]tlv.TLVCodec{}
-		for i := 0; i < int(l); i++ {
-			tlv := tlv.TLV{}
-			tlv.Decode(buf)
-			tlvs[tlv.GetType()] = &tlv
-		}
 		c.loginExtraData = resp.LoginExtraData
+
+		// decode t119
+		t119 := crypto.NewCipher(c.tgtgtKey).Decrypt(resp.T119)
+		tlvs := map[uint16]tlv.TLVCodec{}
+		{
+			buf := bytes.NewBuffer(t119)
+			l, _ := buf.DecodeUint16()
+			for i := 0; i < int(l); i++ {
+				v := tlv.TLV{}
+				v.Decode(buf)
+				tlvs[v.GetType()] = &v
+			}
+		}
 		tlv.DumpTLVs(ctx, tlvs)
+
+		// t106 := tlvs[0x0106].(*tlv.TLV).MustGetValue().Bytes()
+		// t10c := tlvs[0x010c].(*tlv.TLV).MustGetValue().Bytes()
+
+		c.ksid = tlvs[0x0108].(*tlv.TLV).MustGetValue().Bytes()
+
+		SetUserSignature(ParseUserSignature(ctx, resp.Username, tlvs))
+
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
 		// captcha

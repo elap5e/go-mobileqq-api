@@ -16,7 +16,7 @@ type T106 struct {
 	subAppID         uint64
 	appClientVersion uint32
 	uin              uint64
-	currentTime      uint32
+	serverTime       uint32
 	ip               net.IP
 	i2               bool
 	passwordMD5      [16]byte
@@ -28,14 +28,14 @@ type T106 struct {
 	loginType        uint32
 }
 
-func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, currentTime uint32, ip net.IP, i2 bool, passwordMD5 [16]byte, salt uint64, username string, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
+func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, serverTime uint32, ip net.IP, i2 bool, passwordMD5 [16]byte, salt uint64, username string, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
 	return &T106{
 		tlv:              NewTLV(0x0106, 0x0000, nil),
 		appID:            appID,
 		subAppID:         subAppID,
 		appClientVersion: appClientVersion,
 		uin:              uin,
-		currentTime:      currentTime,
+		serverTime:       serverTime,
 		ip:               ip,
 		i2:               i2,
 		passwordMD5:      passwordMD5,
@@ -60,7 +60,7 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	} else {
 		v.EncodeUint64(t.salt)
 	}
-	v.EncodeUint32(t.currentTime)
+	v.EncodeUint32(t.serverTime)
 	v.EncodeRawBytes(t.ip.To4())
 	v.EncodeBool(t.i2)
 	v.EncodeRawBytes(t.passwordMD5[:])

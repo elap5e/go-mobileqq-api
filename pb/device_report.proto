@@ -4,12 +4,12 @@ option go_package = "./;pb";
 
 message DeviceReport {
   bytes bootloader = 10;
-  bytes proc_version = 18;
+  bytes procVersion = 18;
   bytes codename = 26;
   bytes incremental = 34;
   bytes fingerprint = 42;
-  bytes boot_id = 50;
-  bytes android_id = 58;
+  bytes bootId = 50;
+  bytes androidId = 58;
   bytes baseband = 66;
-  bytes inner_version = 74;
+  bytes innerVersion = 74;
 }

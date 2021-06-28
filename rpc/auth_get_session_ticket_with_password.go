@@ -29,7 +29,7 @@ type AuthGetSessionTicketWithPasswordRequest struct {
 	Uin              uint64
 	I2               uint16 // constant 0x0000
 	IPv4Address      net.IP
-	CurrentTime      uint32
+	ServerTime       uint32
 	PasswordMD5      [16]byte
 	TGTGTKey         [16]byte // placeholder
 	LoginType        uint32   // 0x00, 0x01, 0x03
@@ -61,7 +61,7 @@ func NewAuthGetSessionTicketWithPasswordRequest(username string, password string
 		Uin:              uint64(uin),
 		I2:               0x0000,
 		IPv4Address:      defaultDeviceIPv4Address,
-		CurrentTime:      util.GetServerCurrentTime(),
+		ServerTime:       util.GetServerTime(),
 		PasswordMD5:      md5.Sum([]byte(password)),
 		TGTGTKey:         [16]byte{},
 		LoginType:        0x00000001,
@@ -88,7 +88,7 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.AppClientVersion, req.Uin, req.I2)
 	tlvs[0x0001] = tlv.NewT1(req.Uin, req.IPv4Address)
 	if len(req.T106) == 0 {
-		tlvs[0x0106] = tlv.NewT106(req.DstAppID, req.SubDstAppID, req.AppClientVersion, req.Uin, req.CurrentTime, req.IPv4Address, true, req.PasswordMD5, 0, req.Username, req.TGTGTKey, true, deviceGUID[:], req.LoginType)
+		tlvs[0x0106] = tlv.NewT106(req.DstAppID, req.SubDstAppID, req.AppClientVersion, req.Uin, req.ServerTime, req.IPv4Address, true, req.PasswordMD5, 0, req.Username, req.TGTGTKey, true, deviceGUID[:], req.LoginType)
 	} else {
 		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(req.T106))
 	}
@@ -108,9 +108,9 @@ func (req *AuthGetSessionTicketWithPasswordRequest) GetTLVs(ctx context.Context)
 	tlvs[0x0144] = tlv.NewT144(req.TGTGTKey,
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(ctx),
-		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSVersion, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
-		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, defaultDeviceOSBuildModel, deviceGUID[:], defaultDeviceOSBuildBrand),
-		tlv.NewT16E(defaultDeviceOSBuildModel),
+		tlv.NewT124([]byte(defaultDeviceOSType), []byte(defaultDeviceOSVersion), defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
+		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, []byte(defaultDeviceOSBuildModel), deviceGUID[:], defaultDeviceOSBuildBrand),
+		tlv.NewT16E([]byte(defaultDeviceOSBuildModel)),
 	)
 	tlvs[0x0145] = tlv.NewT145(deviceGUID[:])
 	tlvs[0x0147] = tlv.NewT147(req.DstAppID, clientVersionName, clientSignatureMD5)
@@ -192,12 +192,13 @@ func (c *Client) AuthGetSessionTicketWithPassword(ctx context.Context, req *Auth
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		AppID:    clientAppID,
-		Cookie:   c.cookie[:],
-		Buffer:   buf,
-		Simple:   false,
+		Username:     req.Username,
+		Seq:          req.Seq,
+		AppID:        clientAppID,
+		Cookie:       c.cookie[:],
+		Buffer:       buf,
+		ReserveField: c.ksid,
+		Simple:       false,
 	}, s2c); err != nil {
 		return nil, err
 	}

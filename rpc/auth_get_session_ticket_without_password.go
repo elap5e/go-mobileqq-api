@@ -10,8 +10,8 @@ import (
 )
 
 type AuthGetSessionTicketWithoutPasswordRequest struct {
-	Seq    uint32
-	Cookie []byte
+	Seq  uint32
+	T172 []byte
 
 	Username string
 
@@ -58,9 +58,9 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) GetTLVs(ctx context.Conte
 	tlvs[0x0144] = tlv.NewT144(md5.Sum(key.D2Key[:]),
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(ctx),
-		tlv.NewT124(defaultDeviceOSType, defaultDeviceOSVersion, defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
-		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, defaultDeviceOSBuildModel, deviceGUID[:], defaultDeviceOSBuildBrand),
-		tlv.NewT16E(defaultDeviceOSBuildModel),
+		tlv.NewT124([]byte(defaultDeviceOSType), []byte(defaultDeviceOSVersion), defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
+		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, []byte(defaultDeviceOSBuildModel), deviceGUID[:], defaultDeviceOSBuildBrand),
+		tlv.NewT16E([]byte(defaultDeviceOSBuildModel)),
 	)
 	tlvs[0x0143] = tlv.NewT143(key.D2)
 	tlvs[0x0142] = tlv.NewT142(clientPackageName)
@@ -72,20 +72,23 @@ func (req *AuthGetSessionTicketWithoutPasswordRequest) GetTLVs(ctx context.Conte
 		tlvs[0x0511] = tlv.NewT511(req.Domains)
 	}
 	tlvs[0x0147] = tlv.NewT147(req.DstAppID, clientVersionName, clientSignatureMD5)
-	// tlvs[0x0172] = tlv.NewT172([]byte{})
+	if len(req.T172) != 0 {
+		tlvs[0x0172] = tlv.NewT172(req.T172)
+	}
 	tlvs[0x0177] = tlv.NewT177(clientBuildTime, clientSDKVersion)
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
 	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(defaultDeviceIMSI)))
+	// DISABLED: SetNeedForPayToken
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
-	// tlvs[0x0544] = tlv.NewT544(req.Username, "810_a", nil)
+	// DISABLED: tgt
+	// tlvs[0x0544] = tlv.NewT544(req.Uin, deviceGUID, clientSDKVersion, 0x0009)
 	return tlvs, nil
 }
 
 func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *AuthGetSessionTicketWithoutPasswordRequest) (*AuthGetSessionTicketResponse, error) {
 	req.Seq = c.getNextSeq()
-	req.Cookie = c.cookie[:]
 	tlvs, err := req.GetTLVs(ctx)
 	if err != nil {
 		return nil, err
@@ -107,12 +110,13 @@ func (c *Client) AuthGetSessionTicketWithoutPassword(ctx context.Context, req *A
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthExchangeAccount, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		AppID:    clientAppID,
-		Cookie:   req.Cookie,
-		Buffer:   buf,
-		Simple:   false,
+		Username:     req.Username,
+		Seq:          req.Seq,
+		AppID:        clientAppID,
+		Cookie:       c.cookie[:],
+		Buffer:       buf,
+		ReserveField: c.ksid,
+		Simple:       false,
 	}, s2c); err != nil {
 		return nil, err
 	}

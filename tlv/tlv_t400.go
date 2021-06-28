@@ -41,7 +41,7 @@ func (t *T400) Encode(b *bytes.Buffer) {
 	v.EncodeBytes(t.dpwd[:])
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(uint32(t.subAppID))
-	v.EncodeUint32(util.GetServerCurrentTime())
+	v.EncodeUint32(util.GetServerTime())
 	v.EncodeBytes(t.randSeed)
 	t.tlv.SetValue(bytes.NewBuffer(crypto.NewCipher(t.key).Encrypt(v.Bytes())))
 	t.tlv.Encode(b)

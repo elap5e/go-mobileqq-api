@@ -20,7 +20,7 @@ func init() {
 	viper.ReadInConfig()
 	username = viper.GetString("GMA_USERNAME")
 	password = viper.GetString("GMA_PASSWORD")
-	rpc.SetClientForAndroidPad()
+	rpc.SetClientForAndroidTablet()
 }
 
 func main() {

@@ -42,6 +42,7 @@ func (c *Client) init() {
 	c.connMux.Unlock()
 	log.Printf("==> [init] create rpc client")
 	c.rpc = rpc.NewClient(c.conn)
+	// c.rpc.PushServiceRegister(c.ctx, rpc.NewPushServiceRegisterRequest())
 }
 
 func (c *Client) restoreConnection(ctx context.Context) error {

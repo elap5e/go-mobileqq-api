@@ -17,12 +17,13 @@ var (
 )
 
 var (
-	defaultDeviceOSType    = []byte("android")
-	defaultDeviceOSVersion = []byte("11")
+	defaultDeviceOSType    = "android"
+	defaultDeviceOSVersion = "11"
 
 	defaultDeviceOSBuildID    = []byte("RKQ1.200827.002")
 	defaultDeviceOSBuildBrand = []byte("Xiaomi")
-	defaultDeviceOSBuildModel = []byte("Redmi K20")
+	defaultDeviceOSBuildModel = "Redmi K20"
+	defaultDeviceOSSDKVersion = uint32(30)
 
 	defaultDeviceIMEI = "860308028836598"
 	defaultDeviceIMSI = "088906035901507678"
@@ -80,4 +81,6 @@ const (
 	ServiceMethodAuthExchangeAccount = "wtlogin.exchange_emp"
 	ServiceMethodAuthUsernameToUin   = "wtlogin.name2uin"
 	ServiceMethodAuthRegisterAccount = "wtlogin.trans_emp"
+
+	ServiceMethodPushServiceRegister = "StatSvc.register"
 )

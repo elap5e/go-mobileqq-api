@@ -26,6 +26,7 @@ func SelectClientCodecKey(username string) *ClientCodecKey {
 	if key, ok := clientCodecKeys[username]; ok {
 		return &ClientCodecKey{
 			A1:     key.A1,
+			A1Key:  key.A1Key,
 			A2:     key.A2,
 			A2Key:  key.A2Key,
 			A3:     key.A3,

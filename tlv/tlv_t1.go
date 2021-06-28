@@ -28,7 +28,7 @@ func (t *T1) Encode(b *bytes.Buffer) {
 	v.EncodeUint16(0x0001)
 	v.EncodeUint32(rand.Uint32())
 	v.EncodeUint32(uint32(t.uin))
-	v.EncodeUint32(util.GetServerCurrentTime())
+	v.EncodeUint32(util.GetServerTime())
 	v.EncodeRawBytes(t.ip.To4())
 	v.EncodeUint16(0x0000)
 	t.tlv.SetValue(v)

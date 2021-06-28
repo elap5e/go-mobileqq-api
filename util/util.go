@@ -8,15 +8,15 @@ import (
 )
 
 var (
-	serverTimeDuration = uint32(0x00000000) // TODO: add atomic
+	serverTimeInterval = uint32(0x00000000) // TODO: add atomic
 )
 
-func SetServerCurrentTime(v uint32) {
-	serverTimeDuration = v - uint32(time.Now().Unix())
+func SetServerTime(v uint32) {
+	serverTimeInterval = v - uint32(time.Now().Unix())
 }
 
-func GetServerCurrentTime() uint32 {
-	return uint32(time.Now().Unix()) + serverTimeDuration
+func GetServerTime() uint32 {
+	return uint32(time.Now().Unix()) + serverTimeInterval
 }
 
 func CheckUin(uin uint64) bool {

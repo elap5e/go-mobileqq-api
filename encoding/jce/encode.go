@@ -24,12 +24,12 @@ type encoder struct {
 }
 
 func (e *encoder) marshal(v interface{}) error {
-	e.reflectValue(reflect.ValueOf(v))
+	e.reflectValue(reflect.ValueOf(v), 0x00)
 	return nil
 }
 
-func (e *encoder) reflectValue(v reflect.Value) {
-	typeEncoder(v.Type())(e, v, 0x00)
+func (e *encoder) reflectValue(v reflect.Value, t uint8) {
+	typeEncoder(v.Type())(e, v, t)
 }
 
 func (e *encoder) EncodeHead(v uint8, t uint8) {
@@ -45,6 +45,10 @@ type encoderFunc func(e *encoder, v reflect.Value, t uint8)
 
 func typeEncoder(t reflect.Type) encoderFunc {
 	switch t.Kind() {
+	case reflect.Interface:
+		return interfaceEncoder
+	case reflect.Ptr:
+		return newPtrEncoder(t)
 	case reflect.Slice:
 		return newSliceEncoder(t)
 	case reflect.Struct:
@@ -64,6 +68,23 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	default:
 		return nil
 	}
+}
+
+func interfaceEncoder(e *encoder, v reflect.Value, t uint8) {
+	e.reflectValue(v.Elem(), t)
+}
+
+type ptrEncoder struct {
+	elemEnc encoderFunc
+}
+
+func (pe ptrEncoder) encode(e *encoder, v reflect.Value, t uint8) {
+	pe.elemEnc(e, v.Elem(), t)
+}
+
+func newPtrEncoder(t reflect.Type) encoderFunc {
+	enc := ptrEncoder{typeEncoder(t.Elem())}
+	return enc.encode
 }
 
 func bytesEncoder(e *encoder, v reflect.Value, t uint8) {
@@ -226,7 +247,7 @@ func (me mapEncoder) encode(e *encoder, v reflect.Value, t uint8) {
 	uintEncoder(e, reflect.ValueOf(uint32(len(ks))), 0x00)
 	for _, k := range ks {
 		b := v.MapIndex(k)
-		me.elemEnc(e, k, 0x00)
+		stringEncoder(e, k, 0x00)
 		me.elemEnc(e, b, 0x01)
 	}
 }

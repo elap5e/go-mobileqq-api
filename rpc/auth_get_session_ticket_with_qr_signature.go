@@ -22,7 +22,7 @@ func NewAuthGetSessionTicketWithQRSignatureRequest(uin uint64, password string) 
 			Uin:              uin,
 			I2:               0x0000,
 			IPv4Address:      defaultDeviceIPv4Address,
-			CurrentTime:      0,
+			ServerTime:       0,
 			PasswordMD5:      [16]byte{},
 			TGTGTKey:         [16]byte{},
 			LoginType:        0x00000000,
@@ -72,12 +72,13 @@ func (c *Client) AuthGetSessionTicketWithQRSignature(ctx context.Context, req *A
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		AppID:    clientAppID,
-		Cookie:   c.cookie[:],
-		Buffer:   buf,
-		Simple:   false,
+		Username:     req.Username,
+		Seq:          req.Seq,
+		AppID:        clientAppID,
+		Cookie:       c.cookie[:],
+		Buffer:       buf,
+		ReserveField: c.ksid,
+		Simple:       false,
 	}, s2c); err != nil {
 		return nil, err
 	}

@@ -83,12 +83,13 @@ func (c *Client) AuthCheckCaptchaAndGetSessionTicket(ctx context.Context, req *A
 	}
 	s2c := new(ServerToClientMessage)
 	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		AppID:    clientAppID,
-		Cookie:   req.Cookie,
-		Buffer:   buf,
-		Simple:   false,
+		Username:     req.Username,
+		Seq:          req.Seq,
+		AppID:        clientAppID,
+		Cookie:       req.Cookie,
+		Buffer:       buf,
+		ReserveField: c.ksid,
+		Simple:       false,
 	}, s2c); err != nil {
 		return nil, err
 	}
