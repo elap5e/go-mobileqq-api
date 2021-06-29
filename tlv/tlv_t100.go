@@ -10,22 +10,26 @@ type T100 struct {
 	subAppID         uint64
 	appClientVersion uint32
 	mainSigMap       uint32
+
+	ssoVersion uint32
 }
 
-func NewT100(appID, subAppID uint64, appClientVersion, mainSigMap uint32) *T100 {
+func NewT100(appID, subAppID uint64, appClientVersion, mainSigMap, ssoVersion uint32) *T100 {
 	return &T100{
 		tlv:              NewTLV(0x0100, 0x0000, nil),
 		appID:            appID,
 		subAppID:         subAppID,
 		appClientVersion: appClientVersion,
 		mainSigMap:       mainSigMap,
+
+		ssoVersion: ssoVersion,
 	}
 }
 
 func (t *T100) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
 	v.EncodeUint16(0x0001)
-	v.EncodeUint32(ssoVersion)
+	v.EncodeUint32(t.ssoVersion)
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(uint32(t.subAppID))
 	v.EncodeUint32(t.appClientVersion)

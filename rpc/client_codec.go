@@ -6,112 +6,20 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
 )
 
-var (
-	clientCodecKeys    = map[string]*ClientCodecKey{}
-	clientCodecKeysMux = sync.RWMutex{}
-	clientCodecKSID    = []byte{}
-)
-
-func SelectClientCodecKey(username string) *ClientCodecKey {
-	clientCodecKeysMux.RLock()
-	defer clientCodecKeysMux.RUnlock()
-	if key, ok := clientCodecKeys[username]; ok {
-		return &ClientCodecKey{
-			A1:     key.A1,
-			A1Key:  key.A1Key,
-			A2:     key.A2,
-			A2Key:  key.A2Key,
-			A3:     key.A3,
-			D1:     key.D1,
-			D2:     key.D2,
-			D2Key:  key.D2Key,
-			S1:     key.S1,
-			Cookie: key.Cookie,
-		} // TODO: anyway, need fix atomic
-	}
-	return nil
-}
-
-func InsertClientCodecKey(username string, key *ClientCodecKey) {
-	clientCodecKeysMux.Lock()
-	clientCodecKeys[username] = key
-	clientCodecKeysMux.Unlock()
-}
-
-func DeleteClientCodecKey(username string) {
-	clientCodecKeysMux.Lock()
-	delete(clientCodecKeys, username)
-	clientCodecKeysMux.Unlock()
-}
-
-func GetClientCodecKSID() []byte {
-	return clientCodecKSID
-}
-
-func SetClientCodecKSID(ksid []byte) {
-	clientCodecKSID = ksid
-}
-
 type clientCodec struct {
 	conn io.ReadWriteCloser
 
-	appID       uint32
-	networkType uint8
-	netIPFamily uint8
-	imei        string
-	imsi        string
-	revision    string
+	buf *bytes.Buffer
 }
 
 func NewClientCodec(conn io.ReadWriteCloser) ClientCodec {
-	return &clientCodec{
-		conn:        conn,
-		appID:       fixAppID(),
-		networkType: fixNetworkType(defaultDeviceNetworkType),
-		netIPFamily: fixNetIPFamily(defaultDeviceNetIPFamily),
-		imei:        defaultDeviceIMEI,
-		imsi:        defaultDeviceIMSI,
-		revision:    clientRevision,
-	}
-}
-
-func fixAppID() uint32 {
-	appID := clientCodecAppIDRelease
-	for i := range appID {
-		appID[i] ^= defaultClientCodecAppIDMapByte[i%4]
-	}
-	v, _ := strconv.Atoi(string(appID))
-	return uint32(v)
-}
-
-func fixNetworkType(v string) uint8 {
-	switch v {
-	case "Wi-Fi":
-		return 0x01
-	default:
-		return 0x00
-	}
-}
-
-func fixNetIPFamily(v string) uint8 {
-	switch v {
-	case "IPv4Only":
-		return 0x01
-	case "IPv6Only":
-		return 0x02
-	case "IPv4IPv6":
-		return 0x03
-	default:
-		return 0x00
-	}
+	return &clientCodec{conn: conn}
 }
 
 func (c *clientCodec) encodeHead(msg *ClientToServerMessage) ([]byte, error) {
@@ -125,8 +33,8 @@ func (c *clientCodec) encodeHead(msg *ClientToServerMessage) ([]byte, error) {
 	switch msg.Version {
 	case 0x0000000a:
 		if msg.EncryptType == 0x01 {
-			buf.EncodeUint32(uint32(len(msg.EncryptKey) + 4))
-			buf.EncodeRawBytes(msg.EncryptKey[:])
+			buf.EncodeUint32(uint32(len(msg.EncryptD2) + 4))
+			buf.EncodeRawBytes(msg.EncryptD2)
 		} else {
 			buf.EncodeUint32(0x00000004)
 		}
@@ -139,7 +47,7 @@ func (c *clientCodec) encodeHead(msg *ClientToServerMessage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (c *clientCodec) encodeData(msg *ClientToServerMessage) ([]byte, error) {
+func (c *clientCodec) encodeBody(msg *ClientToServerMessage) ([]byte, error) {
 	if msg.Version != 0x0000000a && msg.Version != 0x0000000b {
 		return nil, fmt.Errorf("failed to encode data, version 0x%x", msg.Version)
 	}
@@ -147,32 +55,28 @@ func (c *clientCodec) encodeData(msg *ClientToServerMessage) ([]byte, error) {
 	buf.EncodeUint32(0x00000000)
 	if msg.Version == 0x0000000a {
 		buf.EncodeUint32(msg.Seq)
-		buf.EncodeUint32(c.appID)
+		buf.EncodeUint32(msg.CodecAppID)
 		buf.EncodeUint32(msg.AppID)
 		{
 			tmp := make([]byte, 12)
-			tmp[0x0] = c.networkType
-			tmp[0xa] = c.netIPFamily
+			tmp[0x0] = msg.CodecNetworkType
+			tmp[0xa] = msg.CodecNetIPFamily
 			buf.EncodeRawBytes(tmp)
 		}
-		if key := SelectClientCodecKey(msg.Username); key == nil {
-			buf.EncodeUint32(4)
-		} else {
-			buf.EncodeUint32(uint32(len(key.A2) + 4))
-			buf.EncodeRawBytes(key.A2)
-		}
+		buf.EncodeUint32(uint32(len(msg.EncryptA2) + 4))
+		buf.EncodeRawBytes(msg.EncryptA2)
 	}
 	buf.EncodeUint32(uint32(len(msg.ServiceMethod) + 4))
 	buf.EncodeRawString(msg.ServiceMethod)
 	buf.EncodeUint32(uint32(len(msg.Cookie) + 4))
 	buf.EncodeRawBytes(msg.Cookie)
 	if msg.Version == 0x0000000a {
-		buf.EncodeUint32(uint32(len(c.imei) + 4))
-		buf.EncodeRawString(c.imei)
-		buf.EncodeUint32(uint32(len(clientCodecKSID) + 4))
-		buf.EncodeRawBytes(clientCodecKSID)
+		buf.EncodeUint32(uint32(len(msg.CodecIMEI) + 4))
+		buf.EncodeRawString(msg.CodecIMEI)
+		buf.EncodeUint32(uint32(len(msg.KSID) + 4))
+		buf.EncodeRawBytes(msg.KSID)
 		{
-			tmp := "" + "|" + c.imsi + "|A" + c.revision
+			tmp := "" + "|" + msg.CodecIMSI + "|A" + msg.CodecRevision
 			buf.EncodeUint16(uint16(len(tmp) + 2))
 			buf.EncodeRawString(tmp)
 		}
@@ -218,7 +122,7 @@ func (c *clientCodec) decodeHead(buf *bytes.Buffer, msg *ServerToClientMessage) 
 	return nil
 }
 
-func (c *clientCodec) decodeData(buf *bytes.Buffer, msg *ServerToClientMessage) error {
+func (c *clientCodec) decodeBody(buf *bytes.Buffer, msg *ServerToClientMessage) error {
 	if msg.Version != 0x0000000a && msg.Version != 0x0000000b {
 		return fmt.Errorf("failed to encode head, version 0x%x", msg.Version)
 	}
@@ -267,7 +171,7 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 	}
 	log.Printf("  < [send] seq 0x%08x, uin %s, method %s, dump buff:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
 	var data []byte
-	data, err = c.encodeData(msg)
+	data, err = c.encodeBody(msg)
 	if err != nil {
 		return err
 	}
@@ -279,7 +183,7 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 		msg.EncryptType = 0x00
 	} else {
 		cipher := crypto.NewCipher([16]byte{})
-		if key := SelectClientCodecKey(msg.Username); key == nil || len(msg.EncryptKey) == 0 ||
+		if len(msg.EncryptD2) == 0 ||
 			method == "login.auth" ||
 			method == "login.chguin" ||
 			method == "grayuinpro.check" ||
@@ -296,7 +200,7 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 			method == "qqconnectlogin.auth_emp" {
 			msg.EncryptType = 0x02
 		} else {
-			cipher.SetKey(msg.EncryptKey)
+			cipher.SetKey(msg.EncryptD2Key)
 			msg.EncryptType = 0x01
 		}
 		data = cipher.Encrypt(data)
@@ -329,26 +233,27 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 	if _, err = c.conn.Read(v[4:]); err != nil {
 		return err
 	}
-	buf := bytes.NewBuffer(v)
-	if err = c.decodeHead(buf, msg); err != nil {
+	c.buf = bytes.NewBuffer(v)
+	if err = c.decodeHead(c.buf, msg); err != nil {
 		log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, error %v, dump recv:\n%s", msg.Username, err, hex.Dump(v))
 		return err
 	}
 	log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, dump recv:\n%s", msg.Username, hex.Dump(v))
+	return nil
+}
+
+func (c *clientCodec) DecodeBody(msg *ServerToClientMessage) error {
 	switch msg.EncryptType {
 	case 0x00:
 	case 0x01:
-		if key := SelectClientCodecKey(msg.Username); key != nil {
-			buf = bytes.NewBuffer(crypto.NewCipher(key.D2Key).Decrypt(buf.Bytes()))
-		}
+		c.buf = bytes.NewBuffer(crypto.NewCipher(msg.EncryptD2Key).Decrypt(c.buf.Bytes()))
 	case 0x02:
-		buf = bytes.NewBuffer(crypto.NewCipher([16]byte{}).Decrypt(buf.Bytes()))
-	case 0x03:
+		c.buf = bytes.NewBuffer(crypto.NewCipher([16]byte{}).Decrypt(c.buf.Bytes()))
 	default:
 		return fmt.Errorf("failed to decode data, encrypt type 0x%x", msg.EncryptType)
 	}
-	v = buf.Bytes()
-	if err = c.decodeData(buf, msg); err != nil {
+	v := c.buf.Bytes()
+	if err := c.decodeBody(c.buf, msg); err != nil {
 		log.Printf("->  [recv] seq 0x%08x, uin %s, method %s, error %v, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, err, hex.Dump(v))
 		return err
 	}

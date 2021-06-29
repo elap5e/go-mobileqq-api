@@ -2,127 +2,115 @@ package rpc
 
 import (
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"io/ioutil"
+	"path"
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-var (
-	deviceGUID          = md5.Sum(append(defaultDeviceOSBuildID, defaultDeviceMACAddress...)) // []byte("%4;7t>;28<fclient.5*6")
-	deviceGUIDFlag      = uint32((1 << 24 & 0xFF000000) | (0 << 8 & 0xFF00))
-	deviceIsGUIDFileNil = false
-	deviceIsGUIDGenSucc = true
-	deviceIsGUIDChanged = false
+const PATH_TO_USER_SIGNATURE_JSON = "user_signatures.json"
 
-	clientVerifyMethod = uint8(0x82) // 0x00, 0x82
-)
-
-var (
-	clientPackageName  = []byte("com.tencent.mobileqq")
-	clientVersionName  = []byte("8.8.3")
-	clientRevision     = "8.8.3.b2791edc"
-	clientSignatureMD5 = [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d}
-
-	clientAppID      = uint32(0x20030cb2)
-	clientBuildTime  = uint64(0x00000000609b85ad)
-	clientSDKVersion = "6.0.0.2476"
-	clientSSOVersion = uint32(0x00000011)
-
-	clientCodecAppIDDebug   = []byte("736350642")
-	clientCodecAppIDRelease = []byte("736350642")
-
-	clientImageType  = uint8(0x01)
-	clientMiscBitmap = uint32(0x08f7ff7c)
-)
-
-func SetClientForAndroid() {
-	clientPackageName = []byte("com.tencent.mobileqq")
-	clientVersionName = []byte("8.8.3")
-	clientRevision = "8.8.3.b2791edc"
-	clientSignatureMD5 = [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d}
-
-	clientAppID = uint32(0x20030cb2)
-	clientBuildTime = uint64(0x00000000609b85ad)
-	clientSDKVersion = "6.0.0.2476"
-	clientSSOVersion = uint32(0x00000011)
-
-	clientCodecAppIDDebug = []byte("736350642")
-	clientCodecAppIDRelease = []byte("736350642")
-
-	clientMiscBitmap = uint32(0x08f7ff7c)
-	tlv.SetSSOVersion(clientSSOVersion)
+type UserSignature struct {
+	Username    string
+	DeviceToken []byte            `json:",omitempty"`
+	Domains     map[string]string `json:",omitempty"`
+	Tickets     map[string]Ticket `json:",omitempty"`
+	Session     Session
 }
 
-func SetClientLiteForAndroid() {
-	clientPackageName = []byte("com.tencent.qqlite")
-	clientVersionName = []byte("4.0.2")
-	clientRevision = "4.0.2.9b6340cd"
-	clientSignatureMD5 = [16]byte{0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77, 0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d}
-
-	clientAppID = uint32(0x200300f0)
-	clientBuildTime = uint64(0x0000000060409d2d)
-	clientSDKVersion = "6.0.0.2356"
-	clientSSOVersion = uint32(0x00000005)
-
-	clientCodecAppIDDebug = []byte("736360370")
-	clientCodecAppIDRelease = []byte("736347652")
-
-	clientMiscBitmap = uint32(0x00f7ff7c)
-	tlv.SetSSOVersion(clientSSOVersion)
+type Ticket struct {
+	Sig []byte
+	Key []byte `json:",omitempty"`
+	Iss int64
+	Exp int64 `json:",omitempty"`
 }
 
-func SetClientForAndroidTablet() {
-	clientPackageName = []byte("com.tencent.minihd.qq")
-	clientVersionName = []byte("5.9.2")
-	clientRevision = "5.9.2.3baec0"
-	clientSignatureMD5 = [16]byte{0xaa, 0x39, 0x78, 0xf4, 0x1f, 0xd9, 0x6f, 0xf9, 0x91, 0x4a, 0x66, 0x9e, 0x18, 0x64, 0x74, 0xc7}
-
-	clientAppID = uint32(0x2002fdd5)
-	clientBuildTime = uint64(0x000000005f1e8730)
-	clientSDKVersion = "6.0.0.2433"
-	clientSSOVersion = uint32(0x0000000c)
-
-	clientCodecAppIDDebug = []byte("73636270;")
-	clientCodecAppIDRelease = []byte("736346857")
-
-	clientMiscBitmap = uint32(0x08f7ff7c)
-	tlv.SetSSOVersion(clientSSOVersion)
+type Session struct {
+	Auth   []byte `json:",omitempty"`
+	Cookie []byte
+	KSID   []byte `json:",omitempty"`
 }
 
-func SetClientForAndroidWatch() {
-	panic("not implement")
+func (c *Client) initUserSignatures() {
+	c.userSignatures = make(map[string]*UserSignature)
+	c.LoadUserSignatures(path.Join(c.cfg.BaseDir, PATH_TO_USER_SIGNATURE_JSON))
+
 }
 
-func SetClientForiOS() {
-	panic("not implement")
+func (c *Client) LoadUserSignatures(file string) error {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	sigs := make(map[string]*UserSignature)
+	if err = json.Unmarshal(data, &sigs); err != nil {
+		return err
+	}
+	for username, sig := range sigs {
+		tsig := c.GetUserSignature(username)
+		if len(sig.DeviceToken) != 0 {
+			tsig.DeviceToken = sig.DeviceToken
+		}
+		for k, v := range sig.Domains {
+			tsig.Domains[k] = v
+		}
+		for k, v := range sig.Tickets {
+			tsig.Tickets[k] = v
+		}
+		tsig.Session.Auth = sig.Session.Auth
+		tsig.Session.Cookie = sig.Session.Cookie
+		tsig.Session.KSID = sig.Session.KSID
+	}
+	return nil
 }
 
-func SetClientLiteForiOS() {
-	panic("not implement")
+func (c *Client) SaveUserSignatures(file string) error {
+	data, err := json.MarshalIndent(c.userSignatures, "", "    ")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(file, data, 0600)
 }
 
-func SetClientForiPadOS() {
-	panic("not implement")
+func (c *Client) GetUserSignature(username string) *UserSignature {
+	sig, ok := c.userSignatures[username]
+	if !ok {
+		sig = new(UserSignature)
+		sig.Username = username
+		sig.Domains = make(map[string]string)
+		sig.Tickets = make(map[string]Ticket)
+		sig.Session.Cookie = make([]byte, 4)
+		c.rand.Read(sig.Session.Cookie)
+		c.userSignatures[username] = sig
+	}
+	return sig
 }
 
-func SetClientForwatchOS() {
-	panic("not implement")
+func (c *Client) SetUserSignature(ctx context.Context, username string, tlvs map[uint16]tlv.TLVCodec) {
+	sig := c.GetUserSignature(username)
+	tsig := ParseUserSignature(ctx, username, tlvs)
+	if len(tsig.DeviceToken) != 0 {
+		sig.DeviceToken = tsig.DeviceToken
+	}
+	for key, val := range tsig.Domains {
+		sig.Domains[key] = val
+	}
+	for key, val := range tsig.Tickets {
+		sig.Tickets[key] = val
+	}
 }
 
-func SetClientForWindows() {
-	panic("not implement")
+func (c *Client) SetUserAuthSession(username string, session []byte) {
+	sig := c.GetUserSignature(username)
+	sig.Session.Auth = session
 }
 
-func SetClientFormacOS() {
-	panic("not implement")
-}
-
-func SetClientForLinux() {
-	panic("not implement")
+func (c *Client) SetUserKSIDSession(username string, ksid []byte) {
+	sig := c.GetUserSignature(username)
+	sig.Session.KSID = ksid
 }
 
 func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tlv.TLVCodec) *UserSignature {
@@ -168,7 +156,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: -1,
+				Exp: 0,
 			}
 		}
 		if v, ok := tlvs[0x0102]; ok {
@@ -176,7 +164,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: -1,
+				Exp: 0,
 			}
 		}
 		if v, ok := tlvs[0x0143]; ok {
@@ -208,7 +196,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: -1,
+				Exp: 0,
 			}
 		}
 		if v, ok := tlvs[0x0164]; ok {
@@ -224,7 +212,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x010e].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
-				Exp: -1,
+				Exp: 0,
 			}
 		}
 		if v, ok := tlvs[0x0103]; ok {
@@ -247,43 +235,43 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? OpenKey 0x0125
 		// 0x00008000: {
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? AccessToken 0x0132
 		// 0x00100000: {
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? SuperKey 0x016d
 		// 0x00200000: {
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? AQSig 0x0171
 		// 0x00800000: {
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? PayToken 0x0199
 		// 0x01000000: {
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? PF 0x0200
 		// 0x02000000: {
 		// 	Sig: nil,
 		// 	Key: nil,
 		// 	Iss: time.Now().Unix(),
-		// 	Exp: -1,
+		// 	Exp: 0,
 		// }, // ??? DA2 0x0203
 	}
 
@@ -293,30 +281,4 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 		Domains:     domains,
 		Tickets:     tickets,
 	}
-}
-
-func SetUserSignature(sig *UserSignature) {
-	if sig != nil {
-		data, _ := ioutil.ReadFile("tmp/user_signature.json")
-		tsig := new(UserSignature)
-		_ = json.Unmarshal(data, tsig)
-		if len(sig.DeviceToken) != 0 {
-			tsig.DeviceToken = sig.DeviceToken
-		}
-		for k, v := range sig.Domains {
-			tsig.Domains[k] = v
-		}
-		for k, v := range sig.Tickets {
-			tsig.Tickets[k] = v
-		}
-		file, _ := json.MarshalIndent(tsig, "", "    ")
-		_ = ioutil.WriteFile("tmp/user_signature.json", file, 0600)
-	}
-}
-
-func GetUserSignature() *UserSignature {
-	file, _ := ioutil.ReadFile("tmp/user_signature.json")
-	sig := new(UserSignature)
-	_ = json.Unmarshal(file, sig)
-	return sig
 }

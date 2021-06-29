@@ -1,8 +1,6 @@
 package tlv
 
 import (
-	"context"
-
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
@@ -10,29 +8,19 @@ import (
 )
 
 type T52D struct {
-	tlv *TLV
-	ctx context.Context
+	tlv          *TLV
+	deviceReport *pb.DeviceReport
 }
 
-func NewT52D(ctx context.Context) *T52D {
+func NewT52D(deviceReport *pb.DeviceReport) *T52D {
 	return &T52D{
-		tlv: NewTLV(0x052d, 0x0000, nil),
-		ctx: ctx,
+		tlv:          NewTLV(0x052d, 0x0000, nil),
+		deviceReport: deviceReport,
 	}
 }
 
 func (t *T52D) Encode(b *bytes.Buffer) {
-	v, _ := proto.Marshal(&pb.DeviceReport{
-		Bootloader:   deviceBootloader,
-		ProcVersion:  deviceProcVersion,
-		Codename:     deviceCodename,
-		Incremental:  deviceIncremental,
-		Fingerprint:  deviceFingerprint,
-		BootId:       deviceBootID,
-		AndroidId:    deviceOSBuildID,
-		Baseband:     deviceBaseband,
-		InnerVersion: deviceInnerVersion,
-	})
+	v, _ := proto.Marshal(t.deviceReport)
 	t.tlv.SetValue(bytes.NewBuffer(v))
 	t.tlv.Encode(b)
 }

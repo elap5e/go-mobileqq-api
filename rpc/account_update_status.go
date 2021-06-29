@@ -107,7 +107,7 @@ func NewAccountUpdateStatusRequest(uin uint64, status PushRegisterInfoStatusType
 		BuildVersion: "",
 		RegisterType: false,
 		DevParam:     nil,
-		GUID:         deviceGUID[:],
+		GUID:         nil, // deviceGUID[:],
 		LocaleID:     0x00000804,
 		SlientPush:   false,
 		DeviceName:   defaultDeviceOSBuildModel,
@@ -118,7 +118,7 @@ func NewAccountUpdateStatusRequest(uin uint64, status PushRegisterInfoStatusType
 	}
 }
 
-func (c *Client) PushServiceRegister(ctx context.Context, req *AccountUpdateStatusRequest) (*AccountUpdateStatusResponse, error) {
+func (c *Client) AccountUpdateStatus(ctx context.Context, req *AccountUpdateStatusRequest) (*AccountUpdateStatusResponse, error) {
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
 		PacketType:  0x00,

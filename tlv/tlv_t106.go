@@ -22,13 +22,15 @@ type T106 struct {
 	passwordMD5      [16]byte
 	salt             uint64
 	username         string
-	tgtgtKey         [16]byte
+	userA1Key        [16]byte
 	isGUIDAvailable  bool
 	guid             []byte
 	loginType        uint32
+
+	ssoVersion uint32
 }
 
-func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, serverTime uint32, ip net.IP, i2 bool, passwordMD5 [16]byte, salt uint64, username string, tgtgtKey [16]byte, isGUIDAvailable bool, guid []byte, loginType uint32) *T106 {
+func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, serverTime uint32, ip net.IP, i2 bool, passwordMD5 [16]byte, salt uint64, username string, userA1Key [16]byte, isGUIDAvailable bool, guid []byte, loginType, ssoVersion uint32) *T106 {
 	return &T106{
 		tlv:              NewTLV(0x0106, 0x0000, nil),
 		appID:            appID,
@@ -41,10 +43,12 @@ func NewT106(appID, subAppID uint64, appClientVersion uint32, uin uint64, server
 		passwordMD5:      passwordMD5,
 		salt:             salt,
 		username:         username,
-		tgtgtKey:         tgtgtKey,
+		userA1Key:        userA1Key,
 		isGUIDAvailable:  isGUIDAvailable,
 		guid:             guid,
 		loginType:        loginType,
+
+		ssoVersion: ssoVersion,
 	}
 }
 
@@ -52,7 +56,7 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	v := bytes.NewBuffer([]byte{})
 	v.EncodeUint16(0x0004)
 	v.EncodeUint32(rand.Uint32())
-	v.EncodeUint32(ssoVersion)
+	v.EncodeUint32(t.ssoVersion)
 	v.EncodeUint32(uint32(t.appID))
 	v.EncodeUint32(t.appClientVersion)
 	if t.uin != 0 {
@@ -64,7 +68,7 @@ func (t *T106) Encode(b *bytes.Buffer) {
 	v.EncodeRawBytes(t.ip.To4())
 	v.EncodeBool(t.i2)
 	v.EncodeRawBytes(t.passwordMD5[:])
-	v.EncodeRawBytes(t.tgtgtKey[:])
+	v.EncodeRawBytes(t.userA1Key[:])
 	v.EncodeUint32(0x00000000)
 	v.EncodeBool(t.isGUIDAvailable)
 	if len(t.guid) == 0 {

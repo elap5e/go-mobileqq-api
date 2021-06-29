@@ -2,24 +2,22 @@ package rpc
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 )
 
 type AuthGetSessionTicketsWithQRSignatureRequest struct {
 	AuthGetSessionTicketsWithPasswordRequest
 }
 
-func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string) *AuthGetSessionTicketsWithQRSignatureRequest {
-	return &AuthGetSessionTicketsWithQRSignatureRequest{
+func NewAuthGetSessionTicketsWithQRSignatureRequest(
+	username string,
+	password string,
+) *AuthGetSessionTicketsWithQRSignatureRequest {
+	req := &AuthGetSessionTicketsWithQRSignatureRequest{
 		AuthGetSessionTicketsWithPasswordRequest{
-			Username: fmt.Sprintf("%d", uin),
-
 			DstAppID:         defaultClientDstAppID,
 			SubDstAppID:      defaultClientOpenAppID,
 			AppClientVersion: 0x00000000,
-			Uin:              uin,
+			_Uin:             0x00000000,
 			I2:               0x0000,
 			IPv4Address:      defaultDeviceIPv4Address, // nil
 			ServerTime:       0,                        // nil
@@ -28,7 +26,7 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string)
 			LoginType:        0x00000000,
 			UserA1:           nil,
 			T16A:             nil,
-			MiscBitmap:       clientMiscBitmap,
+			MiscBitmap:       0x00000000,
 			SubSigMap:        defaultClientSubSigMap,
 			SubAppIDList:     defaultClientSubAppIDList,
 			MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
@@ -37,47 +35,19 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(uin uint64, password string)
 			I8:               0x00,
 			I9:               0x0000,
 			I10:              0x01,
-			KSID:             GetClientCodecKSID(),
-			Session:          nil,
-			PackageName:      clientPackageName,
+			KSID:             nil,
+			AuthSession:      nil,
+			PackageName:      []byte{},
 			Domains:          defaultClientDomains,
 		},
 	}
+	req.SetUsername(username)
+	return req
 }
 
-func (c *Client) AuthGetSessionTicketsWithQRSignature(ctx context.Context, req *AuthGetSessionTicketsWithQRSignatureRequest) (*AuthGetSessionTicketsResponse, error) {
-	req.Seq = c.getNextSeq()
-	req.UserA1Key = c.userA1Key
-	req.UserA1 = []byte{}
-	req.T16A = []byte{}
-	req.Session = c.session
-	tlvs, err := req.GetTLVs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, &oicq.Message{
-		Version:       0x1f41,
-		ServiceMethod: 0x0810,
-		Uin:           req.Uin,
-		EncryptMethod: oicq.EncryptMethodECDH,
-		RandomKey:     c.randomKey,
-		KeyVersion:    c.serverPublicKeyVersion,
-		PublicKey:     c.privateKey.Public().Bytes(),
-		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
-		Type:          0x0009,
-		TLVs:          tlvs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, s2c); err != nil {
-		return nil, err
-	}
-	return c.AuthGetSessionTickets(ctx, s2c)
+func (c *Client) AuthGetSessionTicketsWithQRSignature(
+	ctx context.Context,
+	req *AuthGetSessionTicketsWithQRSignatureRequest,
+) (*AuthGetSessionTicketsResponse, error) {
+	return c.AuthGetSessionTickets(ctx, req)
 }

@@ -2,79 +2,43 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
 type AuthUnlockDeviceRequest struct {
-	Seq    uint32
-	Cookie []byte
+	authGetSessionTicketsRequest
 
-	Uin      uint64
-	Username string
-
-	Session      []byte
-	MiscBitmap   uint32
+	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
+	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	HashedGUID   [16]byte
+	HashedGUID   [16]byte // c.hashedGUID
 }
 
-func NewAuthUnlockDeviceRequest(uin uint64) *AuthUnlockDeviceRequest {
-	return &AuthUnlockDeviceRequest{
-		Uin:      uin,
-		Username: fmt.Sprintf("%d", uin),
-
-		Session:      nil,
-		MiscBitmap:   clientMiscBitmap,
+func NewAuthUnlockDeviceRequest(username string) *AuthUnlockDeviceRequest {
+	req := &AuthUnlockDeviceRequest{
+		AuthSession:  nil,
+		MiscBitmap:   0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
 		HashedGUID:   [16]byte{},
 	}
+	req.SetUsername(username)
+	return req
 }
 
 func (req *AuthUnlockDeviceRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+	c := ForClient(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(req.Session)
-	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0401] = tlv.NewT401(req.HashedGUID)
+	tlvs[0x0104] = tlv.NewT104(c.GetUserSignature(req.GetUsername()).Session.Auth)
+	tlvs[0x0116] = tlv.NewT116(c.cfg.Client.MiscBitmap, req.SubSigMap, req.SubAppIDList)
+	tlvs[0x0401] = tlv.NewT401(c.hashedGUID)
+	req.SetType(0x0014)
 	return tlvs, nil
 }
 
 func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketsResponse, error) {
-	req.Seq = c.getNextSeq()
-	req.Session = c.session
-	req.HashedGUID = c.hashedGUID
-	tlvs, err := req.GetTLVs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, &oicq.Message{
-		Version:       0x1f41,
-		ServiceMethod: 0x0810,
-		Uin:           req.Uin,
-		EncryptMethod: oicq.EncryptMethodECDH,
-		RandomKey:     c.randomKey,
-		KeyVersion:    c.serverPublicKeyVersion,
-		PublicKey:     c.privateKey.Public().Bytes(),
-		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
-		Type:          0x0014,
-		TLVs:          tlvs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, s2c); err != nil {
-		return nil, err
-	}
-	return c.AuthGetSessionTickets(ctx, s2c)
+	return c.AuthGetSessionTickets(ctx, req)
 }

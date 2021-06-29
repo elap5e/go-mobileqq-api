@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"log"
+	"path"
 	"strconv"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
@@ -11,6 +12,54 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
+
+type AuthGetSessionTicketsRequest interface {
+	GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error)
+	GetType() uint16
+	GetSeq() uint32
+	GetUin() uint64
+	GetUsername() string
+	SetType(typ uint16)
+	SetSeq(seq uint32)
+	SetUsername(username string)
+}
+
+type authGetSessionTicketsRequest struct {
+	typ      uint16
+	seq      uint32
+	uin      uint64
+	username string
+}
+
+func (req *authGetSessionTicketsRequest) GetType() uint16 {
+	return req.typ
+}
+
+func (req *authGetSessionTicketsRequest) GetSeq() uint32 {
+	return req.seq
+}
+
+func (req *authGetSessionTicketsRequest) GetUin() uint64 {
+	return req.uin
+}
+
+func (req *authGetSessionTicketsRequest) GetUsername() string {
+	return req.username
+}
+
+func (req *authGetSessionTicketsRequest) SetType(typ uint16) {
+	req.typ = typ
+}
+
+func (req *authGetSessionTicketsRequest) SetSeq(seq uint32) {
+	req.seq = seq
+}
+
+func (req *authGetSessionTicketsRequest) SetUsername(username string) {
+	req.username = username
+	uin, _ := strconv.ParseInt(username, 10, 64)
+	req.uin = uint64(uin)
+}
 
 type AuthGetSessionTicketsResponse struct {
 	Code     uint8
@@ -26,23 +75,26 @@ type AuthGetSessionTicketsResponse struct {
 	Message      string
 	SMSMobile    string
 
-	Session []byte
-	T119    []byte
-	T150    []byte
-	T161    []byte
-	T174    []byte
-	T17B    []byte
-	T401    [16]byte
-	T402    []byte
-	T403    []byte
-	T546    []byte
+	AuthSession []byte
+	T119        []byte
+	T150        []byte
+	T161        []byte
+	T174        []byte
+	T17B        []byte
+	T401        [16]byte
+	T402        []byte
+	T403        []byte
+	T546        []byte
 
 	LoginExtraData []byte
 }
 
-func (resp *AuthGetSessionTicketsResponse) SetTLVs(ctx context.Context, tlvs map[uint16]tlv.TLVCodec) error {
+func (resp *AuthGetSessionTicketsResponse) SetTLVs(
+	ctx context.Context,
+	tlvs map[uint16]tlv.TLVCodec,
+) error {
 	if v, ok := tlvs[0x0104].(*tlv.TLV); ok {
-		resp.Session = v.MustGetValue().Bytes()
+		resp.AuthSession = v.MustGetValue().Bytes()
 	}
 	if v, ok := tlvs[0x0105].(*tlv.TLV); ok {
 		buf, _ := v.GetValue()
@@ -97,7 +149,39 @@ func (resp *AuthGetSessionTicketsResponse) SetTLVs(ctx context.Context, tlvs map
 	return nil
 }
 
-func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientMessage) (*AuthGetSessionTicketsResponse, error) {
+func (c *Client) AuthGetSessionTickets(
+	ctx context.Context,
+	req AuthGetSessionTicketsRequest,
+) (*AuthGetSessionTicketsResponse, error) {
+	req.SetSeq(c.getNextSeq())
+	tlvs, err := req.GetTLVs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	buf, err := oicq.Marshal(ctx, &oicq.Message{
+		Version:       0x1f41,
+		ServiceMethod: 0x0810,
+		Uin:           req.GetUin(),
+		EncryptMethod: oicq.EncryptMethodECDH,
+		RandomKey:     c.randomKey,
+		KeyVersion:    c.serverPublicKeyVersion,
+		PublicKey:     c.privateKey.Public().Bytes(),
+		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
+		Type:          req.GetType(),
+		TLVs:          tlvs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	s2c := new(ServerToClientMessage)
+	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
+		Username: req.GetUsername(),
+		Seq:      req.GetSeq(),
+		Buffer:   buf,
+		Simple:   false,
+	}, s2c); err != nil {
+		return nil, err
+	}
 	resp := new(AuthGetSessionTicketsResponse)
 	msg := &oicq.Message{
 		RandomKey:  c.randomKey,
@@ -109,8 +193,8 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 		return nil, err
 	}
 	resp.Code = msg.Code
-	resp.Uin = msg.Uin
 	resp.Username = strconv.Itoa(int(msg.Uin))
+	resp.Uin = msg.Uin
 	if err := resp.SetTLVs(ctx, msg.TLVs); err != nil {
 		return nil, err
 	}
@@ -133,17 +217,19 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 		}
 		tlv.DumpTLVs(ctx, tlvs)
 
-		// t106 := tlvs[0x0106].(*tlv.TLV).MustGetValue().Bytes()
-		// t10c := tlvs[0x010c].(*tlv.TLV).MustGetValue().Bytes()
-
-		c.ksid = tlvs[0x0108].(*tlv.TLV).MustGetValue().Bytes()
-
-		SetUserSignature(ParseUserSignature(ctx, resp.Username, tlvs))
+		c.SetUserSignature(ctx, resp.Username, tlvs)
+		c.SetUserKSIDSession(
+			resp.Username,
+			tlvs[0x0108].(*tlv.TLV).MustGetValue().Bytes(),
+		)
+		c.SetUserAuthSession(resp.Username, nil)
+		c.SaveUserSignatures(path.Join(c.cfg.BaseDir, PATH_TO_USER_SIGNATURE_JSON))
 
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
 	case 0x02:
 		// captcha
-		c.session = resp.Session
+		c.SetUserAuthSession(resp.Username, resp.AuthSession)
+
 		c.t547 = resp.T546 // TODO: check
 		if resp.CaptchaSign != "" {
 			log.Printf(">_x [warn] need captcha verify, uin %s, url %s, code 0x02", resp.Username, resp.CaptchaSign)
@@ -152,16 +238,23 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 		}
 	case 0xa0:
 		// device lock
-		c.session = resp.Session
+		c.SetUserAuthSession(resp.Username, resp.AuthSession)
+
 		c.t17b = resp.T17B
 		log.Printf(">_x [warn] need sms mobile verify response, uin %s, code 0xa0", resp.Username)
 	case 0xef:
 		// device lock
-		c.session = resp.Session
+		c.SetUserAuthSession(resp.Username, resp.AuthSession)
+
 		c.t174 = resp.T174
 		c.t402 = resp.T402
 		c.t403 = resp.T403
-		c.hashedGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
+		c.hashedGUID = md5.Sum(
+			append(append(
+				c.cfg.Device.GUID,
+				c.randomPassword[:]...),
+				c.t402...),
+		)
 		log.Printf(">_x [warn] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s, code 0xef", resp.Username, resp.SMSMobile, resp.Code, resp.Message)
 	case 0x01:
 		log.Printf("x_x [fail] invalid login, uin %s, code 0x01, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
@@ -172,11 +265,17 @@ func (c *Client) AuthGetSessionTickets(ctx context.Context, s2c *ServerToClientM
 	case 0xed:
 		log.Printf("x_x [fail] invalid device, uin %s, code 0xed, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
 	case 0xcc:
-		c.session = resp.Session
+		c.SetUserAuthSession(resp.Username, resp.AuthSession)
+
 		c.t402 = resp.T402
 		c.t403 = resp.T403
-		c.hashedGUID = md5.Sum(append(append(deviceGUID[:], c.randomPassword[:]...), c.t402...))
-		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(resp.Uin))
+		c.hashedGUID = md5.Sum(
+			append(append(
+				c.cfg.Device.GUID,
+				c.randomPassword[:]...),
+				c.t402...),
+		)
+		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(resp.Username))
 	}
 	return resp, nil
 }

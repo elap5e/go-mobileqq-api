@@ -1,30 +1,53 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
+	"os"
+	"path"
 
 	"github.com/spf13/viper"
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
-	"github.com/elap5e/go-mobileqq-api/rpc"
 )
 
 var (
-	username string
-	password string
+	homeDir, _ = os.UserHomeDir()
+	baseDir    = path.Join(homeDir, "."+mobileqq.PackageName)
+	username   string
+	password   string
 )
 
+const configYAML = `accounts:
+  - username: 10000
+    password: 123456
+`
+
 func init() {
-	viper.SetConfigFile(".env")
-	viper.AutomaticEnv()
-	viper.ReadInConfig()
-	username = viper.GetString("GMA_USERNAME")
-	password = viper.GetString("GMA_PASSWORD")
-	rpc.SetClientForAndroidTablet()
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(baseDir)
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+			_ = ioutil.WriteFile(
+				path.Join(baseDir, "config.yaml"),
+				[]byte(configYAML),
+				0644,
+			)
+			log.Fatalf("$_$ [init] create config.yaml")
+		} else {
+			// Config file was found but another error was produced
+			log.Fatalf("x_x [init] failed to load config.yaml")
+		}
+	} else {
+		username = viper.GetString("accounts.0.username")
+		password = viper.GetString("accounts.0.password")
+	}
 }
 
 func main() {
-	c := mobileqq.NewClient()
+	c := mobileqq.NewClient(mobileqq.Option{Config: mobileqq.NewClientConfigForAndroidTablet()})
 	if err := c.HeartbeatAlive(); err != nil {
 		log.Printf("x_x [test] error: %s", err.Error())
 	}

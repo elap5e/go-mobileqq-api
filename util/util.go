@@ -41,3 +41,14 @@ func ReadLine(rd *bufio.Reader) (string, error) {
 	}
 	return strings.TrimSuffix(str, "\n"), nil
 }
+
+func STBytesTobytes(v [16]byte) (ret []byte) {
+	ret = make([]byte, 16)
+	copy(ret, v[:])
+	return
+}
+
+func BytesToSTBytes(v []byte) (ret [16]byte) {
+	copy(ret[:], v)
+	return
+}

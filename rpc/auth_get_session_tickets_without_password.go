@@ -3,119 +3,148 @@ package rpc
 import (
 	"context"
 	"crypto/md5"
-	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
+	"github.com/elap5e/go-mobileqq-api/pb"
 	"github.com/elap5e/go-mobileqq-api/tlv"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type AuthGetSessionTicketsWithoutPasswordRequest struct {
-	Seq  uint32
-	T172 []byte
+	authGetSessionTicketsRequest
 
-	Username string
-
-	Uin              uint64
+	_Uin             uint64
 	DstAppID         uint64
-	SrcAppID         uint64
+	SrcAppID         uint64 // constant 0x00000064
 	AppClientVersion uint32
 	MainSigMap       uint32
-	UserA2           []byte
-	MiscBitmap       uint32
+	UserA2           []byte // sig.Tickets["A2"].Sig
+	MiscBitmap       uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap        uint32
 	SubAppIDList     []uint64
-	KSID             []byte
-	UserD2           []byte
+	KSID             []byte // sig.Session.KSID
+	UserD2           []byte // sig.Tickets["D2"].Sig
 	Domains          []string
 }
 
-func NewAuthGetSessionTicketsWithoutPasswordRequest(uin uint64) *AuthGetSessionTicketsWithoutPasswordRequest {
-	return &AuthGetSessionTicketsWithoutPasswordRequest{
-		Username: fmt.Sprintf("%d", uin),
-
-		Uin:              uin,
+func NewAuthGetSessionTicketsWithoutPasswordRequest(
+	username string,
+) *AuthGetSessionTicketsWithoutPasswordRequest {
+	req := &AuthGetSessionTicketsWithoutPasswordRequest{
+		_Uin:             0x00000000,
 		DstAppID:         defaultClientDstAppID,
-		SrcAppID:         defaultClientOpenAppID,
+		SrcAppID:         0x00000064,
 		AppClientVersion: 0x00000000,
 		MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
 		UserA2:           nil,
-		MiscBitmap:       clientMiscBitmap,
+		MiscBitmap:       0x00000000,
 		SubSigMap:        defaultClientSubSigMap,
 		SubAppIDList:     defaultClientSubAppIDList,
-		KSID:             GetClientCodecKSID(),
+		KSID:             nil,
 		UserD2:           nil,
 		Domains:          defaultClientDomains,
 	}
+	req.SetUsername(username)
+	return req
 }
 
-func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
-	key := SelectClientCodecKey(req.Username)
+func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
+	ctx context.Context,
+) (map[uint16]tlv.TLVCodec, error) {
+	c := ForClient(ctx)
+	sig := c.GetUserSignature(req.GetUsername())
 	tlvs := make(map[uint16]tlv.TLVCodec)
-	tlvs[0x0100] = tlv.NewT100(req.DstAppID, req.SrcAppID, req.AppClientVersion, req.MainSigMap)
-	tlvs[0x010a] = tlv.NewT10A(req.UserA2)
+	tlvs[0x0100] = tlv.NewT100(
+		req.DstAppID,
+		req.SrcAppID,
+		req.AppClientVersion,
+		req.MainSigMap,
+		c.cfg.Client.SSOVersion,
+	)
+	tlvs[0x010a] = tlv.NewT10A(sig.Tickets["A2"].Sig)
 	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0108] = tlv.NewT108(req.KSID)
-	tlvs[0x0144] = tlv.NewT144(md5.Sum(key.D2Key[:]),
+	tlvs[0x0108] = tlv.NewT108(sig.Session.KSID)
+	tlvs[0x0144] = tlv.NewT144(md5.Sum(sig.Tickets["D2"].Key),
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
-		tlv.NewT52D(ctx),
-		tlv.NewT124([]byte(defaultDeviceOSType), []byte(defaultDeviceOSVersion), defaultDeviceNetworkTypeID, defaultDeviceSIMOPName, nil, defaultDeviceAPNName),
-		tlv.NewT128(deviceIsGUIDFileNil, deviceIsGUIDGenSucc, deviceIsGUIDChanged, deviceGUIDFlag, []byte(defaultDeviceOSBuildModel), deviceGUID[:], defaultDeviceOSBuildBrand),
+		tlv.NewT52D(&pb.DeviceReport{
+			Bootloader:   []byte(c.cfg.Device.Bootloader),
+			ProcVersion:  []byte(c.cfg.Device.ProcVersion),
+			Codename:     []byte(c.cfg.Device.Codename),
+			Incremental:  []byte(c.cfg.Device.Incremental),
+			Fingerprint:  []byte(c.cfg.Device.Fingerprint),
+			BootId:       []byte(c.cfg.Device.BootID),
+			AndroidId:    []byte(c.cfg.Device.OSBuildID),
+			Baseband:     []byte(c.cfg.Device.Baseband),
+			InnerVersion: []byte(c.cfg.Device.InnerVersion),
+		}),
+		tlv.NewT124(
+			[]byte(defaultDeviceOSType),
+			[]byte(defaultDeviceOSVersion),
+			defaultDeviceNetworkTypeID,
+			defaultDeviceSIMOPName,
+			nil,
+			defaultDeviceAPNName,
+		),
+		tlv.NewT128(
+			c.cfg.Device.IsGUIDFileNil,
+			c.cfg.Device.IsGUIDGenSucc,
+			c.cfg.Device.IsGUIDChanged,
+			c.cfg.Device.GUIDFlag,
+			[]byte(defaultDeviceOSBuildModel),
+			c.cfg.Device.GUID,
+			defaultDeviceOSBuildBrand,
+		),
 		tlv.NewT16E([]byte(defaultDeviceOSBuildModel)),
 	)
-	tlvs[0x0143] = tlv.NewT143(req.UserD2)
-	tlvs[0x0142] = tlv.NewT142(clientPackageName)
-	tlvs[0x0154] = tlv.NewT154(req.Seq)
-	tlvs[0x0018] = tlv.NewT18(req.DstAppID, req.MainSigMap, req.Uin, 0x0000)
-	tlvs[0x0141] = tlv.NewT141(defaultDeviceSIMOPName, defaultDeviceNetworkTypeID, defaultDeviceAPNName)
+	tlvs[0x0143] = tlv.NewT143(sig.Tickets["D2"].Sig)
+	tlvs[0x0142] = tlv.NewT142([]byte(c.cfg.Client.PackageName))
+	tlvs[0x0154] = tlv.NewT154(req.GetSeq())
+	tlvs[0x0018] = tlv.NewT18(
+		req.DstAppID,
+		req.MainSigMap,
+		req.GetUin(),
+		0x0000,
+	)
+	tlvs[0x0141] = tlv.NewT141(
+		defaultDeviceSIMOPName,
+		defaultDeviceNetworkTypeID,
+		defaultDeviceAPNName,
+	)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	if len(req.Domains) > 0 {
 		tlvs[0x0511] = tlv.NewT511(req.Domains)
 	}
-	tlvs[0x0147] = tlv.NewT147(req.DstAppID, clientVersionName, clientSignatureMD5)
-	if len(req.T172) != 0 {
-		tlvs[0x0172] = tlv.NewT172(req.T172)
+	tlvs[0x0147] = tlv.NewT147(
+		req.DstAppID,
+		[]byte(c.cfg.Client.VersionName),
+		util.BytesToSTBytes(c.cfg.Client.SignatureMD5),
+	)
+	if len(c.t172) != 0 {
+		tlvs[0x0172] = tlv.NewT172(c.t172)
 	}
-	tlvs[0x0177] = tlv.NewT177(clientBuildTime, clientSDKVersion)
+	tlvs[0x0177] = tlv.NewT177(c.cfg.Client.BuildTime, c.cfg.Client.SDKVersion)
 	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
 	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
 	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(defaultDeviceIMSI)))
-	// DISABLED: SetNeedForPayToken
+	// // DISABLED: SetNeedForPayToken
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
-	tlvs[0x0202] = tlv.NewT202(md5.Sum(defaultDeviceBSSIDAddress), defaultDeviceSSIDAddress)
-	// DISABLED: tgt
-	// tlvs[0x0544] = tlv.NewT544(req.Uin, deviceGUID, clientSDKVersion, 0x0009)
+	tlvs[0x0202] = tlv.NewT202(
+		md5.Sum(defaultDeviceBSSIDAddress),
+		defaultDeviceSSIDAddress,
+	)
+	// // DISABLED: tgt
+	// tlvs[0x0544] = tlv.NewT544(
+	// 	req.Uin,
+	// 	c.cfg.Device.GUID,
+	// 	c.cfg.Client.SDKVersion,
+	// 	0x0009,
+	// )
+	req.SetType(0x000b)
 	return tlvs, nil
 }
 
-func (c *Client) AuthGetSessionTicketsWithoutPassword(ctx context.Context, req *AuthGetSessionTicketsWithoutPasswordRequest) (*AuthGetSessionTicketsResponse, error) {
-	req.Seq = c.getNextSeq()
-	tlvs, err := req.GetTLVs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, &oicq.Message{
-		Version:       0x1f41,
-		ServiceMethod: 0x0810,
-		Uin:           req.Uin,
-		EncryptMethod: oicq.EncryptMethodECDH,
-		RandomKey:     c.randomKey,
-		KeyVersion:    c.serverPublicKeyVersion,
-		PublicKey:     c.privateKey.Public().Bytes(),
-		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
-		Type:          0x000b,
-		TLVs:          tlvs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodAuthExchangeAccount, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, s2c); err != nil {
-		return nil, err
-	}
-	return c.AuthGetSessionTickets(ctx, s2c)
+func (c *Client) AuthGetSessionTicketsWithoutPassword(
+	ctx context.Context,
+	req *AuthGetSessionTicketsWithoutPasswordRequest,
+) (*AuthGetSessionTicketsResponse, error) {
+	return c.AuthGetSessionTickets(ctx, req)
 }

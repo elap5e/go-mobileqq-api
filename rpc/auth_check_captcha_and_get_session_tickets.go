@@ -2,93 +2,70 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
 type AuthCheckCaptchaAndGetSessionTicketsRequest struct {
-	Seq    uint32
-	Cookie []byte
+	authGetSessionTicketsRequest
 
-	Uin      uint64
-	Username string
-
-	Session      []byte
+	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
 	Code         []byte
 	Sign         []byte
-	MiscBitmap   uint32
+	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	T547         []byte
+	ExtraData    []byte // c.t547
 
-	checkWeb bool
+	isCaptcha bool
 }
 
-func NewAuthCheckCaptchaAndGetSessionTicketsRequest(uin uint64, code []byte) *AuthCheckCaptchaAndGetSessionTicketsRequest {
-	return &AuthCheckCaptchaAndGetSessionTicketsRequest{
-		Uin:      uin,
-		Username: fmt.Sprintf("%d", uin),
-
-		Session:      nil,
+func NewAuthCheckCaptchaAndGetSessionTicketsRequest(
+	username string,
+	code []byte,
+) *AuthCheckCaptchaAndGetSessionTicketsRequest {
+	req := &AuthCheckCaptchaAndGetSessionTicketsRequest{
+		AuthSession:  nil,
 		Code:         code,
-		Sign:         nil,
-		MiscBitmap:   clientMiscBitmap,
+		Sign:         nil, // nil
+		MiscBitmap:   0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		T547:         nil,
+		ExtraData:    nil,
 
-		checkWeb: true,
+		isCaptcha: true,
 	}
+	req.SetUsername(username)
+	return req
 }
 
-func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(
+	ctx context.Context,
+) (map[uint16]tlv.TLVCodec, error) {
+	c := ForClient(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
-	if req.checkWeb {
+	if req.isCaptcha {
 		tlvs[0x0193] = tlv.NewT193(req.Code)
 	} else {
 		tlvs[0x0002] = tlv.NewT2(req.Code, req.Sign)
 	}
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(req.Session)
-	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0547] = tlv.NewT547(req.T547)
+	tlvs[0x0104] = tlv.NewT104(
+		c.GetUserSignature(req.GetUsername()).Session.Auth,
+	)
+	tlvs[0x0116] = tlv.NewT116(
+		c.cfg.Client.MiscBitmap,
+		req.SubSigMap,
+		req.SubAppIDList,
+	)
+	tlvs[0x0547] = tlv.NewT547(c.t547)
+	req.SetType(0x0002)
 	return tlvs, nil
 }
 
-func (c *Client) AuthCheckCaptchaAndGetSessionTickets(ctx context.Context, req *AuthCheckCaptchaAndGetSessionTicketsRequest) (*AuthGetSessionTicketsResponse, error) {
-	req.Seq = c.getNextSeq()
-	req.Cookie = c.cookie[:]
-	req.Session = c.session
-	req.T547 = c.t547
-	tlvs, err := req.GetTLVs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, &oicq.Message{
-		Version:       0x1f41,
-		ServiceMethod: 0x0810,
-		Uin:           req.Uin,
-		EncryptMethod: oicq.EncryptMethodECDH,
-		RandomKey:     c.randomKey,
-		KeyVersion:    c.serverPublicKeyVersion,
-		PublicKey:     c.privateKey.Public().Bytes(),
-		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
-		Type:          0x0002,
-		TLVs:          tlvs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, s2c); err != nil {
-		return nil, err
-	}
-	return c.AuthGetSessionTickets(ctx, s2c)
+func (c *Client) AuthCheckCaptchaAndGetSessionTickets(
+	ctx context.Context,
+	req *AuthCheckCaptchaAndGetSessionTicketsRequest,
+) (*AuthGetSessionTicketsResponse, error) {
+	return c.AuthGetSessionTickets(ctx, req)
 }

@@ -6,10 +6,10 @@ import (
 
 type T145 struct {
 	tlv  *TLV
-	bArr []byte
+	bArr [16]byte
 }
 
-func NewT145(bArr []byte) *T145 {
+func NewT145(bArr [16]byte) *T145 {
 	return &T145{
 		tlv:  NewTLV(0x0145, 0x0000, nil),
 		bArr: bArr,
@@ -17,7 +17,7 @@ func NewT145(bArr []byte) *T145 {
 }
 
 func (t *T145) Encode(b *bytes.Buffer) {
-	t.tlv.SetValue(bytes.NewBuffer(t.bArr))
+	t.tlv.SetValue(bytes.NewBuffer(t.bArr[:]))
 	t.tlv.Encode(b)
 }
 
@@ -29,6 +29,6 @@ func (t *T145) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	t.bArr = v.Bytes()
+	copy(t.bArr[:], v.Bytes())
 	return nil
 }

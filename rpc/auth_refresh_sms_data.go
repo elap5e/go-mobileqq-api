@@ -2,90 +2,72 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
-	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
 type AuthRefreshSMSDataRequest struct {
-	Seq uint32
+	authGetSessionTicketsRequest
 
-	Uin      uint64
-	Username string
-
-	Session      []byte
+	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
 	SMSAppID     uint64
-	T174         []byte
-	MiscBitmap   uint32
+	T174         []byte // c.t174
+	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	SMSExtraData []byte
+	SMSExtraData []byte // c.extraData[0x0542]
 
 	lockType uint8
 }
 
-func NewAuthRefreshSMSDataRequest(uin uint64) *AuthRefreshSMSDataRequest {
-	return &AuthRefreshSMSDataRequest{
-		Uin:      uin,
-		Username: fmt.Sprintf("%d", uin),
-
-		Session:      nil,
+func NewAuthRefreshSMSDataRequest(
+	username string,
+) *AuthRefreshSMSDataRequest {
+	req := &AuthRefreshSMSDataRequest{
+		AuthSession:  nil,
 		SMSAppID:     defaultClientSMSAppID,
 		T174:         nil,
-		MiscBitmap:   clientMiscBitmap,
+		MiscBitmap:   0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
 		SMSExtraData: nil,
 
 		lockType: 0x00,
 	}
+	req.SetUsername(username)
+	return req
 }
 
-func (req *AuthRefreshSMSDataRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+func (req *AuthRefreshSMSDataRequest) GetTLVs(
+	ctx context.Context,
+) (map[uint16]tlv.TLVCodec, error) {
+	c := ForClient(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(req.Session)
-	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
-	tlvs[0x0174] = tlv.NewT174(req.T174)
+	tlvs[0x0104] = tlv.NewT104(
+		c.GetUserSignature(req.GetUsername()).Session.Auth,
+	)
+	tlvs[0x0116] = tlv.NewT116(
+		c.cfg.Client.MiscBitmap,
+		req.SubSigMap,
+		req.SubAppIDList,
+	)
+	tlvs[0x0174] = tlv.NewT174(c.t174)
 	tlvs[0x017a] = tlv.NewT17A(req.SMSAppID)
-	tlvs[0x0197] = tlv.NewTLV(0x0197, 0x0000, bytes.NewBuffer([]byte{req.lockType}))
-	tlvs[0x0542] = tlv.NewT542(req.SMSExtraData)
+	tlvs[0x0197] = tlv.NewTLV(
+		0x0197,
+		0x0000,
+		bytes.NewBuffer([]byte{req.lockType}),
+	)
+	tlvs[0x0542] = tlv.NewT542(c.extraData[0x0542])
+	req.SetType(0x0008)
 	return tlvs, nil
 }
 
-func (c *Client) AuthRefreshSMSData(ctx context.Context, req *AuthRefreshSMSDataRequest) (*AuthGetSessionTicketsResponse, error) {
-	req.Seq = c.getNextSeq()
-	req.Session = c.session
-	req.T174 = c.t174
-	tlvs, err := req.GetTLVs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := oicq.Marshal(ctx, &oicq.Message{
-		Version:       0x1f41,
-		ServiceMethod: 0x0810,
-		Uin:           req.Uin,
-		EncryptMethod: 0x87,
-		RandomKey:     c.randomKey,
-		KeyVersion:    c.serverPublicKeyVersion,
-		PublicKey:     c.privateKey.Public().Bytes(),
-		ShareKey:      c.privateKey.ShareKey(c.serverPublicKey),
-		Type:          0x0008,
-		TLVs:          tlvs,
-	})
-	if err != nil {
-		return nil, err
-	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
-		Username: req.Username,
-		Seq:      req.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, s2c); err != nil {
-		return nil, err
-	}
-	return c.AuthGetSessionTickets(ctx, s2c)
+func (c *Client) AuthRefreshSMSData(
+	ctx context.Context,
+	req *AuthRefreshSMSDataRequest,
+) (*AuthGetSessionTicketsResponse, error) {
+	return c.AuthGetSessionTickets(ctx, req)
 }
