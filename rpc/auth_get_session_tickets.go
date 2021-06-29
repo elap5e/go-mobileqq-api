@@ -11,6 +11,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/crypto"
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type AuthGetSessionTicketsRequest interface {
@@ -214,9 +215,24 @@ func (c *Client) AuthGetSessionTickets(
 		c.loginExtraData = resp.LoginExtraData
 
 		// decode t119
-		t119 := crypto.NewCipher(c.userA1Key).Decrypt(resp.T119)
+		sig := c.GetUserSignature(req.GetUsername())
 		tlvs := map[uint16]tlv.TLVCodec{}
-		{
+		switch msg.Type {
+		case 0x000b:
+			t119 := crypto.NewCipher(
+				md5.Sum(sig.Tickets["D2"].Key),
+			).Decrypt(resp.T119)
+			buf := bytes.NewBuffer(t119)
+			l, _ := buf.DecodeUint16()
+			for i := 0; i < int(l); i++ {
+				v := tlv.TLV{}
+				v.Decode(buf)
+				tlvs[v.GetType()] = &v
+			}
+		case 0x0014:
+			t119 := crypto.NewCipher(
+				util.BytesToSTBytes(sig.Tickets["A1"].Key),
+			).Decrypt(resp.T119)
 			buf := bytes.NewBuffer(t119)
 			l, _ := buf.DecodeUint16()
 			for i := 0; i < int(l); i++ {
@@ -228,11 +244,13 @@ func (c *Client) AuthGetSessionTickets(
 		tlv.DumpTLVs(ctx, tlvs)
 
 		c.SetUserSignature(ctx, resp.Username, tlvs)
-		c.SetUserKSIDSession(
-			resp.Username,
-			tlvs[0x0108].(*tlv.TLV).MustGetValue().Bytes(),
-		)
 		c.SetUserAuthSession(resp.Username, nil)
+		if v, ok := tlvs[0x0108]; ok {
+			c.SetUserKSIDSession(
+				resp.Username,
+				v.(*tlv.TLV).MustGetValue().Bytes(),
+			)
+		}
 		c.SaveUserSignatures(path.Join(c.cfg.BaseDir, PATH_TO_USER_SIGNATURE_JSON))
 
 		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
@@ -240,7 +258,7 @@ func (c *Client) AuthGetSessionTickets(
 		// captcha
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
-		c.t547 = resp.T546 // TODO: check
+		c.extraData[0x0547] = resp.T546 // TODO: check
 		if resp.CaptchaSign != "" {
 			log.Printf(">_x [warn] need captcha verify, uin %s, url %s, code 0x02", resp.Username, resp.CaptchaSign)
 		} else {

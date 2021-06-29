@@ -36,9 +36,6 @@ func Marshal(ctx context.Context, msg *Message) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// for i := range msg.TLVs {
-	// 	log.Printf("<-- [send] dump tlv 0x%04x", i)
-	// }
 	log.Printf("<-- [send] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(data))
 	buf.EncodeRawBytes(crypto.NewCipher(msg.ShareKey).Encrypt(data))
 	buf.EncodeUint8(0x03)

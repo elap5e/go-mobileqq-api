@@ -22,11 +22,11 @@ type AuthGetSessionTicketsWithPasswordRequest struct {
 	IPv4Address      net.IP
 	ServerTime       uint32
 	PasswordMD5      [16]byte
-	UserA1Key        [16]byte // c.userA1Key
+	_UserA1Key       [16]byte // c.userA1Key
 	LoginType        uint32   // 0x00, 0x01, 0x03
 	UserA1           []byte
 	T16A             []byte
-	MiscBitmap       uint32 // c.cfg.Client.MiscBitmap
+	_MiscBitmap      uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap        uint32
 	SubAppIDList     []uint64
 	MainSigMap       uint32
@@ -35,9 +35,9 @@ type AuthGetSessionTicketsWithPasswordRequest struct {
 	I8               uint8  // constant 0x00
 	I9               uint16 // constant 0x0000
 	I10              uint8  // constant 0x01
-	KSID             []byte // sig.Session.KSID
-	AuthSession      []byte // sig.Session.AuthSession
-	PackageName      []byte // []byte(c.cfg.Client.PackageName)
+	_KSID            []byte // sig.Session.KSID
+	_AuthSession     []byte // sig.Session.AuthSession
+	_PackageName     []byte // []byte(c.cfg.Client.PackageName)
 	Domains          []string
 }
 
@@ -54,11 +54,11 @@ func NewAuthGetSessionTicketsWithPasswordRequest(
 		IPv4Address:      defaultDeviceIPv4Address,
 		ServerTime:       util.GetServerTime(),
 		PasswordMD5:      md5.Sum([]byte(password)),
-		UserA1Key:        [16]byte{},
+		_UserA1Key:       [16]byte{},
 		LoginType:        0x00000001,
 		UserA1:           nil, // nil
 		T16A:             nil, // nil
-		MiscBitmap:       0x00000000,
+		_MiscBitmap:      0x00000000,
 		SubSigMap:        defaultClientSubSigMap,
 		SubAppIDList:     defaultClientSubAppIDList,
 		MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
@@ -67,9 +67,9 @@ func NewAuthGetSessionTicketsWithPasswordRequest(
 		I8:               0x00,
 		I9:               0x0000,
 		I10:              0x01,
-		KSID:             nil,
-		AuthSession:      nil,
-		PackageName:      []byte{},
+		_KSID:            nil,
+		_AuthSession:     nil,
+		_PackageName:     []byte{},
 		Domains:          defaultClientDomains,
 	}
 	req.SetUsername(username)
@@ -89,7 +89,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 		req.I2,
 	)
 	tlvs[0x0001] = tlv.NewT1(req.GetUin(), req.IPv4Address)
-	if len(c.userA1) == 0 {
+	if len(sig.Tickets["A1"].Sig) == 0 {
 		tlvs[0x0106] = tlv.NewT106(
 			req.DstAppID,
 			req.SubDstAppID,
@@ -101,14 +101,18 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 			req.PasswordMD5,
 			0,
 			req.GetUsername(),
-			c.userA1Key,
+			util.BytesToSTBytes(sig.Tickets["A1"].Key),
 			true,
 			c.cfg.Device.GUID,
 			req.LoginType,
 			c.cfg.Client.SSOVersion,
 		)
 	} else {
-		tlvs[0x0106] = tlv.NewTLV(0x0106, 0x0000, bytes.NewBuffer(c.userA1))
+		tlvs[0x0106] = tlv.NewTLV(
+			0x0106,
+			0x0000,
+			bytes.NewBuffer(sig.Tickets["A1"].Sig),
+		)
 	}
 	tlvs[0x0116] = tlv.NewT116(
 		c.cfg.Client.MiscBitmap,
@@ -133,7 +137,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 	if !util.CheckUsername(req.GetUsername()) {
 		tlvs[0x0112] = tlv.NewT112([]byte(req.GetUsername()))
 	}
-	tlvs[0x0144] = tlv.NewT144(c.userA1Key,
+	tlvs[0x0144] = tlv.NewT144(util.BytesToSTBytes(sig.Tickets["A1"].Key),
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
 		tlv.NewT52D(&pb.DeviceReport{
 			Bootloader:   []byte(c.cfg.Device.Bootloader),

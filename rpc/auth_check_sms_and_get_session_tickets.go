@@ -10,14 +10,14 @@ import (
 type AuthCheckSMSAndGetSessionTicketsRequest struct {
 	authGetSessionTicketsRequest
 
-	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
+	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
 	Code         []byte
-	T174         []byte // c.t174
-	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
+	_T174        []byte // c.t174
+	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	HashedGUID   [16]byte // c.hashedGUID
-	ExtraData    []byte   // placeholder
+	_HashedGUID  [16]byte // c.hashedGUID
+	_ExtraData   []byte   // c.extraData[0x0542]
 
 	lockType uint8
 }
@@ -27,14 +27,14 @@ func NewAuthCheckSMSAndGetSessionTicketsRequest(
 	code []byte,
 ) *AuthCheckSMSAndGetSessionTicketsRequest {
 	req := &AuthCheckSMSAndGetSessionTicketsRequest{
-		AuthSession:  nil,
+		_AuthSession: nil,
 		Code:         code,
-		T174:         nil,
-		MiscBitmap:   0x00000000,
+		_T174:        nil,
+		_MiscBitmap:  0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		HashedGUID:   [16]byte{},
-		ExtraData:    nil,
+		_HashedGUID:  [16]byte{},
+		_ExtraData:   nil,
 
 		lockType: 0x00,
 	}
@@ -64,7 +64,7 @@ func (req *AuthCheckSMSAndGetSessionTicketsRequest) GetTLVs(
 		0x0000,
 		bytes.NewBuffer([]byte{req.lockType}),
 	)
-	tlvs[0x0542] = tlv.NewT542(req.ExtraData)
+	tlvs[0x0542] = tlv.NewT542(c.extraData[0x0542])
 	req.SetType(0x0007)
 	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil

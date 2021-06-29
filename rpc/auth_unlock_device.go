@@ -9,20 +9,20 @@ import (
 type AuthUnlockDeviceRequest struct {
 	authGetSessionTicketsRequest
 
-	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
-	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
+	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
+	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	HashedGUID   [16]byte // c.hashedGUID
+	_HashedGUID  [16]byte // c.hashedGUID
 }
 
 func NewAuthUnlockDeviceRequest(username string) *AuthUnlockDeviceRequest {
 	req := &AuthUnlockDeviceRequest{
-		AuthSession:  nil,
-		MiscBitmap:   0x00000000,
+		_AuthSession: nil,
+		_MiscBitmap:  0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		HashedGUID:   [16]byte{},
+		_HashedGUID:  [16]byte{},
 	}
 	req.SetUsername(username)
 	return req

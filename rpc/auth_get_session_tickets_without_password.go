@@ -17,12 +17,12 @@ type AuthGetSessionTicketsWithoutPasswordRequest struct {
 	SrcAppID         uint64 // constant 0x00000064
 	AppClientVersion uint32
 	MainSigMap       uint32
-	UserA2           []byte // sig.Tickets["A2"].Sig
-	MiscBitmap       uint32 // c.cfg.Client.MiscBitmap
+	_UserA2          []byte // sig.Tickets["A2"].Sig
+	_MiscBitmap      uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap        uint32
 	SubAppIDList     []uint64
-	KSID             []byte // sig.Session.KSID
-	UserD2           []byte // sig.Tickets["D2"].Sig
+	_KSID            []byte // sig.Session.KSID
+	_UserD2          []byte // sig.Tickets["D2"].Sig
 	Domains          []string
 }
 
@@ -35,12 +35,12 @@ func NewAuthGetSessionTicketsWithoutPasswordRequest(
 		SrcAppID:         0x00000064,
 		AppClientVersion: 0x00000000,
 		MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
-		UserA2:           nil,
-		MiscBitmap:       0x00000000,
+		_UserA2:          nil,
+		_MiscBitmap:      0x00000000,
 		SubSigMap:        defaultClientSubSigMap,
 		SubAppIDList:     defaultClientSubAppIDList,
-		KSID:             nil,
-		UserD2:           nil,
+		_KSID:            nil,
+		_UserD2:          nil,
 		Domains:          defaultClientDomains,
 	}
 	req.SetUsername(username)
@@ -61,7 +61,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 		c.cfg.Client.SSOVersion,
 	)
 	tlvs[0x010a] = tlv.NewT10A(sig.Tickets["A2"].Sig)
-	tlvs[0x0116] = tlv.NewT116(req.MiscBitmap, req.SubSigMap, req.SubAppIDList)
+	tlvs[0x0116] = tlv.NewT116(c.cfg.Client.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0108] = tlv.NewT108(sig.Session.KSID)
 	tlvs[0x0144] = tlv.NewT144(md5.Sum(sig.Tickets["D2"].Key),
 		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),

@@ -10,13 +10,13 @@ import (
 type AuthRefreshSMSDataRequest struct {
 	authGetSessionTicketsRequest
 
-	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
+	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
 	SMSAppID     uint64
-	T174         []byte // c.t174
-	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
+	_T174        []byte // c.t174
+	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	SMSExtraData []byte // c.extraData[0x0542]
+	_ExtraData   []byte // c.extraData[0x0542]
 
 	lockType uint8
 }
@@ -25,13 +25,13 @@ func NewAuthRefreshSMSDataRequest(
 	username string,
 ) *AuthRefreshSMSDataRequest {
 	req := &AuthRefreshSMSDataRequest{
-		AuthSession:  nil,
+		_AuthSession: nil,
 		SMSAppID:     defaultClientSMSAppID,
-		T174:         nil,
-		MiscBitmap:   0x00000000,
+		_T174:        nil,
+		_MiscBitmap:  0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		SMSExtraData: nil,
+		_ExtraData:   nil,
 
 		lockType: 0x00,
 	}

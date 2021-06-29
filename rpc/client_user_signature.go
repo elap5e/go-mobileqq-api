@@ -15,6 +15,7 @@ const PATH_TO_USER_SIGNATURE_JSON = "user_signatures.json"
 
 type UserSignature struct {
 	Username    string
+	PasswordMD5 []byte            `json:"-"`
 	DeviceToken []byte            `json:",omitempty"`
 	Domains     map[string]string `json:",omitempty"`
 	Tickets     map[string]Ticket `json:",omitempty"`
@@ -68,11 +69,11 @@ func (c *Client) LoadUserSignatures(file string) error {
 }
 
 func (c *Client) SaveUserSignatures(file string) error {
-	data, err := json.MarshalIndent(c.userSignatures, "", "    ")
+	data, err := json.MarshalIndent(c.userSignatures, "", "  ")
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(file, data, 0600)
+	return ioutil.WriteFile(file, append(data, '\n'), 0600)
 }
 
 func (c *Client) GetUserSignature(username string) *UserSignature {
@@ -82,6 +83,13 @@ func (c *Client) GetUserSignature(username string) *UserSignature {
 		sig.Username = username
 		sig.Domains = make(map[string]string)
 		sig.Tickets = make(map[string]Ticket)
+		sig.Tickets["A1"] = Ticket{
+			Sig: nil,
+			Key: make([]byte, 16),
+			Iss: time.Now().Unix(),
+			Exp: 0,
+		}
+		c.rand.Read(sig.Tickets["A1"].Key)
 		sig.Session.Cookie = make([]byte, 4)
 		c.rand.Read(sig.Session.Cookie)
 		c.userSignatures[username] = sig
@@ -99,7 +107,23 @@ func (c *Client) SetUserSignature(ctx context.Context, username string, tlvs map
 		sig.Domains[key] = val
 	}
 	for key, val := range tsig.Tickets {
-		sig.Tickets[key] = val
+		if ssig, ok := sig.Tickets[key]; ok {
+			if len(val.Sig) != 0 {
+				ssig.Sig = val.Sig
+			}
+			if len(val.Key) != 0 {
+				ssig.Key = val.Key
+			}
+			if val.Iss != 0 {
+				ssig.Iss = val.Iss
+			}
+			if val.Exp != 0 {
+				ssig.Exp = val.Exp
+			}
+			sig.Tickets[key] = ssig
+		} else {
+			sig.Tickets[key] = val
+		}
 	}
 }
 
@@ -143,12 +167,25 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 
 	tickets := map[string]Ticket{}
 	{
+		if v, ok := tlvs[0x0106]; ok {
+			// key := append(ForClient(ctx).GetUserSignature(username).PasswordMD5, make([]byte, 8)...)
+			// uin, _ := strconv.ParseInt(username, 10, 64)
+			// binary.BigEndian.PutUint64(key[16:], uint64(uin))
+			// sig := crypto.NewCipher(md5.Sum(key)).Decrypt(v.(*tlv.TLV).MustGetValue().Bytes())
+			// log.Printf("\n%s", hex.Dump(sig))
+			tickets["A1"] = Ticket{
+				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
+				Key: tlvs[0x010c].(*tlv.TLV).MustGetValue().Bytes(),
+				Iss: time.Now().Unix(),
+				Exp: 0,
+			}
+		}
 		if v, ok := tlvs[0x010a]; ok {
 			tickets["A2"] = Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x010d].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x010a]),
+				Exp: int64(chgt[0x010a]),
 			}
 		}
 		if v, ok := tlvs[0x010b]; ok {
@@ -172,7 +209,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x0305].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x0143]),
+				Exp: int64(chgt[0x0143]),
 			}
 		}
 		if v, ok := tlvs[0x011c]; ok {
@@ -180,7 +217,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x011c]),
+				Exp: int64(chgt[0x011c]),
 			}
 		}
 		if v, ok := tlvs[0x0120]; ok {
@@ -188,7 +225,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x0120]),
+				Exp: int64(chgt[0x0120]),
 			}
 		}
 		if v, ok := tlvs[0x0164]; ok {
@@ -204,7 +241,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x0164]),
+				Exp: int64(chgt[0x0164]),
 			}
 		}
 		if v, ok := tlvs[0x0114]; ok {
@@ -220,7 +257,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x0103]),
+				Exp: int64(chgt[0x0103]),
 			}
 		}
 		if v, ok := tlvs[0x0136]; ok {
@@ -228,7 +265,7 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
-				Exp: time.Now().Unix() + int64(chgt[0x0136]),
+				Exp: int64(chgt[0x0136]),
 			}
 		}
 		// 0x00004000: {

@@ -22,11 +22,11 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(
 			IPv4Address:      defaultDeviceIPv4Address, // nil
 			ServerTime:       0,                        // nil
 			PasswordMD5:      [16]byte{},               // nil
-			UserA1Key:        [16]byte{},               // nil
+			_UserA1Key:       [16]byte{},               // nil
 			LoginType:        0x00000000,
 			UserA1:           nil,
 			T16A:             nil,
-			MiscBitmap:       0x00000000,
+			_MiscBitmap:      0x00000000,
 			SubSigMap:        defaultClientSubSigMap,
 			SubAppIDList:     defaultClientSubAppIDList,
 			MainSigMap:       defaultClientMainSigMap & 0xfdfffffe,
@@ -35,9 +35,9 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(
 			I8:               0x00,
 			I9:               0x0000,
 			I10:              0x01,
-			KSID:             nil,
-			AuthSession:      nil,
-			PackageName:      []byte{},
+			_KSID:            nil,
+			_AuthSession:     nil,
+			_PackageName:     []byte{},
 			Domains:          defaultClientDomains,
 		},
 	}

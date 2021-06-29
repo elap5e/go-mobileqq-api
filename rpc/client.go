@@ -49,8 +49,6 @@ type Client struct {
 	// random
 	rand *rand.Rand
 
-	userA1         []byte
-	userA1Key      [16]byte
 	randomKey      [16]byte
 	randomPassword [16]byte
 
@@ -74,7 +72,6 @@ type Client struct {
 	t17b []byte
 	t402 []byte
 	t403 []byte
-	t547 []byte
 
 	hashedGUID     [16]byte // t401
 	loginExtraData []byte   // from t537
@@ -86,7 +83,6 @@ type Client struct {
 }
 
 func (c *Client) init() {
-	c.initUserA1Key()
 	c.initRandomKey()
 	c.initRandomPassword()
 
@@ -94,11 +90,6 @@ func (c *Client) init() {
 	c.initPrivateKey()
 
 	c.initUserSignatures()
-}
-
-func (c *Client) initUserA1Key() {
-	rand.Read(c.userA1Key[:])
-	log.Printf("--> [init] dump tgtgt key\n%s", hex.Dump(c.userA1Key[:]))
 }
 
 func (c *Client) initRandomKey() {
@@ -200,7 +191,7 @@ func NewClientWithCodec(codec ClientCodec, opts ...Option) *Client {
 	for _, opt := range opts {
 		cfg = *opt.Config
 	}
-	data, _ := json.MarshalIndent(cfg, "", "    ")
+	data, _ := json.MarshalIndent(cfg, "", "  ")
 	log.Printf("~v~ [init] dump RPC client config:\n%s", string(data))
 	c := &Client{
 		cfg:       cfg,

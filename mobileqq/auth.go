@@ -3,6 +3,7 @@ package mobileqq
 import (
 	"bufio"
 	"context"
+	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -191,8 +192,12 @@ func (c *Client) handleAuthResponse(
 func (c *Client) Auth(username, password string) error {
 	var err error
 	var resp *rpc.AuthGetSessionTicketsResponse
-	d2, ok := c.rpc.GetUserSignature(username).Tickets["D2"]
-	if (ok && time.Now().After(time.Unix(d2.Exp, 0))) || !ok {
+	sig := c.rpc.GetUserSignature(username)
+	if len(password) != 0 {
+		sig.PasswordMD5 = util.STBytesTobytes(md5.Sum([]byte(password)))
+	}
+	d2, ok := sig.Tickets["D2"]
+	if (ok && time.Now().After(time.Unix(d2.Iss+d2.Exp, 0))) || !ok {
 		if resp, err = c.rpc.AuthGetSessionTicketsWithPassword(
 			c.ctx,
 			rpc.NewAuthGetSessionTicketsWithPasswordRequest(
@@ -223,7 +228,7 @@ func (c *Client) Auth(username, password string) error {
 			if err != nil {
 				return err
 			}
-			jresp, _ := json.MarshalIndent(tresp, "", "    ")
+			jresp, _ := json.MarshalIndent(tresp, "", "  ")
 			log.Printf("AccountUpdateStatusResponse\n%s", jresp)
 			return nil
 		}

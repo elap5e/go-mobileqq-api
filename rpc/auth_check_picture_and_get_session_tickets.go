@@ -14,13 +14,13 @@ func NewAuthCheckPictureAndGetSessionTicketsRequest(
 ) *AuthCheckPictureAndGetSessionTicketsRequest {
 	req := &AuthCheckPictureAndGetSessionTicketsRequest{
 		AuthCheckCaptchaAndGetSessionTicketsRequest{
-			AuthSession:  nil,
+			_AuthSession: nil,
 			Code:         code,
 			Sign:         sign,
-			MiscBitmap:   0x00000000,
+			_MiscBitmap:  0x00000000,
 			SubSigMap:    defaultClientSubSigMap,
 			SubAppIDList: defaultClientSubAppIDList,
-			ExtraData:    nil,
+			_ExtraData:   nil,
 
 			isCaptcha: false,
 		},

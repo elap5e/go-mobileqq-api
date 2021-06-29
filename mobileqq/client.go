@@ -55,7 +55,7 @@ func NewClient(opts ...Option) *Client {
 	for _, opt := range opts {
 		cfg = *opt.Config
 	}
-	data, _ := json.MarshalIndent(cfg, "", "    ")
+	data, _ := json.MarshalIndent(cfg, "", "  ")
 	log.Printf("~v~ [init] dump MobileQQ client config:\n%s", string(data))
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &Client{

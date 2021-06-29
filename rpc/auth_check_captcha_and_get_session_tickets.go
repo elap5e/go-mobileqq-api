@@ -9,13 +9,13 @@ import (
 type AuthCheckCaptchaAndGetSessionTicketsRequest struct {
 	authGetSessionTicketsRequest
 
-	AuthSession  []byte // c.GetUserSignature(req.Username).Session.Auth
+	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
 	Code         []byte
 	Sign         []byte
-	MiscBitmap   uint32 // c.cfg.Client.MiscBitmap
+	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	ExtraData    []byte // c.t547
+	_ExtraData   []byte // c.t547
 
 	isCaptcha bool
 }
@@ -25,13 +25,13 @@ func NewAuthCheckCaptchaAndGetSessionTicketsRequest(
 	code []byte,
 ) *AuthCheckCaptchaAndGetSessionTicketsRequest {
 	req := &AuthCheckCaptchaAndGetSessionTicketsRequest{
-		AuthSession:  nil,
+		_AuthSession: nil,
 		Code:         code,
 		Sign:         nil, // nil
-		MiscBitmap:   0x00000000,
+		_MiscBitmap:  0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
-		ExtraData:    nil,
+		_ExtraData:   nil,
 
 		isCaptcha: true,
 	}
@@ -58,7 +58,7 @@ func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(
 		req.SubSigMap,
 		req.SubAppIDList,
 	)
-	tlvs[0x0547] = tlv.NewT547(c.t547)
+	tlvs[0x0547] = tlv.NewT547(c.extraData[0x0547])
 	req.SetType(0x0002)
 	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
