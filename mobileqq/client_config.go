@@ -23,7 +23,7 @@ type Config struct {
 
 type ClientConfig struct {
 	NetworkType string
-	NetIPFamily string
+	NetIPFamily string // None, IPv4, IPv6, Dual
 }
 
 func NewClientConfig() *Config {

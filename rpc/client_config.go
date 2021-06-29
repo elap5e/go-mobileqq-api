@@ -202,6 +202,10 @@ func NewClientConfigForWindowsTIM() *ClientConfig {
 	panic("not implement")
 }
 
+func NewClientConfigForWindowsQiDian() *ClientConfig {
+	panic("not implement")
+}
+
 func NewClientConfigForWindowsTablet() *ClientConfig {
 	panic("not implement")
 }
@@ -212,4 +216,29 @@ func NewClientConfigFormacOS() *ClientConfig {
 
 func NewClientConfigForLinux() *ClientConfig {
 	panic("not implement")
+}
+
+func NewClientConfigForAndroidUpcoming() *ClientConfig {
+	return &ClientConfig{
+		AppID:             0x20032ba2,
+		CodecAppIDDebug:   "7363587:2",
+		CodecAppIDRelease: "7363587:2",
+
+		PackageName: "com.tencent.mobileqq",
+		VersionName: "8.8.5",
+		Revision:    "8.8.5.55c6675c",
+		SignatureMD5: []byte{
+			0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77,
+			0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d,
+		},
+
+		BuildTime:  0x0000000060c9bd50,
+		SDKVersion: "6.0.0.2477",
+		SSOVersion: 0x00000012,
+
+		ImageType:  0x01,
+		MiscBitmap: 0x08f7ff7c,
+
+		CanCaptcha: true,
+	}
 }
