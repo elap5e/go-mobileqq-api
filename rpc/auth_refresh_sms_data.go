@@ -62,6 +62,7 @@ func (req *AuthRefreshSMSDataRequest) GetTLVs(
 	)
 	tlvs[0x0542] = tlv.NewT542(c.extraData[0x0542])
 	req.SetType(0x0008)
+	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 

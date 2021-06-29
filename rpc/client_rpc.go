@@ -185,8 +185,8 @@ func (c *Client) preprocess(c2s *ClientToServerMessage, s2c *ServerToClientMessa
 	c2s.CodecAppID = c.cfg.Client.AppID
 	c2s.CodecIMEI = defaultDeviceIMEI
 	c2s.CodecIMSI = defaultDeviceIMSI
-	c2s.CodecNetIPFamily = 0x01 // 0x00: Others; 0x01: Wi-Fi
-	c2s.CodecNetworkType = 0x03 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
+	c2s.CodecNetworkType = 0x01 // 0x00: Others; 0x01: Wi-Fi
+	c2s.CodecNetIPFamily = 0x03 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
 	c2s.CodecRevision = c.cfg.Client.Revision
 }
 

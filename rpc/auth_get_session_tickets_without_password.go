@@ -139,6 +139,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 	// 	0x0009,
 	// )
 	req.SetType(0x000b)
+	req.SetServiceMethod(ServiceMethodAuthExchangeAccount)
 	return tlvs, nil
 }
 

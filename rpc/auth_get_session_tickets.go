@@ -16,12 +16,13 @@ import (
 type AuthGetSessionTicketsRequest interface {
 	GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error)
 	GetType() uint16
+	SetType(typ uint16)
 	GetSeq() uint32
+	SetSeq(seq uint32)
 	GetUin() uint64
 	GetUsername() string
-	SetType(typ uint16)
-	SetSeq(seq uint32)
 	SetUsername(username string)
+	GetServiceMethod() string
 }
 
 type authGetSessionTicketsRequest struct {
@@ -29,14 +30,23 @@ type authGetSessionTicketsRequest struct {
 	seq      uint32
 	uin      uint64
 	username string
+	method   string
 }
 
 func (req *authGetSessionTicketsRequest) GetType() uint16 {
 	return req.typ
 }
 
+func (req *authGetSessionTicketsRequest) SetType(typ uint16) {
+	req.typ = typ
+}
+
 func (req *authGetSessionTicketsRequest) GetSeq() uint32 {
 	return req.seq
+}
+
+func (req *authGetSessionTicketsRequest) SetSeq(seq uint32) {
+	req.seq = seq
 }
 
 func (req *authGetSessionTicketsRequest) GetUin() uint64 {
@@ -47,18 +57,18 @@ func (req *authGetSessionTicketsRequest) GetUsername() string {
 	return req.username
 }
 
-func (req *authGetSessionTicketsRequest) SetType(typ uint16) {
-	req.typ = typ
-}
-
-func (req *authGetSessionTicketsRequest) SetSeq(seq uint32) {
-	req.seq = seq
-}
-
 func (req *authGetSessionTicketsRequest) SetUsername(username string) {
 	req.username = username
 	uin, _ := strconv.ParseInt(username, 10, 64)
 	req.uin = uint64(uin)
+}
+
+func (req *authGetSessionTicketsRequest) GetServiceMethod() string {
+	return req.method
+}
+
+func (req *authGetSessionTicketsRequest) SetServiceMethod(method string) {
+	req.method = method
 }
 
 type AuthGetSessionTicketsResponse struct {
@@ -174,7 +184,7 @@ func (c *Client) AuthGetSessionTickets(
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodAuthLogin, &ClientToServerMessage{
+	if err := c.Call(req.GetServiceMethod(), &ClientToServerMessage{
 		Username: req.GetUsername(),
 		Seq:      req.GetSeq(),
 		Buffer:   buf,

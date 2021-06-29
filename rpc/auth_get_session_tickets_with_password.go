@@ -254,6 +254,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 	// // DISABLED: nativeGetTestData
 	// tlvs[0x0548] = tlv.NewT548([]byte("nativeGetTestData"))
 	req.SetType(0x0009)
+	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 

@@ -66,6 +66,7 @@ func (req *AuthCheckSMSAndGetSessionTicketsRequest) GetTLVs(
 	)
 	tlvs[0x0542] = tlv.NewT542(req.ExtraData)
 	req.SetType(0x0007)
+	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 

@@ -60,6 +60,7 @@ func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(
 	)
 	tlvs[0x0547] = tlv.NewT547(c.t547)
 	req.SetType(0x0002)
+	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 

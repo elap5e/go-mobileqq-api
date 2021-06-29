@@ -36,6 +36,7 @@ func (req *AuthUnlockDeviceRequest) GetTLVs(ctx context.Context) (map[uint16]tlv
 	tlvs[0x0116] = tlv.NewT116(c.cfg.Client.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0401] = tlv.NewT401(c.hashedGUID)
 	req.SetType(0x0014)
+	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 
