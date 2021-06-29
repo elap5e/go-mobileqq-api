@@ -51,13 +51,17 @@ func (d *decoder) decodeHead() (uint8, uint8) {
 func (d *decoder) decodeValue(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Interface:
+		return d.decodeInterface(v)
 	case reflect.Ptr:
+		return d.decodePtr(v)
 	case reflect.Slice:
 		return d.decodeSlice(v)
 	case reflect.Struct:
 		return d.decodeStruct(v)
 	case reflect.Array:
+		return d.decodeArray(v)
 	case reflect.Map:
+		return d.decodeMap(v)
 	case reflect.String:
 		v.SetString(d.decodeString(d.typ))
 	case reflect.Float64, reflect.Float32:
@@ -70,7 +74,16 @@ func (d *decoder) decodeValue(v reflect.Value) error {
 	return nil
 }
 
+func (d *decoder) decodeInterface(v reflect.Value) error {
+	return d.decodeValue(v.Elem())
+}
+
+func (d *decoder) decodePtr(v reflect.Value) error {
+	return d.decodeValue(v.Elem())
+}
+
 func (d *decoder) decodeBytes(v reflect.Value) error {
+	_, _ = d.decodeHead()
 	ttyp, _ := d.decodeHead()
 	n := int(d.decodeUint(ttyp))
 	v.SetBytes(d.data[d.off : d.off+n])
@@ -79,10 +92,10 @@ func (d *decoder) decodeBytes(v reflect.Value) error {
 }
 
 func (d *decoder) decodeSlice(v reflect.Value) error {
-	if v.Elem().Kind() == reflect.Uint8 {
+	if v.Type().Elem().Kind() == reflect.Uint8 {
 		return d.decodeBytes(v)
 	}
-	return nil
+	return d.decodeArray(v)
 }
 
 func (d *decoder) decodeStruct(v reflect.Value) error {
@@ -97,8 +110,11 @@ func (d *decoder) decodeStruct(v reflect.Value) error {
 
 	var subv reflect.Value
 
-	typ, tag := d.decodeHead()
-	for {
+	for d.off < d.length {
+		typ, tag := d.decodeHead()
+		if typ == 0x0b {
+			break
+		}
 		var f *field
 		if i, ok := fields.tagIndex[tag]; ok {
 			f = &fields.list[i]
@@ -119,43 +135,53 @@ func (d *decoder) decodeStruct(v reflect.Value) error {
 		if err := d.decodeValue(subv); err != nil {
 			return err
 		}
-		if d.off == d.length {
-			break
-		} else {
-			typ, tag = d.decodeHead()
-			if tag == 0x0b {
-				break
+	}
+	return nil
+}
+
+func (d *decoder) decodeArray(v reflect.Value) error {
+	ttyp, _ := d.decodeHead()
+	n := int(d.decodeUint(ttyp))
+	if v.Kind() == reflect.Slice {
+		if n >= v.Cap() {
+			newv := reflect.MakeSlice(v.Type(), v.Len(), n)
+			reflect.Copy(newv, v)
+			v.Set(newv)
+		}
+		if n >= v.Len() {
+			v.SetLen(n)
+		}
+	}
+	for i := 0; i < n; i++ {
+		if i < v.Len() {
+			d.typ, _ = d.decodeHead()
+			if err := d.decodeValue(v.Index(i)); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-// func (d *decoder) arrayInterface() []interface{} {
-// 	v := make([]interface{}, 0)
-// 	ttyp, _ := d.decodeHead()
-// 	l := int(reflect.ValueOf(d.uintInterface(ttyp)).Uint())
-// 	for i := 0; i < l; i++ {
-// 		ttyp, _ := d.decodeHead()
-// 		v = append(v, d.valueInterface(ttyp))
-// 	}
-// 	return v
-// }
-
-func (d *decoder) decodeMap(typ uint8) map[string]interface{} {
-	if typ != 0x08 {
-		log.Panicf("unexpected type 0x%02x (decode map)", typ)
-	}
-	m := make(map[string]interface{})
+func (d *decoder) decodeMap(v reflect.Value) error {
 	ttyp, _ := d.decodeHead()
-	l := int(d.decodeUint(ttyp))
-	for i := 0; i < l; i++ {
-		ttyp, _ = d.decodeHead()
-		key := d.decodeString(ttyp)
-		ttyp, _ = d.decodeHead()
-		m[key] = d.decodeString(ttyp)
+	n := int(d.decodeUint(ttyp))
+	t := v.Type()
+	if v.IsNil() {
+		v.Set(reflect.MakeMap(t))
 	}
-	return m
+	var subv reflect.Value
+	for i := 0; i < n; i++ {
+		ttyp, _ := d.decodeHead()
+		key := d.decodeString(ttyp)
+		subv = reflect.New(t.Elem()).Elem()
+		d.typ, _ = d.decodeHead()
+		if err := d.decodeValue(subv); err != nil {
+			return err
+		}
+		v.SetMapIndex(reflect.ValueOf(key), subv)
+	}
+	return nil
 }
 
 func (d *decoder) decodeString(typ uint8) string {
@@ -166,7 +192,6 @@ func (d *decoder) decodeString(typ uint8) string {
 	case 0x07:
 		ttyp, _ := d.decodeHead()
 		l = int(d.decodeUint(ttyp))
-		d.off++
 	case 0x06:
 		l = int(d.data[d.off])
 		d.off++
@@ -177,31 +202,21 @@ func (d *decoder) decodeString(typ uint8) string {
 }
 
 func (d *decoder) decodeFloat(typ uint8) float64 {
-	var val uint64
 	switch typ {
 	default:
 		log.Panicf("unexpected type 0x%02x (decode float)", typ)
 	case 0x05:
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		fallthrough
+		val := uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
+		d.off += 4
+		val = val<<32 + uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
+		d.off += 4
+		return math.Float64frombits(val)
 	case 0x04:
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
+		val := uint32(d.data[d.off])<<24 + uint32(d.data[d.off+1])<<16 + uint32(d.data[d.off+2])<<8 + uint32(d.data[d.off+3])
+		d.off += 4
+		return float64(math.Float32frombits(val))
 	}
-	return math.Float64frombits(val)
+	return 0
 }
 
 func (d *decoder) decodeUint(typ uint8) uint64 {
@@ -210,20 +225,12 @@ func (d *decoder) decodeUint(typ uint8) uint64 {
 	default:
 		log.Panicf("unexpected type 0x%02x (decode uint)", typ)
 	case 0x03:
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
+		val = uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
+		d.off += 4
 		fallthrough
 	case 0x02:
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
-		val = val<<8 + uint64(d.data[d.off])
-		d.off++
+		val = val<<16 + uint64(d.data[d.off])<<8 + uint64(d.data[d.off+1])
+		d.off += 2
 		fallthrough
 	case 0x01:
 		val = val<<8 + uint64(d.data[d.off])
@@ -232,7 +239,6 @@ func (d *decoder) decodeUint(typ uint8) uint64 {
 	case 0x00:
 		val = val<<8 + uint64(d.data[d.off])
 		d.off++
-		fallthrough
 	case 0x0c:
 	}
 	return val

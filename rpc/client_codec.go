@@ -114,9 +114,9 @@ func fixNetIPFamily(v string) uint8 {
 	}
 }
 
-func (c *clientCodec) serializeHead(msg *ClientToServerMessage) ([]byte, error) {
+func (c *clientCodec) encodeHead(msg *ClientToServerMessage) ([]byte, error) {
 	if msg.Version != 0x0000000a && msg.Version != 0x0000000b {
-		return nil, fmt.Errorf("failed to serialize head, version 0x%x", msg.Version)
+		return nil, fmt.Errorf("failed to encode head, version 0x%x", msg.Version)
 	}
 	buf := bytes.NewBuffer([]byte{})
 	buf.EncodeUint32(0x00000000)
@@ -139,9 +139,9 @@ func (c *clientCodec) serializeHead(msg *ClientToServerMessage) ([]byte, error) 
 	return buf.Bytes(), nil
 }
 
-func (c *clientCodec) serializeData(msg *ClientToServerMessage) ([]byte, error) {
+func (c *clientCodec) encodeData(msg *ClientToServerMessage) ([]byte, error) {
 	if msg.Version != 0x0000000a && msg.Version != 0x0000000b {
-		return nil, fmt.Errorf("failed to serialize data, version 0x%x", msg.Version)
+		return nil, fmt.Errorf("failed to encode data, version 0x%x", msg.Version)
 	}
 	buf := bytes.NewBuffer([]byte{})
 	buf.EncodeUint32(0x00000000)
@@ -191,7 +191,7 @@ func (c *clientCodec) serializeData(msg *ClientToServerMessage) ([]byte, error) 
 	return ret, nil
 }
 
-func (c *clientCodec) deserializeHead(buf *bytes.Buffer, msg *ServerToClientMessage) error {
+func (c *clientCodec) decodeHead(buf *bytes.Buffer, msg *ServerToClientMessage) error {
 	var err error
 	if _, err = buf.DecodeUint32(); err != nil {
 		return err
@@ -200,7 +200,7 @@ func (c *clientCodec) deserializeHead(buf *bytes.Buffer, msg *ServerToClientMess
 		return err
 	}
 	if msg.Version != 0x0000000a && msg.Version != 0x0000000b {
-		return fmt.Errorf("failed to deserialize head, version 0x%x", msg.Version)
+		return fmt.Errorf("failed to decode head, version 0x%x", msg.Version)
 	}
 	if msg.EncryptType, err = buf.DecodeUint8(); err != nil {
 		return err
@@ -218,9 +218,9 @@ func (c *clientCodec) deserializeHead(buf *bytes.Buffer, msg *ServerToClientMess
 	return nil
 }
 
-func (c *clientCodec) deserializeData(buf *bytes.Buffer, msg *ServerToClientMessage) error {
+func (c *clientCodec) decodeData(buf *bytes.Buffer, msg *ServerToClientMessage) error {
 	if msg.Version != 0x0000000a && msg.Version != 0x0000000b {
-		return fmt.Errorf("failed to serialize head, version 0x%x", msg.Version)
+		return fmt.Errorf("failed to encode head, version 0x%x", msg.Version)
 	}
 	var err error
 	if _, err = buf.DecodeUint32(); err != nil {
@@ -267,7 +267,7 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 	}
 	log.Printf("  < [send] seq 0x%08x, uin %s, method %s, dump buff:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
 	var data []byte
-	data, err = c.serializeData(msg)
+	data, err = c.encodeData(msg)
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 		data = cipher.Encrypt(data)
 	}
 	var head []byte
-	head, err = c.serializeHead(msg)
+	head, err = c.encodeHead(msg)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 		return err
 	}
 	buf := bytes.NewBuffer(v)
-	if err = c.deserializeHead(buf, msg); err != nil {
+	if err = c.decodeHead(buf, msg); err != nil {
 		log.Printf(">   [recv] seq 0xffffffff, uin %s, method Unknown, error %v, dump recv:\n%s", msg.Username, err, hex.Dump(v))
 		return err
 	}
@@ -348,7 +348,7 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 		return fmt.Errorf("failed to decode data, encrypt type 0x%x", msg.EncryptType)
 	}
 	v = buf.Bytes()
-	if err = c.deserializeData(buf, msg); err != nil {
+	if err = c.decodeData(buf, msg); err != nil {
 		log.Printf("->  [recv] seq 0x%08x, uin %s, method %s, error %v, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, err, hex.Dump(v))
 		return err
 	}

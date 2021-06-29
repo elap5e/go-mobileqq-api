@@ -246,6 +246,8 @@ func (c *Client) revc() {
 			call.ServerToClientMessage.Cookie = s2c.Cookie
 			call.ServerToClientMessage.Buffer = s2c.Buffer
 			call.done()
+		} else {
+			// server notify
 		}
 	}
 	// Terminate pending calls.
