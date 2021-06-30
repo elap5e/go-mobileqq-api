@@ -146,7 +146,7 @@ func (c *Client) handleAuthResponse(
 					),
 				),
 				resp.PictureData,
-				0644,
+				0600,
 			)
 			code, _ := util.ReadLine(reader)
 			return c.rpc.AuthCheckPictureAndGetSessionTickets(

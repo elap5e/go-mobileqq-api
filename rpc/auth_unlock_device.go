@@ -28,18 +28,29 @@ func NewAuthUnlockDeviceRequest(username string) *AuthUnlockDeviceRequest {
 	return req
 }
 
-func (req *AuthUnlockDeviceRequest) GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error) {
+func (req *AuthUnlockDeviceRequest) GetTLVs(
+	ctx context.Context,
+) (map[uint16]tlv.TLVCodec, error) {
 	c := ForClient(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
-	tlvs[0x0104] = tlv.NewT104(c.GetUserSignature(req.GetUsername()).Session.Auth)
-	tlvs[0x0116] = tlv.NewT116(c.cfg.Client.MiscBitmap, req.SubSigMap, req.SubAppIDList)
+	tlvs[0x0104] = tlv.NewT104(
+		c.GetUserSignature(req.GetUsername()).Session.Auth,
+	)
+	tlvs[0x0116] = tlv.NewT116(
+		c.cfg.Client.MiscBitmap,
+		req.SubSigMap,
+		req.SubAppIDList,
+	)
 	tlvs[0x0401] = tlv.NewT401(c.hashedGUID)
 	req.SetType(0x0014)
 	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 
-func (c *Client) AuthUnlockDevice(ctx context.Context, req *AuthUnlockDeviceRequest) (*AuthGetSessionTicketsResponse, error) {
+func (c *Client) AuthUnlockDevice(
+	ctx context.Context,
+	req *AuthUnlockDeviceRequest,
+) (*AuthGetSessionTicketsResponse, error) {
 	return c.AuthGetSessionTickets(ctx, req)
 }

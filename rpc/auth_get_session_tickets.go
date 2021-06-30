@@ -3,7 +3,6 @@ package rpc
 import (
 	"context"
 	"crypto/md5"
-	"encoding/hex"
 	"log"
 	"path"
 	"strconv"
@@ -224,7 +223,6 @@ func (c *Client) AuthGetSessionTickets(
 			key = md5.Sum(sig.Tickets["D2"].Key)
 		}
 		t119 := crypto.NewCipher(key).Decrypt(resp.T119)
-		log.Printf("--> [recv] dump tlv 0x0119(decrypt):\n%s\n%s", hex.Dump(t119), hex.Dump(key[:]))
 
 		tlvs := map[uint16]tlv.TLVCodec{}
 		buf := bytes.NewBuffer(t119)

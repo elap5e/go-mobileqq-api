@@ -23,7 +23,11 @@ type Message struct {
 	Status      map[string]string `jce:",10"`
 }
 
-func Marshal(ctx context.Context, msg *Message, opts map[string]interface{}) ([]byte, error) {
+func Marshal(
+	ctx context.Context,
+	msg *Message,
+	opts map[string]interface{},
+) ([]byte, error) {
 	for key, opt := range opts {
 		tbuf, err := jce.Marshal(opt)
 		if err != nil {
@@ -40,7 +44,12 @@ func Marshal(ctx context.Context, msg *Message, opts map[string]interface{}) ([]
 	return data, nil
 }
 
-func Unmarshal(ctx context.Context, data []byte, msg *Message, opts map[string]interface{}) error {
+func Unmarshal(
+	ctx context.Context,
+	data []byte,
+	msg *Message,
+	opts map[string]interface{},
+) error {
 	if int(data[0])<<24+int(data[1])<<16+int(data[2])<<8+int(data[3]) > len(data) {
 		return io.ErrUnexpectedEOF
 	}

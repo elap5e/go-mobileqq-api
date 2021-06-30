@@ -97,7 +97,11 @@ func (c *Client) GetUserSignature(username string) *UserSignature {
 	return sig
 }
 
-func (c *Client) SetUserSignature(ctx context.Context, username string, tlvs map[uint16]tlv.TLVCodec) {
+func (c *Client) SetUserSignature(
+	ctx context.Context,
+	username string,
+	tlvs map[uint16]tlv.TLVCodec,
+) {
 	sig := c.GetUserSignature(username)
 	tsig := ParseUserSignature(ctx, username, tlvs)
 	if len(tsig.DeviceToken) != 0 {
@@ -137,7 +141,11 @@ func (c *Client) SetUserKSIDSession(username string, ksid []byte) {
 	sig.Session.KSID = ksid
 }
 
-func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tlv.TLVCodec) *UserSignature {
+func ParseUserSignature(
+	ctx context.Context,
+	username string,
+	tlvs map[uint16]tlv.TLVCodec,
+) *UserSignature {
 	token := []byte{}
 	if v, ok := tlvs[0x0322]; ok {
 		token = v.(*tlv.TLV).MustGetValue().Bytes()

@@ -95,15 +95,25 @@ func (c *Client) init() {
 func (c *Client) initRandomKey() {
 	c.randomKey = [16]byte{}
 	c.rand.Read(c.randomKey[:])
-	log.Printf("--> [init] dump client random key\n%s", hex.Dump(c.randomKey[:]))
+	log.Printf(
+		"--> [init] dump client random key\n%s",
+		hex.Dump(c.randomKey[:]),
+	)
 }
 
 func (c *Client) initServerPublicKey() {
-	if err := c.setServerPublicKey(defaultServerECDHPublicKey, 0x0001); err != nil {
-		log.Fatalf("==> [init] failed to init default server public key, error: %s", err.Error())
+	err := c.setServerPublicKey(defaultServerECDHPublicKey, 0x0001)
+	if err != nil {
+		log.Fatalf(
+			"==> [init] failed to init default server public key, error: %s",
+			err.Error(),
+		)
 	}
 	if err := c.updateServerPublicKey(); err != nil {
-		log.Printf("==> [init] failed to init updated server public key, error: %s", err.Error())
+		log.Printf(
+			"==> [init] failed to init updated server public key, error: %s",
+			err.Error(),
+		)
 	}
 }
 
@@ -130,7 +140,9 @@ func (c *Client) updateServerPublicKey() error {
 			PublicKeySign string `json:"PubKeySign"`
 		} `json:"PubKeyMeta"`
 	}
-	resp, err := http.Get("https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000")
+	resp, err := http.Get(
+		"https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000",
+	)
 	if err != nil {
 		return err
 	}
@@ -144,13 +156,28 @@ func (c *Client) updateServerPublicKey() error {
 	if err != nil {
 		return err
 	}
-	hashed := sha256.Sum256([]byte(fmt.Sprintf("%d%d%s", 305, data.PublicKeyMetaData.KeyVersion, data.PublicKeyMetaData.PublicKey)))
-	sig, _ := base64.StdEncoding.DecodeString(data.PublicKeyMetaData.PublicKeySign)
-	if err := rsa.VerifyPKCS1v15(rsaPub.(*rsa.PublicKey), crypto.SHA256, hashed[:], sig); err != nil {
+	hashed := sha256.Sum256([]byte(fmt.Sprintf(
+		"%d%d%s",
+		305,
+		data.PublicKeyMetaData.KeyVersion,
+		data.PublicKeyMetaData.PublicKey,
+	)))
+	sig, _ := base64.StdEncoding.DecodeString(
+		data.PublicKeyMetaData.PublicKeySign,
+	)
+	if err := rsa.VerifyPKCS1v15(
+		rsaPub.(*rsa.PublicKey),
+		crypto.SHA256,
+		hashed[:],
+		sig,
+	); err != nil {
 		return err
 	}
 	key, _ := hex.DecodeString(data.PublicKeyMetaData.PublicKey)
-	if err := c.setServerPublicKey(key, data.PublicKeyMetaData.KeyVersion); err != nil {
+	if err := c.setServerPublicKey(
+		key,
+		data.PublicKeyMetaData.KeyVersion,
+	); err != nil {
 		return err
 	}
 	return nil
@@ -159,7 +186,10 @@ func (c *Client) updateServerPublicKey() error {
 func (c *Client) initPrivateKey() {
 	priv, err := ecdh.GenerateKey(c.rand)
 	if err != nil {
-		log.Fatalf("==> [init] failed to init private key, error: %s", err.Error())
+		log.Fatalf(
+			"==> [init] failed to init private key, error: %s",
+			err.Error(),
+		)
 	}
 	c.privateKey = *priv
 }
@@ -167,7 +197,9 @@ func (c *Client) initPrivateKey() {
 func (c *Client) initRandomPassword() {
 	c.randomPassword = [16]byte{}
 	for i := range c.randomPassword {
-		c.randomPassword[i] = byte(0x41 + c.rand.Intn(1)*0x20 + c.rand.Intn(26))
+		c.randomPassword[i] = byte(
+			0x41 + c.rand.Intn(1)*0x20 + c.rand.Intn(26),
+		)
 	}
 }
 

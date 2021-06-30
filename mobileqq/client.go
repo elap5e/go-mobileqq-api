@@ -26,8 +26,12 @@ func init() {
 			log.Fatalf(err.Error())
 		}
 	}
-	logFile, err := os.OpenFile(path.Join(logDir,
-		fmt.Sprintf("mqqapi-%s.log", time.Now().Local().Format("20060102150405")),
+	logFile, err := os.OpenFile(path.Join(
+		logDir,
+		fmt.Sprintf(
+			"mqqapi-%s.log",
+			time.Now().Local().Format("20060102150405"),
+		),
 	), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -94,7 +98,10 @@ func (c *Client) runUntilClosed(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) Run(ctx context.Context, f func(ctx context.Context) error) error {
+func (c *Client) Run(
+	ctx context.Context,
+	f func(ctx context.Context) error,
+) error {
 	var err error
 
 	defer c.cancel()
@@ -102,7 +109,8 @@ func (c *Client) Run(ctx context.Context, f func(ctx context.Context) error) err
 		c.connsMux.Lock()
 		defer c.connsMux.Unlock()
 		for _, conn := range c.conns {
-			if closeErr := conn.Close(); !errors.Is(closeErr, context.Canceled) {
+			closeErr := conn.Close()
+			if !errors.Is(closeErr, context.Canceled) {
 				err = fmt.Errorf("%v closeErr:%v;", err, closeErr)
 			}
 		}

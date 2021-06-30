@@ -67,7 +67,10 @@ func NewDeviceConfigForAndroid() *DeviceConfig {
 		Baseband:     "4.3.c5-00069-SM6150_GEN_PACK-1",
 		InnerVersion: "20.10.20",
 
-		GUID:          util.STBytesTobytes(md5.Sum(append(defaultDeviceOSBuildID, defaultDeviceMACAddress...))), // []byte("%4;7t>;28<fclient.5*6")
+		GUID: util.STBytesTobytes(md5.Sum(append(
+			defaultDeviceOSBuildID,
+			defaultDeviceMACAddress...,
+		))), // []byte("%4;7t>;28<fclient.5*6")
 		GUIDFlag:      uint32((1 << 24 & 0xFF000000) | (0 << 8 & 0xFF00)),
 		IsGUIDFileNil: false,
 		IsGUIDGenSucc: true,

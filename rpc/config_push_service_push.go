@@ -136,7 +136,10 @@ type ProxyIPInfo struct {
 	Port uint32 `jce:",2"`
 }
 
-func (c *Client) handleConfigPushServicePush(ctx context.Context, s2c *ServerToClientMessage) error {
+func (c *Client) handleConfigPushServicePush(
+	ctx context.Context,
+	s2c *ServerToClientMessage,
+) error {
 	msg := new(uni.Message)
 	req := new(ConfigPushServicePushRequest)
 	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
@@ -208,12 +211,14 @@ func (c *Client) handleConfigPushServicePush(ctx context.Context, s2c *ServerToC
 	if err != nil {
 		return err
 	}
-	if err := c.Call(ServiceMethodConfigPushServicePushResponse, &ClientToServerMessage{
-		Username: s2c.Username,
-		Seq:      s2c.Seq,
-		Buffer:   buf,
-		Simple:   false,
-	}, s2c); err != nil {
+	if err := c.Call(ServiceMethodConfigPushServicePushResponse,
+		&ClientToServerMessage{
+			Username: s2c.Username,
+			Seq:      s2c.Seq,
+			Buffer:   buf,
+			Simple:   false,
+		}, s2c,
+	); err != nil {
 		return err
 	}
 	return nil

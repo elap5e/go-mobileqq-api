@@ -51,7 +51,7 @@ func (c *Cipher) encryptBlock(dst, src []byte) {
 	s1 := binary.BigEndian.Uint32(src[4:8])
 	var sum uint32 = 0x00000000
 	for i := 0; i < 0x10; i++ {
-		sum += 0x9E3779B9 // -1640531527
+		sum += 0x9e3779B9 // -1640531527
 		s0 += ((s1 << 4) + c.key[0]) ^ (s1 + sum) ^ ((s1 >> 5) + c.key[1])
 		s1 += ((s0 << 4) + c.key[2]) ^ (s0 + sum) ^ ((s0 >> 5) + c.key[3])
 	}
@@ -87,7 +87,7 @@ func (c *Cipher) decryptBlock(dst, src []byte) {
 	for i := 0; i < 0x10; i++ {
 		s1 -= ((s0 << 4) + c.key[2]) ^ (s0 + sum) ^ ((s0 >> 5) + c.key[3])
 		s0 -= ((s1 << 4) + c.key[0]) ^ (s1 + sum) ^ ((s1 >> 5) + c.key[1])
-		sum -= 0x9E3779B9 // -1640531527
+		sum -= 0x9e3779B9 // -1640531527
 	}
 	binary.BigEndian.PutUint32(dst[0:4], s0)
 	binary.BigEndian.PutUint32(dst[4:8], s1)

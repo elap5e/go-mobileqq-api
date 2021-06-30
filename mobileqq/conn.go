@@ -85,18 +85,27 @@ var (
 )
 
 func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
-	rawURIs := append(connSocketMobileWiFiIPv4Default, connSocketMobileWiFiIPv6Default...)
+	rawURIs := append(
+		connSocketMobileWiFiIPv4Default,
+		connSocketMobileWiFiIPv6Default...,
+	)
 
 	var addrs []*net.TCPAddr
 	for _, rawURI := range rawURIs {
 		uri, err := url.Parse(rawURI)
 		if err != nil {
-			log.Printf("x_x [conn] failed to parse raw uri %s, with error %s", rawURI, err.Error())
+			log.Printf(
+				"x_x [conn] failed to parse raw uri %s, with error %s",
+				rawURI, err.Error(),
+			)
 			continue
 		}
 		ips, err := net.LookupIP(uri.Hostname())
 		if err != nil {
-			log.Printf("x_x [conn] failed to nslookup %s, with error %s", uri.Hostname(), err.Error())
+			log.Printf(
+				"x_x [conn] failed to nslookup %s, with error %s",
+				uri.Hostname(), err.Error(),
+			)
 			continue
 		}
 		port, _ := strconv.Atoi(uri.Port())

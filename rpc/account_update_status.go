@@ -72,7 +72,11 @@ type AccountUpdateStatusResponse struct {
 	LargeSeqUpdate bool   `jce:",14"`
 }
 
-func NewAccountUpdateStatusRequest(uin uint64, status PushRegisterInfoStatusType, kick bool) *AccountUpdateStatusRequest {
+func NewAccountUpdateStatusRequest(
+	uin uint64,
+	status PushRegisterInfoStatusType,
+	kick bool,
+) *AccountUpdateStatusRequest {
 	ids := []uint64{0x01, 0x02, 0x04}
 	bid := uint64(0x0000000000000000)
 	for _, id := range ids {
@@ -118,7 +122,10 @@ func NewAccountUpdateStatusRequest(uin uint64, status PushRegisterInfoStatusType
 	}
 }
 
-func (c *Client) AccountUpdateStatus(ctx context.Context, req *AccountUpdateStatusRequest) (*AccountUpdateStatusResponse, error) {
+func (c *Client) AccountUpdateStatus(
+	ctx context.Context,
+	req *AccountUpdateStatusRequest,
+) (*AccountUpdateStatusResponse, error) {
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
 		PacketType:  0x00,

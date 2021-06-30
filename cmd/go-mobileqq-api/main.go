@@ -61,7 +61,7 @@ func init() {
 			_ = ioutil.WriteFile(
 				path.Join(baseDir, "config.yaml"),
 				[]byte(configYAML),
-				0644,
+				0600,
 			)
 			log.Fatalf("$_$ [init] create config.yaml")
 		} else {

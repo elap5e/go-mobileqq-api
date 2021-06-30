@@ -124,7 +124,10 @@ func (c *Client) revc() {
 			call.done()
 		} else {
 			// server notify
-			log.Printf("==> [recv] seq 0x%08x, uin %s, method %s, server notify", seq, s2c.Username, s2c.ServiceMethod)
+			log.Printf(
+				"==> [recv] seq 0x%08x, uin %s, method %s, server notify",
+				seq, s2c.Username, s2c.ServiceMethod,
+			)
 		}
 	}
 	// Terminate pending calls.
@@ -157,7 +160,9 @@ func (call *ClientCall) done() {
 	default:
 		// We don't want to block here. It is the caller's responsibility to make
 		// sure the channel has enough buffer space. See comment in Go().
-		log.Println("rpc: discarding Call reply due to insufficient Done chan capacity")
+		log.Println(
+			"rpc: discarding Call reply due to insufficient Done chan capacity",
+		)
 	}
 }
 
@@ -172,7 +177,7 @@ func (c *Client) Close() error {
 	return c.codec.Close()
 }
 
-func (c *Client) preprocess(c2s *ClientToServerMessage, s2c *ServerToClientMessage) {
+func (c *Client) preprocess(c2s *ClientToServerMessage) {
 	c2s.AppID = c.cfg.Client.AppID
 	sig := c.GetUserSignature(c2s.Username)
 	c2s.Cookie = sig.Session.Cookie
@@ -192,10 +197,15 @@ func (c *Client) preprocess(c2s *ClientToServerMessage, s2c *ServerToClientMessa
 	c2s.CodecRevision = c.cfg.Client.Revision
 }
 
-func (c *Client) Go(serviceMethod string, c2s *ClientToServerMessage, s2c *ServerToClientMessage, done chan *ClientCall) *ClientCall {
+func (c *Client) Go(
+	serviceMethod string,
+	c2s *ClientToServerMessage,
+	s2c *ServerToClientMessage,
+	done chan *ClientCall,
+) *ClientCall {
 	call := new(ClientCall)
 	call.ServiceMethod = serviceMethod
-	c.preprocess(c2s, s2c)
+	c.preprocess(c2s)
 	call.ClientToServerMessage, call.ServerToClientMessage = c2s, s2c
 	if done == nil {
 		done = make(chan *ClientCall, 10) // buffered.
@@ -213,7 +223,11 @@ func (c *Client) Go(serviceMethod string, c2s *ClientToServerMessage, s2c *Serve
 	return call
 }
 
-func (c *Client) Call(serviceMethod string, c2s *ClientToServerMessage, s2c *ServerToClientMessage) error {
+func (c *Client) Call(
+	serviceMethod string,
+	c2s *ClientToServerMessage,
+	s2c *ServerToClientMessage,
+) error {
 	call := <-c.Go(serviceMethod, c2s, s2c, make(chan *ClientCall, 1)).Done
 	return call.Error
 }
