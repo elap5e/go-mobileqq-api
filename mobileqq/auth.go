@@ -67,7 +67,7 @@ func (c *Client) handleAuthResponse(
 		return resp, nil
 	case 0x02:
 		if resp.CaptchaSign != "" {
-			l, err := net.Listen("tcp", ":0")
+			l, err := net.Listen("tcp", c.cfg.Client.AuthAddress)
 			if err != nil {
 				log.Fatalf("listen:%+s\n", err)
 			}

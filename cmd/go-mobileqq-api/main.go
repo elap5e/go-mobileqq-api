@@ -26,9 +26,14 @@ accounts:
     status: online
 
 configs:
+  auth:
+    address: 127.0.0.1:0
+    captcha: true
   database:
-    driverName: sqlite
     dataSourceName: mqqapi.db
+    driverName: sqlite
+  netIPFamily: dual
+  networkType: wifi
   protocol: android-tablet
 
 plugins:
@@ -72,7 +77,7 @@ func init() {
 func main() {
 	c := mobileqq.NewClient(
 		mobileqq.Option{
-			Config: mobileqq.NewClientConfigForAndroidTablet(),
+			Config: mobileqq.NewClientConfigFromViper(),
 		},
 	)
 	if err := c.HeartbeatAlive(); err != nil {
