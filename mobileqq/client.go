@@ -17,11 +17,20 @@ import (
 )
 
 func init() {
+	for _, dir := range []string{baseDir, cacheDir, logDir} {
+		_, err := os.Stat(dir)
+		if err == nil || os.IsExist(err) {
+			err = os.MkdirAll(dir, 0600)
+		}
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+	}
 	logFile, err := os.OpenFile(path.Join(logDir,
 		fmt.Sprintf("mqqapi-%s.log", time.Now().Local().Format("20060102150405")),
-	), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
-		panic(err)
+		log.Fatalf(err.Error())
 	}
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 }

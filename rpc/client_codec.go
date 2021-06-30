@@ -111,7 +111,7 @@ func (c *clientCodec) decodeHead(buf *bytes.Buffer, msg *ServerToClientMessage) 
 	}
 	if _, err = buf.DecodeUint8(); err != nil {
 		return err
-	}
+	} // 0x00
 	l, err := buf.DecodeUint32()
 	if err != nil {
 		return err
@@ -133,14 +133,14 @@ func (c *clientCodec) decodeBody(buf *bytes.Buffer, msg *ServerToClientMessage) 
 	if msg.Seq, err = buf.DecodeUint32(); err != nil {
 		return err
 	}
-	if msg.ReturnCode, err = buf.DecodeUint32(); err != nil {
+	if msg.Code, err = buf.DecodeUint32(); err != nil {
 		return err
 	}
 	var l uint32
 	if l, err = buf.DecodeUint32(); err != nil {
 		return err
 	}
-	if _, err = buf.DecodeBytesN(uint16(l - 4)); err != nil {
+	if msg.Message, err = buf.DecodeStringN(uint16(l - 4)); err != nil {
 		return err
 	}
 	if l, err = buf.DecodeUint32(); err != nil {
@@ -157,7 +157,7 @@ func (c *clientCodec) decodeBody(buf *bytes.Buffer, msg *ServerToClientMessage) 
 	}
 	if _, err = buf.DecodeUint32(); err != nil {
 		return err
-	}
+	} // 0x00000000
 	msg.Buffer = buf.Bytes()
 	return nil
 }
@@ -259,7 +259,7 @@ func (c *clientCodec) DecodeBody(msg *ServerToClientMessage) error {
 	}
 	log.Printf("->  [recv] seq 0x%08x, uin %s, method %s, dump data:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(v))
 	log.Printf("=>  [recv] seq 0x%08x, uin %s, method %s, dump buff:\n%s", msg.Seq, msg.Username, msg.ServiceMethod, hex.Dump(msg.Buffer))
-	log.Printf("==> [recv] seq 0x%08x, uin %s, method %s", msg.Seq, msg.Username, msg.ServiceMethod)
+	log.Printf("==> [recv] seq 0x%08x, uin %s, method %s, code 0x%08x, message %s", msg.Seq, msg.Username, msg.ServiceMethod, msg.Code, msg.Message)
 	return nil
 }
 

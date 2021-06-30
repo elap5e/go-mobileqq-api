@@ -44,7 +44,8 @@ type ServerToClientMessage struct {
 	EncryptD2Key  [16]byte
 	Username      string
 	Seq           uint32
-	ReturnCode    uint32
+	Code          uint32
+	Message       string
 	ServiceMethod string
 	Cookie        []byte
 	Buffer        []byte
@@ -115,7 +116,8 @@ func (c *Client) revc() {
 			ts2c.EncryptType = s2c.EncryptType
 			ts2c.Username = s2c.Username
 			ts2c.Seq = s2c.Seq
-			ts2c.ReturnCode = s2c.ReturnCode
+			ts2c.Code = s2c.Code
+			ts2c.Message = s2c.Message
 			ts2c.ServiceMethod = s2c.ServiceMethod
 			ts2c.Cookie = s2c.Cookie
 			ts2c.Buffer = s2c.Buffer

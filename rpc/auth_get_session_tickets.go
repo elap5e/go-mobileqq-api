@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"log"
 	"path"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	"github.com/elap5e/go-mobileqq-api/crypto"
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
 	"github.com/elap5e/go-mobileqq-api/tlv"
-	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type AuthGetSessionTicketsRequest interface {
@@ -216,30 +216,23 @@ func (c *Client) AuthGetSessionTickets(
 
 		// decode t119
 		sig := c.GetUserSignature(req.GetUsername())
-		tlvs := map[uint16]tlv.TLVCodec{}
+		key := [16]byte{}
 		switch msg.Type {
+		case 0x0009, 0x0014:
+			copy(key[:], sig.Tickets["A1"].Key)
 		case 0x000b:
-			t119 := crypto.NewCipher(
-				md5.Sum(sig.Tickets["D2"].Key),
-			).Decrypt(resp.T119)
-			buf := bytes.NewBuffer(t119)
-			l, _ := buf.DecodeUint16()
-			for i := 0; i < int(l); i++ {
-				v := tlv.TLV{}
-				v.Decode(buf)
-				tlvs[v.GetType()] = &v
-			}
-		case 0x0014:
-			t119 := crypto.NewCipher(
-				util.BytesToSTBytes(sig.Tickets["A1"].Key),
-			).Decrypt(resp.T119)
-			buf := bytes.NewBuffer(t119)
-			l, _ := buf.DecodeUint16()
-			for i := 0; i < int(l); i++ {
-				v := tlv.TLV{}
-				v.Decode(buf)
-				tlvs[v.GetType()] = &v
-			}
+			key = md5.Sum(sig.Tickets["D2"].Key)
+		}
+		t119 := crypto.NewCipher(key).Decrypt(resp.T119)
+		log.Printf("--> [recv] dump tlv 0x0119(decrypt):\n%s\n%s", hex.Dump(t119), hex.Dump(key[:]))
+
+		tlvs := map[uint16]tlv.TLVCodec{}
+		buf := bytes.NewBuffer(t119)
+		l, _ := buf.DecodeUint16()
+		for i := 0; i < int(l); i++ {
+			v := tlv.TLV{}
+			v.Decode(buf)
+			tlvs[v.GetType()] = &v
 		}
 		tlv.DumpTLVs(ctx, tlvs)
 
@@ -251,25 +244,39 @@ func (c *Client) AuthGetSessionTickets(
 				v.(*tlv.TLV).MustGetValue().Bytes(),
 			)
 		}
-		c.SaveUserSignatures(path.Join(c.cfg.BaseDir, PATH_TO_USER_SIGNATURE_JSON))
+		c.SaveUserSignatures(path.Join(
+			c.cfg.BaseDir, PATH_TO_USER_SIGNATURE_JSON,
+		))
 
-		log.Printf("^_^ [info] login success, uin %s, code 0x00", resp.Username)
+		log.Printf(
+			"^_^ [info] login success, uin %s, code 0x00",
+			resp.Username,
+		)
 	case 0x02:
 		// captcha
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
 		c.extraData[0x0547] = resp.T546 // TODO: check
 		if resp.CaptchaSign != "" {
-			log.Printf(">_x [warn] need captcha verify, uin %s, url %s, code 0x02", resp.Username, resp.CaptchaSign)
+			log.Printf(
+				">_x [warn] need captcha verify, uin %s, url %s, code 0x02",
+				resp.Username, resp.CaptchaSign,
+			)
 		} else {
-			log.Printf(">_x [warn] need picture verify, uin %s, code 0x02", resp.Username)
+			log.Printf(
+				">_x [warn] need picture verify, uin %s, code 0x02",
+				resp.Username,
+			)
 		}
 	case 0xa0:
 		// device lock
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
 		c.t17b = resp.T17B
-		log.Printf(">_x [warn] need sms mobile verify response, uin %s, code 0xa0", resp.Username)
+		log.Printf(
+			">_x [warn] need sms mobile verify response, uin %s, code 0xa0",
+			resp.Username,
+		)
 	case 0xef:
 		// device lock
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
@@ -283,15 +290,30 @@ func (c *Client) AuthGetSessionTickets(
 				c.randomPassword[:]...),
 				c.t402...),
 		)
-		log.Printf(">_x [warn] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s, code 0xef", resp.Username, resp.SMSMobile, resp.Code, resp.Message)
+		log.Printf(
+			">_x [warn] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s, code 0xef",
+			resp.Username, resp.SMSMobile, resp.Code, resp.Message,
+		)
 	case 0x01:
-		log.Printf("x_x [fail] invalid login, uin %s, code 0x01, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
+		log.Printf(
+			"x_x [fail] invalid login, uin %s, code 0x01, error %s: %s",
+			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
+		)
 	case 0x06:
-		log.Printf("x_x [fail] not implement, uin %s, code 0x06, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
+		log.Printf(
+			"x_x [fail] not implement, uin %s, code 0x06, error %s: %s",
+			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
+		)
 	case 0x09:
-		log.Printf("x_x [fail] invalid service, uin %s, code 0x09, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
+		log.Printf(
+			"x_x [fail] invalid service, uin %s, code 0x09, error %s: %s",
+			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
+		)
 	case 0xed:
-		log.Printf("x_x [fail] invalid device, uin %s, code 0xed, error %s: %s", resp.Username, resp.ErrorTitle, resp.ErrorMessage)
+		log.Printf(
+			"x_x [fail] invalid device, uin %s, code 0xed, error %s: %s",
+			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
+		)
 	case 0xcc:
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
@@ -303,7 +325,9 @@ func (c *Client) AuthGetSessionTickets(
 				c.randomPassword[:]...),
 				c.t402...),
 		)
-		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(resp.Username))
+		return c.AuthUnlockDevice(ctx, NewAuthUnlockDeviceRequest(
+			resp.Username,
+		))
 	}
 	return resp, nil
 }

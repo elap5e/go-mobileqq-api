@@ -14,25 +14,25 @@ import (
 const PATH_TO_USER_SIGNATURE_JSON = "user_signatures.json"
 
 type UserSignature struct {
-	Username    string
+	Username    string            `json:"username"`
 	PasswordMD5 []byte            `json:"-"`
-	DeviceToken []byte            `json:",omitempty"`
-	Domains     map[string]string `json:",omitempty"`
-	Tickets     map[string]Ticket `json:",omitempty"`
-	Session     Session
+	DeviceToken []byte            `json:"deviceToken,omitempty"`
+	Domains     map[string]string `json:"domains,omitempty"`
+	Tickets     map[string]Ticket `json:"tickets,omitempty"`
+	Session     Session           `json:"session"`
 }
 
 type Ticket struct {
-	Sig []byte
-	Key []byte `json:",omitempty"`
-	Iss int64
-	Exp int64 `json:",omitempty"`
+	Sig []byte `json:"sig"`
+	Key []byte `json:"key,omitempty"`
+	Iss int64  `json:"iss"`
+	Exp int64  `json:"exp,omitempty"`
 }
 
 type Session struct {
-	Auth   []byte `json:",omitempty"`
-	Cookie []byte
-	KSID   []byte `json:",omitempty"`
+	Auth   []byte `json:"auth,omitempty"`
+	Cookie []byte `json:"cookie"`
+	KSID   []byte `json:"ksid,omitempty"`
 }
 
 func (c *Client) initUserSignatures() {
@@ -144,19 +144,20 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 	}
 
 	domains := map[string]string{}
-	{
-		buf := bytes.NewBuffer(tlvs[0x0512].(*tlv.TLV).MustGetValue().Bytes())
+	if v, ok := tlvs[0x0512]; ok {
+		buf := bytes.NewBuffer(v.(*tlv.TLV).MustGetValue().Bytes())
 		l, _ := buf.DecodeUint16()
 		for i := 0; i < int(l); i++ {
 			key, _ := buf.DecodeString()
 			domains[key], _ = buf.DecodeString()
 			_, _ = buf.DecodeUint16()
 		}
+		// TODO: duplicate domain qun.qq.com
 	}
 
 	chgt := map[uint16]uint32{}
-	{
-		buf := bytes.NewBuffer(tlvs[0x0138].(*tlv.TLV).MustGetValue().Bytes())
+	if v, ok := tlvs[0x0138]; ok {
+		buf := bytes.NewBuffer(v.(*tlv.TLV).MustGetValue().Bytes())
 		l, _ := buf.DecodeUint32()
 		for i := 0; i < int(l); i++ {
 			key, _ := buf.DecodeUint16()
@@ -168,11 +169,6 @@ func ParseUserSignature(ctx context.Context, username string, tlvs map[uint16]tl
 	tickets := map[string]Ticket{}
 	{
 		if v, ok := tlvs[0x0106]; ok {
-			// key := append(ForClient(ctx).GetUserSignature(username).PasswordMD5, make([]byte, 8)...)
-			// uin, _ := strconv.ParseInt(username, 10, 64)
-			// binary.BigEndian.PutUint64(key[16:], uint64(uin))
-			// sig := crypto.NewCipher(md5.Sum(key)).Decrypt(v.(*tlv.TLV).MustGetValue().Bytes())
-			// log.Printf("\n%s", hex.Dump(sig))
 			tickets["A1"] = Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x010c].(*tlv.TLV).MustGetValue().Bytes(),
