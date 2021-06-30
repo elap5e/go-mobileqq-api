@@ -86,5 +86,10 @@ const (
 	ServiceMethodAuthUsernameToUin   = "wtlogin.name2uin"
 	ServiceMethodAuthRegisterAccount = "wtlogin.trans_emp"
 
-	ServiceMethodPushServiceRegister = "StatSvc.register"
+	ServiceMethodAccountUpdateStatus       = "StatSvc.register"
+	ServiceMethodAccountGetDeviceLoginInfo = "StatSvc.GetDevLoginInfo"
+
+	ServiceMethodConfigPushServicePushDomain   = "ConfigPushSvc.PushDomain"
+	ServiceMethodConfigPushServicePushRequest  = "ConfigPushSvc.PushReq"
+	ServiceMethodConfigPushServicePushResponse = "ConfigPushSvc.PushResp"
 )

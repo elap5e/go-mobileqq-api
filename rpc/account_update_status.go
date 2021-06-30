@@ -137,7 +137,7 @@ func (c *Client) AccountUpdateStatus(ctx context.Context, req *AccountUpdateStat
 		return nil, err
 	}
 	s2c := new(ServerToClientMessage)
-	if err := c.Call(ServiceMethodPushServiceRegister, &ClientToServerMessage{
+	if err := c.Call(ServiceMethodAccountUpdateStatus, &ClientToServerMessage{
 		Username: strconv.FormatInt(int64(req.Uin), 10),
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,

@@ -1,6 +1,7 @@
 .vscode/
 bin/
 tmp/
+*_test.go
 
 # Binaries for programs and plugins
 *.exe

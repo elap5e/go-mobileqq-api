@@ -215,3 +215,22 @@ func (c *Client) Call(serviceMethod string, c2s *ClientToServerMessage, s2c *Ser
 	call := <-c.Go(serviceMethod, c2s, s2c, make(chan *ClientCall, 1)).Done
 	return call.Error
 }
+
+// func (c *Client) Register(
+// 	serviceMethod string,
+// 	dispatcher func(context.Context, *ServerToClientMessage) error,
+// ) error {
+// 	http.HandleFunc()
+// 	return nil
+// }
+
+// func HandleFunc(
+// 	serviceMethod string,
+// 	handler func(context.Context, *ServerToClientMessage) error,
+// ) error {
+// 	return nil
+// }
+
+// type Handler interface {
+// 	ServeHTTP(ResponseWriter, *Request)
+// }
