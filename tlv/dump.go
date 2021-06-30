@@ -155,10 +155,11 @@ func DumpTLVs(ctx context.Context, tlvs map[uint16]TLVCodec, flag ...bool) {
 				kv[key], _ = buf.DecodeString()
 				_, _ = buf.DecodeUint16()
 			}
-			log.Printf("--> [recv] tlv 0x0512(decrypt), domain tickets:")
+			tickets := ""
 			for key := range kv {
-				fmt.Printf("domain %17s, ticket %s\n", key, kv[key])
+				tickets += fmt.Sprintf("\ndomain %17s, ticket %s", key, kv[key])
 			}
+			log.Printf("--> [recv] tlv 0x0512(decrypt), domain tickets: %s", tickets)
 		case 0x0528: // _loginResultField1
 			log.Printf("--> [recv] tlv 0x0528(decrypt), _loginResultField1 %s", string(buf.Bytes()))
 

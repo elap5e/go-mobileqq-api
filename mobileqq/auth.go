@@ -73,9 +73,9 @@ func (c *Client) handleAuthResponse(
 			}
 			addr := l.Addr().(*net.TCPAddr).String()
 			u, _ := url.Parse(string(resp.CaptchaSign))
-			captcha := ".......... ........ >_< [info] 1st, submit captcha manually: " + resp.CaptchaSign + "\n"
-			captcha += ".......... ........ >_< [info] 2nd, submit captcha by popup: http://" + addr + "/api/captcha?" + u.RawQuery
-			log.Printf(">_< [info] verify captcha:\n%s\n", captcha)
+			info := ".......... ........ >_< [info] 1st, submit captcha manually: " + resp.CaptchaSign + "\n"
+			info += ".......... ........ >_< [info] 2nd, submit captcha by popup: http://" + addr + "/api/captcha?" + u.RawQuery
+			log.Printf(">_< [info] verify captcha:\n%s\n", info)
 			done := make(chan string, 1)
 			// ctx, cancel := context.WithCancel(context.Background())
 			// go func() {
@@ -95,7 +95,10 @@ func (c *Client) handleAuthResponse(
 						ticket := r.FormValue("ticket")
 						// fmt.Println()
 						// cancel()
-						log.Printf(">_< [info] got captcha verify code: %s", ticket)
+						log.Printf(
+							">_< [info] got captcha verify code: %s",
+							ticket,
+						)
 						done <- ticket
 					}
 				},
@@ -128,9 +131,10 @@ func (c *Client) handleAuthResponse(
 				),
 			)
 		} else {
+			info := ".......... ........ >_< [info] picture verify code: "
 			log.Printf(
-				">_< [info] picture verify:\n\033]1337;File=name=picture.jpg;inline=1;width=11;height=2:%s\a(please check out picture.jpg)\n",
-				base64.StdEncoding.EncodeToString(resp.PictureData),
+				">_< [info] picture verify:\n\033]1337;File=name=picture.jpg;inline=1;width=11;height=2:%s\a(please check out picture.jpg)\n%s",
+				base64.StdEncoding.EncodeToString(resp.PictureData), info,
 			)
 			_ = ioutil.WriteFile(
 				path.Join(
@@ -144,7 +148,6 @@ func (c *Client) handleAuthResponse(
 				resp.PictureData,
 				0644,
 			)
-			fmt.Printf(".......... ........ >_< [info] picture verify code: ")
 			code, _ := util.ReadLine(reader)
 			return c.rpc.AuthCheckPictureAndGetSessionTickets(
 				c.ctx,
@@ -157,10 +160,16 @@ func (c *Client) handleAuthResponse(
 		}
 	case 0x01:
 		return nil, fmt.Errorf("invalid password(0x01)")
+	case 0x0a: // TODO: check
+		return nil, fmt.Errorf("service temporarily unavailable(0x0a)")
 	case 0x9a:
 		return nil, fmt.Errorf("service temporarily unavailable(0x9a)")
-	case 0xa0:
-		fmt.Printf(".......... ........ >_< [info] sms mobile verify code: ")
+	case 0xa0: // TODO: check
+		info := ".......... ........ >_< [info] sms verification code: "
+		log.Printf(
+			">_< [info] sms verification mobile %s\n%s",
+			resp.SMSMobile, info,
+		)
 		code, _ := util.ReadLine(reader)
 		return c.rpc.AuthCheckSMSAndGetSessionTickets(
 			c.ctx,
@@ -170,15 +179,20 @@ func (c *Client) handleAuthResponse(
 			),
 		)
 	case 0xa1:
-		return nil, fmt.Errorf("too many sms verify requests(0xa1)")
+		return nil, fmt.Errorf("too many sms verification requests(0xa1)")
 	case 0xa2:
-		return nil, fmt.Errorf("frequent sms verify requests(0xa2)")
+		return nil, fmt.Errorf("frequent sms verification requests(0xa2)")
+	case 0xa4:
+		return nil, fmt.Errorf("bad requests(0xa4)")
 	case 0xed:
 		return nil, fmt.Errorf("too many failures(0xed)")
 	case 0xef:
 		if resp.SMSMobile != "" {
-			log.Printf(">_< [info] verify sms mobile %s", resp.SMSMobile)
-			fmt.Printf(".......... ........ >_< [info] press ENTER to send sms mobile verify request: ")
+			info := ".......... ........ >_< [info] press ENTER to send sms verification request: "
+			log.Printf(
+				">_< [info] sms verification mobile %s\n%s",
+				resp.SMSMobile, info,
+			)
 			_, _ = util.ReadLine(reader)
 			return c.rpc.AuthRefreshSMSData(
 				c.ctx,

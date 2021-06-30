@@ -225,12 +225,12 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 	var err error
 	v := make([]byte, 4)
-	if _, err = c.conn.Read(v); err != nil {
+	if err = c.loopRead(v); err != nil {
 		return err
 	}
 	l := uint32(v[0])<<24 | uint32(v[1])<<16 | uint32(v[2])<<8 | uint32(v[3])<<0
 	v = append(v, make([]byte, l-4)...)
-	if _, err = c.conn.Read(v[4:]); err != nil {
+	if err = c.loopRead(v[4:]); err != nil {
 		return err
 	}
 	c.buf = bytes.NewBuffer(v)
@@ -265,4 +265,17 @@ func (c *clientCodec) DecodeBody(msg *ServerToClientMessage) error {
 
 func (c *clientCodec) Close() error {
 	return c.conn.Close()
+}
+
+func (c *clientCodec) loopRead(v []byte) error {
+	l := len(v)
+	i := 0
+	for i < l {
+		n, err := c.conn.Read(v[i:])
+		if err != nil {
+			return err
+		}
+		i += n
+	}
+	return nil
 }

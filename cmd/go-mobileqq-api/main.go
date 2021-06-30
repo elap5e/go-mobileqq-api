@@ -18,9 +18,32 @@ var (
 	password   string
 )
 
-const configYAML = `accounts:
+const configYAML = `# Go MobileQQ API Configuration Template
+
+accounts:
   - username: 10000
     password: 123456
+    status: online
+
+configs:
+  database:
+    driverName: sqlite
+    dataSourceName: mqqapi.db
+  protocol: android-tablet
+
+plugins:
+  echo:
+    id: 0f73f3cd-edef-4b47-b94c-90bc48953694
+
+servers:
+  endpoints:
+    - socket://msfwifi.3g.qq.com:8080
+    - socket://msfwifiv6.3g.qq.com:8080
+    - socket://msfxg.3g.qq.com:8080
+    - socket://msfxg.3g.qq.com:80
+    - https://msfhttp.3g.qq.com:80
+  forceIPv6: false
+  overwrite: false
 `
 
 func init() {
@@ -47,7 +70,11 @@ func init() {
 }
 
 func main() {
-	c := mobileqq.NewClient(mobileqq.Option{Config: mobileqq.NewClientConfigForAndroidTablet()})
+	c := mobileqq.NewClient(
+		mobileqq.Option{
+			Config: mobileqq.NewClientConfigForAndroidTablet(),
+		},
+	)
 	if err := c.HeartbeatAlive(); err != nil {
 		log.Printf("x_x [test] error: %s", err.Error())
 	}
