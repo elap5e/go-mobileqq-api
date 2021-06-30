@@ -43,6 +43,7 @@ type Client struct {
 	mutex    sync.Mutex
 	seq      uint32
 	pending  map[uint32]*ClientCall
+	handlers map[string]HandleFunc
 	closing  bool
 	shutdown bool
 
@@ -90,6 +91,8 @@ func (c *Client) init() {
 	c.initPrivateKey()
 
 	c.initUserSignatures()
+
+	c.initHandlers()
 }
 
 func (c *Client) initRandomKey() {

@@ -2,6 +2,9 @@ package rpc
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"path"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
@@ -45,11 +48,12 @@ type FileStorageServerList struct {
 	GPicDownLoadList     []FileStorageServerListInfo `jce:",2"`
 	QzoneProxyServerList []FileStorageServerListInfo `jce:",3"`
 	UrlEncodeServerList  []FileStorageServerListInfo `jce:",4"`
-	BigDataIPChannel     BigDataIPChannel            `jce:",5"`
+	BigDataIPChannel     *BigDataIPChannel           `jce:",5"`
 	VIPEmotionList       []FileStorageServerListInfo `jce:",6"`
 	C2CPicDownList       []FileStorageServerListInfo `jce:",7"`
-	FormatIPInfo         FormatIPInfo                `jce:",8"`
-	DomainIPChannel      DomainIPChannel             `jce:",9"`
+	FormatIPInfo         *FormatIPInfo               `jce:",8"`
+	DomainIPChannel      *DomainIPChannel            `jce:",9"`
+	PTTList              []byte                      `jce:",10"`
 }
 
 type FileStorageServerListInfo struct {
@@ -68,6 +72,7 @@ type BigDataIPChannel struct {
 	Key     []byte          `jce:",2"`
 	Uin     uint64          `jce:",3"`
 	Flag    uint32          `jce:",4"`
+	Buffer  []byte          `jce:",5"`
 }
 
 type BigDataIPList struct {
@@ -105,12 +110,12 @@ type DomainIPInfo struct {
 }
 
 type ClientLogConfig struct {
-	Type       uint32    `jce:",1"`
-	TimeStart  TimeStamp `jce:",2"`
-	TimeFinish TimeStamp `jce:",3"`
-	LogLevel   uint8     `jce:",4"`
-	Cookie     uint32    `jce:",5"`
-	Seq        uint64    `jce:",6"`
+	Type       uint32     `jce:",1"`
+	TimeStart  *TimeStamp `jce:",2"`
+	TimeFinish *TimeStamp `jce:",3"`
+	LogLevel   uint8      `jce:",4"`
+	Cookie     uint32     `jce:",5"`
+	Seq        uint64     `jce:",6"`
 }
 
 type TimeStamp struct {
@@ -139,20 +144,20 @@ type ProxyIPInfo struct {
 func (c *Client) handleConfigPushServicePush(
 	ctx context.Context,
 	s2c *ServerToClientMessage,
-) error {
+) (*ClientToServerMessage, error) {
 	msg := new(uni.Message)
 	req := new(ConfigPushServicePushRequest)
 	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
-		"PushReq": msg,
+		"PushReq": req,
 	}); err != nil {
-		return err
+		return nil, err
 	}
 	resp := new(ConfigPushServicePushResponse)
 	switch req.Type {
 	case 0x01:
 		data := new(SSOServerList)
-		if err := jce.Unmarshal(req.Buffer, data); err != nil {
-			return err
+		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+			return nil, err
 		}
 		// TODO: process message
 		resp = &ConfigPushServicePushResponse{
@@ -162,10 +167,18 @@ func (c *Client) handleConfigPushServicePush(
 		}
 	case 0x02:
 		data := new(FileStorageServerList)
-		if err := jce.Unmarshal(req.Buffer, data); err != nil {
-			return err
+		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+			return nil, err
 		}
-		// TODO: process message
+		tdata, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		if ioutil.WriteFile(path.Join(
+			c.cfg.CacheDir, s2c.Username, "file-storage-server-list.json",
+		), append(tdata, '\n'), 0600); err != nil {
+			return nil, err
+		}
 		resp = &ConfigPushServicePushResponse{
 			Type:   req.Type,
 			Seq:    req.Seq,
@@ -173,8 +186,8 @@ func (c *Client) handleConfigPushServicePush(
 		}
 	case 0x03:
 		data := new(ClientLogConfig)
-		if err := jce.Unmarshal(req.Buffer, data); err != nil {
-			return err
+		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+			return nil, err
 		}
 		// TODO: process message
 		resp = &ConfigPushServicePushResponse{
@@ -184,8 +197,8 @@ func (c *Client) handleConfigPushServicePush(
 		}
 	case 0x04:
 		data := new(ProxyIPChannel)
-		if err := jce.Unmarshal(req.Buffer, data); err != nil {
-			return err
+		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+			return nil, err
 		}
 		// TODO: process message
 		resp = &ConfigPushServicePushResponse{
@@ -209,17 +222,13 @@ func (c *Client) handleConfigPushServicePush(
 		"PushResp": resp,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := c.Call(ServiceMethodConfigPushServicePushResponse,
-		&ClientToServerMessage{
-			Username: s2c.Username,
-			Seq:      s2c.Seq,
-			Buffer:   buf,
-			Simple:   false,
-		}, s2c,
-	); err != nil {
-		return err
-	}
-	return nil
+	return &ClientToServerMessage{
+		Username:      s2c.Username,
+		Seq:           s2c.Seq,
+		ServiceMethod: ServiceMethodConfigPushServicePushResponse,
+		Buffer:        buf,
+		Simple:        true,
+	}, nil
 }

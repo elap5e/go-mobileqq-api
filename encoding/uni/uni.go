@@ -3,9 +3,7 @@ package uni
 import (
 	"context"
 	"encoding/binary"
-	"encoding/hex"
 	"io"
-	"log"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
 )
@@ -21,6 +19,19 @@ type Message struct {
 	Timeout     uint32            `jce:",8"`
 	Context     map[string]string `jce:",9"`
 	Status      map[string]string `jce:",10"`
+}
+
+type MessageV2 struct {
+	Version     uint16                       `jce:",1"`
+	PacketType  uint8                        `jce:",2"`
+	MessageType uint32                       `jce:",3"`
+	RequestID   uint32                       `jce:",4"`
+	ServantName string                       `jce:",5"`
+	FuncName    string                       `jce:",6"`
+	Buffer      map[string]map[string][]byte `jce:",7"`
+	Timeout     uint32                       `jce:",8"`
+	Context     map[string]string            `jce:",9"`
+	Status      map[string]string            `jce:",10"`
 }
 
 func Marshal(
@@ -57,7 +68,6 @@ func Unmarshal(
 		return err
 	}
 	for key, buf := range msg.Buffer {
-		log.Printf("--> [recv] dump jce, key %s\n%s", key, hex.Dump(buf))
 		if opt, ok := opts[key]; ok {
 			err := jce.Unmarshal(buf, opt)
 			if err != nil {

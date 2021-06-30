@@ -1,10 +1,16 @@
 package rpc
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/rpc"
 )
+
+type HandleFunc func(
+	ctx context.Context,
+	s2c *ServerToClientMessage,
+) (*ClientToServerMessage, error)
 
 type ClientCall struct {
 	ServiceMethod         string
@@ -49,6 +55,11 @@ type ServerToClientMessage struct {
 	ServiceMethod string
 	Cookie        []byte
 	Buffer        []byte
+}
+
+func (c *Client) initHandlers() {
+	c.handlers = make(map[string]HandleFunc)
+	c.handlers[ServiceMethodConfigPushServicePushRequest] = c.handleConfigPushServicePush
 }
 
 func (c *Client) send(call *ClientCall) {
@@ -123,11 +134,17 @@ func (c *Client) revc() {
 			ts2c.Buffer = s2c.Buffer
 			call.done()
 		} else {
-			// server notify
-			log.Printf(
-				"==> [recv] seq 0x%08x, uin %s, method %s, server notify",
-				seq, s2c.Username, s2c.ServiceMethod,
-			)
+			ts2c := new(ServerToClientMessage)
+			ts2c.Version = s2c.Version
+			ts2c.EncryptType = s2c.EncryptType
+			ts2c.Username = s2c.Username
+			ts2c.Seq = s2c.Seq
+			ts2c.Code = s2c.Code
+			ts2c.Message = s2c.Message
+			ts2c.ServiceMethod = s2c.ServiceMethod
+			ts2c.Cookie = s2c.Cookie
+			ts2c.Buffer = s2c.Buffer
+			go c.call(s2c.ServiceMethod, ts2c)
 		}
 	}
 	// Terminate pending calls.
@@ -150,6 +167,35 @@ func (c *Client) revc() {
 	c.c2sMux.Unlock()
 	if err != io.EOF && !closing {
 		log.Println("rpc: client protocol error:", err)
+	}
+}
+
+func (c *Client) call(
+	serviceMethod string,
+	s2c *ServerToClientMessage,
+) {
+	if handleFunc, ok := c.handlers[serviceMethod]; ok {
+		log.Printf(
+			"==> [recv] seq 0x%08x, uin %s, method %s, server notify",
+			s2c.Seq, s2c.Username, s2c.ServiceMethod,
+		)
+		c2s, err := handleFunc(context.Background(), s2c)
+		if err != nil {
+			log.Printf("x_< [call] error: %s", err.Error())
+			return
+		}
+		c.preprocess(c2s)
+		c.c2sMux.Lock()
+		defer c.c2sMux.Unlock()
+		if err := c.codec.Encode(c2s); err != nil {
+			log.Printf("x_< [call] error: %s", err.Error())
+			return
+		}
+	} else {
+		log.Printf(
+			"==> [recv] seq 0x%08x, uin %s, method %s, server notify ignored",
+			s2c.Seq, s2c.Username, s2c.ServiceMethod,
+		)
 	}
 }
 
@@ -231,22 +277,3 @@ func (c *Client) Call(
 	call := <-c.Go(serviceMethod, c2s, s2c, make(chan *ClientCall, 1)).Done
 	return call.Error
 }
-
-// func (c *Client) Register(
-// 	serviceMethod string,
-// 	dispatcher func(context.Context, *ServerToClientMessage) error,
-// ) error {
-// 	http.HandleFunc()
-// 	return nil
-// }
-
-// func HandleFunc(
-// 	serviceMethod string,
-// 	handler func(context.Context, *ServerToClientMessage) error,
-// ) error {
-// 	return nil
-// }
-
-// type Handler interface {
-// 	ServeHTTP(ResponseWriter, *Request)
-// }

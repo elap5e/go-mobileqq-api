@@ -79,6 +79,9 @@ func (d *decoder) decodeInterface(v reflect.Value) error {
 }
 
 func (d *decoder) decodePtr(v reflect.Value) error {
+	if v.IsNil() {
+		v.Set(reflect.New(v.Type().Elem()))
+	}
 	return d.decodeValue(v.Elem())
 }
 
@@ -104,6 +107,8 @@ func (d *decoder) decodeStruct(v reflect.Value) error {
 	var fields structFields
 
 	switch v.Kind() {
+	case reflect.Ptr:
+		return d.decodePtr(v)
 	case reflect.Struct:
 		fields = typeFields(tv)
 	}
@@ -164,8 +169,8 @@ func (d *decoder) decodeArray(v reflect.Value) error {
 }
 
 func (d *decoder) decodeMap(v reflect.Value) error {
-	ttyp, _ := d.decodeHead()
-	n := int(d.decodeUint(ttyp))
+	typ, _ := d.decodeHead()
+	n := int(d.decodeUint(typ))
 	t := v.Type()
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(t))
@@ -173,7 +178,23 @@ func (d *decoder) decodeMap(v reflect.Value) error {
 	var subv reflect.Value
 	for i := 0; i < n; i++ {
 		ttyp, _ := d.decodeHead()
-		key := d.decodeString(ttyp)
+		key := ""
+		if ttyp == 0x09 {
+			// TODO: fix
+			_, _ = d.decodeHead()
+			_, _ = d.decodeHead()
+			_, _ = d.decodeHead()
+			_, _ = d.decodeHead()
+			typ, _ = d.decodeHead()
+			key = d.decodeString(typ)
+			_, _ = d.decodeHead()
+			_, _ = d.decodeHead()
+			_, _ = d.decodeHead()
+			typ, _ = d.decodeHead()
+			d.decodeString(typ)
+		} else {
+			key = d.decodeString(ttyp)
+		}
 		subv = reflect.New(t.Elem()).Elem()
 		d.typ, _ = d.decodeHead()
 		if err := d.decodeValue(subv); err != nil {
@@ -188,7 +209,7 @@ func (d *decoder) decodeString(typ uint8) string {
 	var l int
 	switch typ {
 	default:
-		log.Panicf("unexpected type 0x%02x (decode string)", typ)
+		log.Panicf("unexpected type 0x%02x %d (decode string)", typ, d.off)
 	case 0x07:
 		ttyp, _ := d.decodeHead()
 		l = int(d.decodeUint(ttyp))
@@ -204,7 +225,7 @@ func (d *decoder) decodeString(typ uint8) string {
 func (d *decoder) decodeFloat(typ uint8) float64 {
 	switch typ {
 	default:
-		log.Panicf("unexpected type 0x%02x (decode float)", typ)
+		log.Panicf("unexpected type 0x%02x %d (decode float)", typ, d.off)
 	case 0x05:
 		val := uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
 		d.off += 4
@@ -223,7 +244,7 @@ func (d *decoder) decodeUint(typ uint8) uint64 {
 	var val uint64
 	switch typ {
 	default:
-		log.Panicf("unexpected type 0x%02x (decode uint)", typ)
+		log.Panicf("unexpected type 0x%02x %d (decode uint)", typ, d.off)
 	case 0x03:
 		val = uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
 		d.off += 4
