@@ -10,13 +10,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 )
 
-type ConfigPushServicePushRequest struct {
+type PushConfigRequest struct {
 	Type   uint32 `jce:",1"`
 	Seq    uint64 `jce:",3"`
 	Buffer []byte `jce:",2"`
 }
 
-type ConfigPushServicePushResponse struct {
+type PushConfigResponse struct {
 	Type   uint32 `jce:",1"`
 	Seq    uint64 `jce:",2"`
 	Buffer []byte `jce:",3"`
@@ -31,6 +31,12 @@ type SSOServerList struct {
 	MultiConn    uint32              `jce:",7"`
 	HTTP2G3GList []SSOServerListInfo `jce:",8"`
 	HTTPWiFiList []SSOServerListInfo `jce:",9"`
+
+	Unknown12 []uint64 `jce:",12"`
+	Unknown13 []uint64 `jce:",13"`
+	Unknown14 uint64   `jce:",14"`
+	Unknown15 uint64   `jce:",15"`
+	Unknown16 string   `jce:",16"`
 }
 
 type SSOServerListInfo struct {
@@ -39,7 +45,9 @@ type SSOServerListInfo struct {
 	LinkType     bool   `jce:",3"`
 	Proxy        bool   `jce:",4"`
 	ProtocolType bool   `jce:",5"`
-	TimeOut      uint32 `jce:",6"`
+	Timeout      uint32 `jce:",6"`
+
+	Unknown8 string `jce:",8"`
 }
 
 type FileStorageServerList struct {
@@ -141,29 +149,31 @@ type ProxyIPInfo struct {
 	Port uint32 `jce:",2"`
 }
 
-func (c *Client) handleConfigPushServicePush(
+func (c *Client) handlePushConfigRequest(
 	ctx context.Context,
 	s2c *ServerToClientMessage,
 ) (*ClientToServerMessage, error) {
 	msg := new(uni.Message)
-	req := new(ConfigPushServicePushRequest)
+	req := new(PushConfigRequest)
 	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
 		"PushReq": req,
 	}); err != nil {
 		return nil, err
 	}
-	resp := new(ConfigPushServicePushResponse)
 	switch req.Type {
 	case 0x01:
 		data := new(SSOServerList)
 		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
 			return nil, err
 		}
-		// TODO: process message
-		resp = &ConfigPushServicePushResponse{
-			Type:   req.Type,
-			Seq:    req.Seq,
-			Buffer: req.Buffer,
+		tdata, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		if ioutil.WriteFile(path.Join(
+			c.cfg.CacheDir, s2c.Username, "sso-server-list.json",
+		), append(tdata, '\n'), 0600); err != nil {
+			return nil, err
 		}
 	case 0x02:
 		data := new(FileStorageServerList)
@@ -179,42 +189,30 @@ func (c *Client) handleConfigPushServicePush(
 		), append(tdata, '\n'), 0600); err != nil {
 			return nil, err
 		}
-		resp = &ConfigPushServicePushResponse{
-			Type:   req.Type,
-			Seq:    req.Seq,
-			Buffer: req.Buffer,
-		}
 	case 0x03:
 		data := new(ClientLogConfig)
 		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
 			return nil, err
-		}
-		// TODO: process message
-		resp = &ConfigPushServicePushResponse{
-			Type:   req.Type,
-			Seq:    req.Seq,
-			Buffer: req.Buffer,
 		}
 	case 0x04:
 		data := new(ProxyIPChannel)
 		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
 			return nil, err
 		}
-		// TODO: process message
-		resp = &ConfigPushServicePushResponse{
-			Type:   req.Type,
-			Seq:    req.Seq,
-			Buffer: req.Buffer,
-		}
+	}
+	resp := &PushConfigResponse{
+		Type:   req.Type,
+		Seq:    req.Seq,
+		Buffer: req.Buffer,
 	}
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
 		PacketType:  0x00,
 		MessageType: 0x00000000,
 		RequestID:   0x00000000,
-		ServantName: "QQService.ConfigPushSvc.MainServant",
+		ServantName: "QQService.PushConfigSvc.MainServant",
 		FuncName:    "PushResp",
-		Buffer:      map[string][]byte{},
+		Buffer:      []byte{},
 		Timeout:     0x00000000,
 		Context:     map[string]string{},
 		Status:      map[string]string{},
@@ -227,7 +225,7 @@ func (c *Client) handleConfigPushServicePush(
 	return &ClientToServerMessage{
 		Username:      s2c.Username,
 		Seq:           s2c.Seq,
-		ServiceMethod: ServiceMethodConfigPushServicePushResponse,
+		ServiceMethod: ServiceMethodPushConfigResponse,
 		Buffer:        buf,
 		Simple:        true,
 	}, nil

@@ -7,7 +7,7 @@ import (
 	"net/rpc"
 )
 
-type HandleFunc func(
+type PushHandleFunc func(
 	ctx context.Context,
 	s2c *ServerToClientMessage,
 ) (*ClientToServerMessage, error)
@@ -55,11 +55,15 @@ type ServerToClientMessage struct {
 	ServiceMethod string
 	Cookie        []byte
 	Buffer        []byte
+	Flag          uint32
+	ReserveField  []byte
 }
 
-func (c *Client) initHandlers() {
-	c.handlers = make(map[string]HandleFunc)
-	c.handlers[ServiceMethodConfigPushServicePushRequest] = c.handleConfigPushServicePush
+func (c *Client) initPushHandlers() {
+	c.handlers = make(map[string]PushHandleFunc)
+	c.handlers[ServiceMethodPushConfigRequest] = c.handlePushConfigRequest
+	c.handlers[ServiceMethodPushMessageNotify] = c.handlePushMessageNotify
+	c.handlers[ServiceMethodPushOnlineSIDTicketExpired] = c.handlePushOnlineSIDTicketExpired
 }
 
 func (c *Client) send(call *ClientCall) {
@@ -176,24 +180,31 @@ func (c *Client) call(
 ) {
 	if handleFunc, ok := c.handlers[serviceMethod]; ok {
 		log.Printf(
-			"==> [recv] seq 0x%08x, uin %s, method %s, server notify",
+			"==> [recv] seq 0x%08x, uin %s, method %s, server notify, handle",
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,
 		)
 		c2s, err := handleFunc(context.Background(), s2c)
 		if err != nil {
-			log.Printf("x_< [call] error: %s", err.Error())
+			log.Printf("x_< [call] handle error: %s", err.Error())
+			return
+		}
+		if c2s == nil {
+			log.Printf(
+				"==> [recv] seq 0x%08x, uin %s, method %s, server notify, no callback",
+				s2c.Seq, s2c.Username, s2c.ServiceMethod,
+			)
 			return
 		}
 		c.preprocess(c2s)
 		c.c2sMux.Lock()
 		defer c.c2sMux.Unlock()
 		if err := c.codec.Encode(c2s); err != nil {
-			log.Printf("x_< [call] error: %s", err.Error())
+			log.Printf("x_< [call] encode error: %s", err.Error())
 			return
 		}
 	} else {
 		log.Printf(
-			"==> [recv] seq 0x%08x, uin %s, method %s, server notify ignored",
+			"==> [recv] seq 0x%08x, uin %s, method %s, server notify, ignore",
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,
 		)
 	}

@@ -139,7 +139,8 @@ func (c *clientCodec) decodeBody(
 		return fmt.Errorf("failed to encode head, version 0x%x", msg.Version)
 	}
 	var err error
-	if _, err = buf.DecodeUint32(); err != nil {
+	var n uint32
+	if n, err = buf.DecodeUint32(); err != nil {
 		return err
 	}
 	if msg.Seq, err = buf.DecodeUint32(); err != nil {
@@ -167,9 +168,17 @@ func (c *clientCodec) decodeBody(
 	if msg.Cookie, err = buf.DecodeBytesN(uint16(l - 4)); err != nil {
 		return err
 	}
-	if _, err = buf.DecodeUint32(); err != nil {
+	if msg.Flag, err = buf.DecodeUint32(); err != nil {
 		return err
-	} // 0x00000000
+	}
+	if buf.Index() < int(n) {
+		if l, err = buf.DecodeUint32(); err != nil {
+			return err
+		}
+		if msg.ReserveField, err = buf.DecodeBytesN(uint16(l - 4)); err != nil {
+			return err
+		}
+	}
 	msg.Buffer = buf.Bytes()
 	return nil
 }
@@ -181,21 +190,21 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 	} else {
 		msg.Version = 0x0000000b
 	}
-	log.Printf(
-		"  < [send] seq 0x%08x, uin %s, method %s, dump buff:\n%s",
-		msg.Seq, msg.Username, msg.ServiceMethod,
-		hex.Dump(msg.Buffer),
-	)
+	// log.Printf(
+	// 	"  < [send] seq 0x%08x, uin %s, method %s, dump buff:\n%s",
+	// 	msg.Seq, msg.Username, msg.ServiceMethod,
+	// 	hex.Dump(msg.Buffer),
+	// )
 	var data []byte
 	data, err = c.encodeBody(msg)
 	if err != nil {
 		return err
 	}
-	log.Printf(
-		" <- [send] seq 0x%08x, uin %s, method %s, dump data:\n%s",
-		msg.Seq, msg.Username, msg.ServiceMethod,
-		hex.Dump(data),
-	)
+	// log.Printf(
+	// 	" <- [send] seq 0x%08x, uin %s, method %s, dump data:\n%s",
+	// 	msg.Seq, msg.Username, msg.ServiceMethod,
+	// 	hex.Dump(data),
+	// )
 	method := strings.ToLower(msg.ServiceMethod)
 	if method == "heartbeat.ping" ||
 		method == "heartbeat.alive" ||
@@ -237,11 +246,11 @@ func (c *clientCodec) Encode(msg *ClientToServerMessage) error {
 	if _, err = c.conn.Write(data); err != nil {
 		return err
 	}
-	log.Printf(
-		" <= [send] seq 0x%08x, uin %s, method %s, dump send:\n%s",
-		msg.Seq, msg.Username, msg.ServiceMethod,
-		hex.Dump(append(head, data...)),
-	)
+	// log.Printf(
+	// 	" <= [send] seq 0x%08x, uin %s, method %s, dump send:\n%s",
+	// 	msg.Seq, msg.Username, msg.ServiceMethod,
+	// 	hex.Dump(append(head, data...)),
+	// )
 	log.Printf(
 		"<== [send] seq 0x%08x, uin %s, method %s",
 		msg.Seq, msg.Username, msg.ServiceMethod,
@@ -269,11 +278,11 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 		)
 		return err
 	}
-	log.Printf(
-		">   [recv] seq 0xffffffff, uin %s, method Unknown, dump recv:\n%s",
-		msg.Username,
-		hex.Dump(v),
-	)
+	// log.Printf(
+	// 	">   [recv] seq 0xffffffff, uin %s, method Unknown, dump recv:\n%s",
+	// 	msg.Username,
+	// 	hex.Dump(v),
+	// )
 	return nil
 }
 
@@ -303,11 +312,11 @@ func (c *clientCodec) DecodeBody(msg *ServerToClientMessage) error {
 		)
 		return err
 	}
-	log.Printf(
-		"->  [recv] seq 0x%08x, uin %s, method %s, dump data:\n%s",
-		msg.Seq, msg.Username, msg.ServiceMethod,
-		hex.Dump(v),
-	)
+	// log.Printf(
+	// 	"->  [recv] seq 0x%08x, uin %s, method %s, dump data:\n%s",
+	// 	msg.Seq, msg.Username, msg.ServiceMethod,
+	// 	hex.Dump(v),
+	// )
 	log.Printf(
 		"=>  [recv] seq 0x%08x, uin %s, method %s, dump buff:\n%s",
 		msg.Seq, msg.Username, msg.ServiceMethod,

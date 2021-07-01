@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -231,19 +230,6 @@ func (c *Client) Auth(username, password string) error {
 	}
 	for {
 		if resp.Code == 0x00 {
-			tresp, err := c.rpc.AccountUpdateStatus(
-				c.ctx,
-				rpc.NewAccountUpdateStatusRequest(
-					resp.Uin,
-					rpc.PushRegisterInfoStatusOnline,
-					false,
-				),
-			)
-			if err != nil {
-				return err
-			}
-			jresp, _ := json.MarshalIndent(tresp, "", "  ")
-			log.Printf("AccountUpdateStatusResponse\n%s", jresp)
 			return nil
 		}
 		if resp, err = c.handleAuthResponse(resp); err != nil {

@@ -307,6 +307,16 @@ func (c *Client) AuthGetSessionTickets(
 			"x_x [fail] invalid service, uin %s, code 0x09, error %s: %s",
 			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
 		)
+	case 0x10:
+		log.Printf(
+			"x_x [fail] session expired, uin %s, code 0x10, error %s: %s",
+			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
+		)
+	case 0x28:
+		log.Printf(
+			"x_x [fail] protection mode, uin %s, code 0x10, error %s: %s",
+			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
+		)
 	case 0xed:
 		log.Printf(
 			"x_x [fail] invalid device, uin %s, code 0xed, error %s: %s",

@@ -1,6 +1,7 @@
 package jce
 
 import (
+	"encoding/hex"
 	"log"
 	"math"
 	"reflect"
@@ -178,23 +179,7 @@ func (d *decoder) decodeMap(v reflect.Value) error {
 	var subv reflect.Value
 	for i := 0; i < n; i++ {
 		ttyp, _ := d.decodeHead()
-		key := ""
-		if ttyp == 0x09 {
-			// TODO: fix
-			_, _ = d.decodeHead()
-			_, _ = d.decodeHead()
-			_, _ = d.decodeHead()
-			_, _ = d.decodeHead()
-			typ, _ = d.decodeHead()
-			key = d.decodeString(typ)
-			_, _ = d.decodeHead()
-			_, _ = d.decodeHead()
-			_, _ = d.decodeHead()
-			typ, _ = d.decodeHead()
-			d.decodeString(typ)
-		} else {
-			key = d.decodeString(ttyp)
-		}
+		key := d.decodeString(ttyp)
 		subv = reflect.New(t.Elem()).Elem()
 		d.typ, _ = d.decodeHead()
 		if err := d.decodeValue(subv); err != nil {
@@ -209,7 +194,10 @@ func (d *decoder) decodeString(typ uint8) string {
 	var l int
 	switch typ {
 	default:
-		log.Panicf("unexpected type 0x%02x %d (decode string)", typ, d.off)
+		log.Fatalf(
+			"(decode string) unexpected type 0x%02x 0x%08x dump\n%s",
+			typ, d.off, hex.Dump(d.data),
+		)
 	case 0x07:
 		ttyp, _ := d.decodeHead()
 		l = int(d.decodeUint(ttyp))
@@ -225,7 +213,10 @@ func (d *decoder) decodeString(typ uint8) string {
 func (d *decoder) decodeFloat(typ uint8) float64 {
 	switch typ {
 	default:
-		log.Panicf("unexpected type 0x%02x %d (decode float)", typ, d.off)
+		log.Fatalf(
+			"(decode float) unexpected type 0x%02x 0x%08x dump\n%s",
+			typ, d.off, hex.Dump(d.data),
+		)
 	case 0x05:
 		val := uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
 		d.off += 4
@@ -244,7 +235,10 @@ func (d *decoder) decodeUint(typ uint8) uint64 {
 	var val uint64
 	switch typ {
 	default:
-		log.Panicf("unexpected type 0x%02x %d (decode uint)", typ, d.off)
+		log.Fatalf(
+			"(decode uint) unexpected type 0x%02x 0x%08x dump\n%s",
+			typ, d.off, hex.Dump(d.data),
+		)
 	case 0x03:
 		val = uint64(d.data[d.off])<<24 + uint64(d.data[d.off+1])<<16 + uint64(d.data[d.off+2])<<8 + uint64(d.data[d.off+3])
 		d.off += 4

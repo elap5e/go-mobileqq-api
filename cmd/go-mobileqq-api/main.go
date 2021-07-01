@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
+	"github.com/elap5e/go-mobileqq-api/rpc"
 )
 
 var (
@@ -86,4 +87,12 @@ func main() {
 	if err := c.Auth(username, password); err != nil {
 		log.Printf("x_x [auth] error: %s", err.Error())
 	}
+	if err := c.AccountUpdateStatus(
+		username,
+		rpc.PushRegisterInfoStatusOnline,
+		false,
+	); err != nil {
+		log.Printf("x_x [auth] error: %s", err.Error())
+	}
+	select {}
 }

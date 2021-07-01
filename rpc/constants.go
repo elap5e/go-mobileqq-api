@@ -89,7 +89,11 @@ const (
 	ServiceMethodAccountUpdateStatus       = "StatSvc.register"
 	ServiceMethodAccountGetDeviceLoginInfo = "StatSvc.GetDevLoginInfo"
 
-	ServiceMethodConfigPushServicePushDomain   = "ConfigPushSvc.PushDomain"
-	ServiceMethodConfigPushServicePushRequest  = "ConfigPushSvc.PushReq"
-	ServiceMethodConfigPushServicePushResponse = "ConfigPushSvc.PushResp"
+	ServiceMethodMessageGetMessage = "MessageSvc.PbGetMsg"
+
+	ServiceMethodPushConfigDomain           = "ConfigPushSvc.PushDomain"
+	ServiceMethodPushConfigRequest          = "ConfigPushSvc.PushReq"
+	ServiceMethodPushConfigResponse         = "ConfigPushSvc.PushResp"
+	ServiceMethodPushMessageNotify          = "MessageSvc.PushNotify"
+	ServiceMethodPushOnlineSIDTicketExpired = "OnlinePush.SidTicketExpired"
 )

@@ -31,27 +31,49 @@ type AccountUpdateStatusRequest struct {
 	Uin          uint64 `jce:",0"`
 	Bid          uint64 `jce:",1"`
 	ConnType     uint8  `jce:",2"` // constant 0x00
-	Other        string `jce:",3"`
+	Other        string `jce:",3"` // constant ""
 	Status       uint32 `jce:",4"`
-	OnlinePush   bool   `jce:",5"`
-	IsOnline     bool   `jce:",6"`
-	IsShowOnline bool   `jce:",7"`
+	OnlinePush   bool   `jce:",5"` // constant false
+	IsOnline     bool   `jce:",6"` // constant false
+	IsShowOnline bool   `jce:",7"` // constant false
 	KikPC        bool   `jce:",8"`
-	KikWeak      bool   `jce:",9"`
+	KikWeak      bool   `jce:",9"` // constant false
 	Timestamp    uint64 `jce:",10"`
 	SDKVersion   uint32 `jce:",11"`
 	NetworkType  uint8  `jce:",12"` // 0x00: mobile; 0x01: wifi
-	BuildVersion string `jce:",13"`
+	BuildVersion string `jce:",13"` // constant ""
 	RegisterType bool   `jce:",14"` // false: appRegister, fillRegProxy, createDefaultRegInfo; true: others
-	DevParam     []byte `jce:",15"`
-	GUID         []byte `jce:",16"`
+	DevParam     []byte `jce:",15"` // constant nil
+	GUID         []byte `jce:",16"` // placeholder
 	LocaleID     uint32 `jce:",17"` // constant 0x00000804
-	SlientPush   bool   `jce:",18"`
+	SlientPush   bool   `jce:",18"` // constant false
 	DeviceName   string `jce:",19"`
 	DeviceType   string `jce:",20"`
 	OSVersion    string `jce:",21"`
-	OpenPush     bool   `jce:",22"`
-	LargeSeq     uint32 `jce:",23"`
+	OpenPush     bool   `jce:",22"` // constant true
+	LargeSeq     uint32 `jce:",23"` // constant 0x00000000
+
+	// LastWatchStartTime uint32         `jce:",24"`
+	// BindUin            []uint64       `jce:",25"`
+	// OldSSOIP           uint64         `jce:",26"`
+	// NewSSOIP           uint64         `jce:",27"`
+	// ChannelNo          string         `jce:",28"`
+	// CPID               uint64         `jce:",29"`
+	// VendorName         string         `jce:",30"`
+	// VendorOSName       string         `jce:",31"`
+	// IOSIDFA            string         `jce:",32"`
+	// Reqbody0x769       []byte         `jce:",33"`
+	// IsSetStatus        bool           `jce:",34"`
+	// ServerBuf          []byte         `jce:",35"`
+	// SetMute            bool           `jce:",36"`
+	// NotifySwitch       uint8          `jce:",37"`
+	// ExtOnlineStatus    uint64         `jce:",38"`
+	// BatteryStatus      uint32         `jce:",39"`
+	// VendorPushInfo     VendorPushInfo `jce:",42"`
+}
+
+type VendorPushInfo struct {
+	Type uint64 `jce:",0"`
 }
 
 type AccountUpdateStatusResponse struct {
@@ -70,6 +92,12 @@ type AccountUpdateStatusResponse struct {
 	HelloInterval  uint32 `jce:",12"`
 	LargeSeq       uint32 `jce:",13"`
 	LargeSeqUpdate bool   `jce:",14"`
+
+	Respbody0x769            []byte `jce:",15"`
+	Status                   uint32 `jce:",16"`
+	ExtraOnlineStatus        uint64 `jce:",17"`
+	ClientBatteryGetInterval uint64 `jce:",18"`
+	ClientAutoStatusInterval uint64 `jce:",19"`
 }
 
 func NewAccountUpdateStatusRequest(
@@ -111,7 +139,7 @@ func NewAccountUpdateStatusRequest(
 		BuildVersion: "",
 		RegisterType: false,
 		DevParam:     nil,
-		GUID:         nil, // deviceGUID[:],
+		GUID:         nil,
 		LocaleID:     0x00000804,
 		SlientPush:   false,
 		DeviceName:   defaultDeviceOSBuildModel,
@@ -126,6 +154,7 @@ func (c *Client) AccountUpdateStatus(
 	ctx context.Context,
 	req *AccountUpdateStatusRequest,
 ) (*AccountUpdateStatusResponse, error) {
+	req.GUID = c.cfg.Device.GUID
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
 		PacketType:  0x00,
@@ -133,7 +162,7 @@ func (c *Client) AccountUpdateStatus(
 		RequestID:   0x00000000,
 		ServantName: "PushService",
 		FuncName:    "SvcReqRegister",
-		Buffer:      map[string][]byte{},
+		Buffer:      []byte{},
 		Timeout:     0x00000000,
 		Context:     map[string]string{},
 		Status:      map[string]string{},

@@ -15,6 +15,10 @@ func (b *Buffer) Bytes() []byte {
 	return b.buf[b.idx:]
 }
 
+func (b *Buffer) Index() int {
+	return b.idx
+}
+
 func (b *Buffer) Len() int {
 	return len(b.buf) - b.idx
 }
