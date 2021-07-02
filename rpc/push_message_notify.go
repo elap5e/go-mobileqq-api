@@ -17,16 +17,16 @@ type PushMessageNotifyRequest struct {
 	Service     string `jce:",2" json:",omitempty"`
 	Command     string `jce:",3" json:",omitempty"`
 	Cookie      []byte `jce:",4" json:",omitempty"`
-	MsgType     uint16 `jce:",5" json:",omitempty"`
+	MessageType uint16 `jce:",5" json:",omitempty"`
 	UserActive  uint32 `jce:",6" json:",omitempty"`
 	GeneralFlag uint32 `jce:",7" json:",omitempty"`
 	BindedUin   uint64 `jce:",8" json:",omitempty"`
 
-	MsgInfo    *MsgInfo `jce:",9" json:",omitempty"`
-	MsgCtrlBuf string   `jce:",10" json:",omitempty"`
-	ServerBuf  []byte   `jce:",11" json:",omitempty"`
-	PingFlag   uint64   `jce:",12" json:",omitempty"`
-	VRIP       uint16   `jce:",13" json:",omitempty"`
+	MessageInfo    *MessageInfo `jce:",9" json:",omitempty"`
+	MessageCtrlBuf string       `jce:",10" json:",omitempty"`
+	ServerBuf      []byte       `jce:",11" json:",omitempty"`
+	PingFlag       uint64       `jce:",12" json:",omitempty"`
+	VRIP           uint16       `jce:",13" json:",omitempty"`
 
 	Unknown14 []byte                             `jce:",14" json:",omitempty"`
 	Unknown15 *PushMessageNotifyRequestUnknown15 `jce:",15" json:",omitempty"`
@@ -48,44 +48,44 @@ type PushMessageNotifyRequestUnknown17 struct {
 	Unknown2 string `jce:",2" json:",omitempty"`
 }
 
-type MsgInfo struct {
-	FromUin        uint64       `jce:"0" json:",omitempty"`
-	MsgTime        uint64       `jce:"1" json:",omitempty"`
-	MsgType        uint16       `jce:"2" json:",omitempty"`
-	MsgSeq         uint16       `jce:"3" json:",omitempty"`
-	Msg            string       `jce:"4" json:",omitempty"`
-	RealMsgTime    uint64       `jce:"5" json:",omitempty"`
-	MsgBytes       []byte       `jce:"6" json:",omitempty"`
-	AppShareID     uint64       `jce:"7" json:",omitempty"`
-	MsgCookies     []byte       `jce:"8" json:",omitempty"`
-	AppShareCookie []byte       `jce:"9" json:",omitempty"`
-	MsgUid         uint64       `jce:"10" json:",omitempty"`
-	LastChangeTime uint64       `jce:"11" json:",omitempty"`
-	CPicInfo       []CPicInfo   `jce:"12" json:",omitempty"`
-	ShareData      *ShareData   `jce:"13" json:",omitempty"`
-	FromInstID     uint64       `jce:"14" json:",omitempty"`
-	RemarkOfSender []byte       `jce:"15" json:",omitempty"`
-	FromMobile     string       `jce:"16" json:",omitempty"`
-	FromName       string       `jce:"17" json:",omitempty"`
-	NickName       []string     `jce:"18" json:",omitempty"`
-	TempMsgHead    *TempMsgHead `jce:"19" json:",omitempty"`
+type MessageInfo struct {
+	FromUin         uint64           `jce:",0" json:",omitempty"`
+	MessageTime     uint64           `jce:",1" json:",omitempty"`
+	MessageType     uint16           `jce:",2" json:",omitempty"`
+	MessageSeq      uint16           `jce:",3" json:",omitempty"`
+	Message         string           `jce:",4" json:",omitempty"`
+	RealMessageTime uint64           `jce:",5" json:",omitempty"`
+	MessageBytes    []byte           `jce:",6" json:",omitempty"`
+	AppShareID      uint64           `jce:",7" json:",omitempty"`
+	MessageCookies  []byte           `jce:",8" json:",omitempty"`
+	AppShareCookie  []byte           `jce:",9" json:",omitempty"`
+	MessageUid      uint64           `jce:",10" json:",omitempty"`
+	LastChangeTime  uint64           `jce:",11" json:",omitempty"`
+	CPicInfo        []CPicInfo       `jce:",12" json:",omitempty"`
+	ShareData       *ShareData       `jce:",13" json:",omitempty"`
+	FromInstID      uint64           `jce:",14" json:",omitempty"`
+	RemarkOfSender  []byte           `jce:",15" json:",omitempty"`
+	FromMobile      string           `jce:",16" json:",omitempty"`
+	FromName        string           `jce:",17" json:",omitempty"`
+	NickName        []string         `jce:",18" json:",omitempty"`
+	TempMessageHead *TempMessageHead `jce:",19" json:",omitempty"`
 }
 
 type CPicInfo struct {
-	Path []byte `jce:"0" json:",omitempty"`
-	Host []byte `jce:"1" json:",omitempty"`
+	Path []byte `jce:",0" json:",omitempty"`
+	Host []byte `jce:",1" json:",omitempty"`
 }
 
 type ShareData struct {
-	Pkgname string `jce:"0" json:",omitempty"`
-	Msgtail string `jce:"1" json:",omitempty"`
-	PicURL  string `jce:"2" json:",omitempty"`
-	URL     string `jce:"3" json:",omitempty"`
+	Pkgname     string `jce:",0" json:",omitempty"`
+	Messagetail string `jce:",1" json:",omitempty"`
+	PicURL      string `jce:",2" json:",omitempty"`
+	URL         string `jce:",3" json:",omitempty"`
 }
 
-type TempMsgHead struct {
-	C2CType     uint32 `jce:"0" json:",omitempty"`
-	ServiceType uint32 `jce:"1" json:",omitempty"`
+type TempMessageHead struct {
+	C2CType     uint32 `jce:",0" json:",omitempty"`
+	ServiceType uint32 `jce:",1" json:",omitempty"`
 }
 
 func (c *Client) handlePushMessageNotify(
