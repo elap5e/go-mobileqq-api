@@ -3,7 +3,7 @@ package ecdh
 import (
 	"crypto/elliptic"
 	"crypto/md5"
-	"io"
+	"crypto/rand"
 	"math/big"
 )
 
@@ -37,9 +37,9 @@ func (priv *PrivateKey) ShareKey(pub PublicKey) [16]byte {
 	return md5.Sum(sx.Bytes()[:16])
 }
 
-func GenerateKey(rand io.Reader) (*PrivateKey, error) {
+func GenerateKey() (*PrivateKey, error) {
 	c := elliptic.P256()
-	k, x, y, err := elliptic.GenerateKey(c, rand)
+	k, x, y, err := elliptic.GenerateKey(c, rand.Reader)
 	if err != nil {
 		return nil, err
 	}

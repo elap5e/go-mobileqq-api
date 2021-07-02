@@ -177,10 +177,12 @@ func (c *Client) handlePushMessageNotify(
 			return nil, err
 		}
 		seq := c.getNextSyncSeq(data.PeerUin)
-		log.Printf(
-			"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
-			data.PeerUin, seq, s2c.Username, data.FromUin, string(data.Data),
-		)
+		if c.cfg.Debug {
+			log.Printf(
+				"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
+				data.PeerUin, seq, s2c.Username, data.FromUin, string(data.Data),
+			)
+		}
 		if len(dataList) < 2 {
 			_, _ = c.MessageSendMessage(
 				ctx, s2c.Username, NewMessageSendMessageRequest(

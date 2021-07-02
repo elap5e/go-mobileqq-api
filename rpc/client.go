@@ -192,7 +192,7 @@ func (c *Client) updateServerPublicKey() error {
 }
 
 func (c *Client) initPrivateKey() {
-	priv, err := ecdh.GenerateKey(c.rand)
+	priv, err := ecdh.GenerateKey()
 	if err != nil {
 		log.Fatalf(
 			"==> [init] failed to init private key, error: %s",
