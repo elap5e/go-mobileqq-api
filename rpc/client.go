@@ -47,6 +47,10 @@ type Client struct {
 	closing  bool
 	shutdown bool
 
+	// message
+	syncCookie []byte
+	syncSeq    map[uint64]*uint32
+
 	// random
 	rand *rand.Rand
 
@@ -93,6 +97,7 @@ func (c *Client) init() {
 	c.initUserSignatures()
 
 	c.initPushHandlers()
+	c.initSync()
 }
 
 func (c *Client) initRandomKey() {
@@ -210,6 +215,42 @@ func (c *Client) getNextSeq() uint32 {
 	seq := atomic.AddUint32(&c.seq, 1)
 	if seq > 1000000 {
 		c.seq = uint32(rand.Int31n(100000)) + 60000
+	}
+	return seq - 1
+}
+
+func (c *Client) initSync() {
+	// c.syncCookie = make(map[uint64][]byte)
+	c.syncSeq = make(map[uint64]*uint32)
+}
+
+// func (c *Client) getSyncCookie(uin uint64) []byte {
+// 	return c.syncCookie[uin]
+// }
+
+func (c *Client) setSyncSeq(uin uint64, seq uint32) {
+	if _, ok := c.syncSeq[uin]; !ok {
+		c.syncSeq[uin] = &[]uint32{0}[0]
+	}
+	if *c.syncSeq[uin] < seq {
+		atomic.StoreUint32(c.syncSeq[uin], seq)
+	}
+}
+
+func (c *Client) getSyncSeq(uin uint64) uint32 {
+	if _, ok := c.syncSeq[uin]; !ok {
+		c.syncSeq[uin] = &[]uint32{0}[0]
+	}
+	return *c.syncSeq[uin]
+}
+
+func (c *Client) getNextSyncSeq(uin uint64) uint32 {
+	if _, ok := c.syncSeq[uin]; !ok {
+		c.syncSeq[uin] = &[]uint32{0}[0]
+	}
+	seq := atomic.AddUint32(c.syncSeq[uin], 1)
+	if seq > 1000000 {
+		c.syncSeq[uin] = &[]uint32{uint32(rand.Int31n(100000)) + 60000}[0]
 	}
 	return seq - 1
 }

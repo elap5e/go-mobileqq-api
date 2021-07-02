@@ -64,7 +64,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 	tlvs[0x0116] = tlv.NewT116(c.cfg.Client.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0108] = tlv.NewT108(sig.Session.KSID)
 	tlvs[0x0144] = tlv.NewT144(md5.Sum(sig.Tickets["D2"].Key),
-		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
+		tlv.NewT109(md5.Sum([]byte(c.cfg.Device.OSBuildID))),
 		tlv.NewT52D(&pb.DeviceReport{
 			Bootloader:   []byte(c.cfg.Device.Bootloader),
 			ProcVersion:  []byte(c.cfg.Device.ProcVersion),
@@ -79,7 +79,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 		tlv.NewT124(
 			[]byte(defaultDeviceOSType),
 			[]byte(defaultDeviceOSVersion),
-			defaultDeviceNetworkTypeID,
+			c.cfg.Device.NetworkType,
 			defaultDeviceSIMOPName,
 			nil,
 			defaultDeviceAPNName,
@@ -106,7 +106,7 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 	)
 	tlvs[0x0141] = tlv.NewT141(
 		defaultDeviceSIMOPName,
-		defaultDeviceNetworkTypeID,
+		c.cfg.Device.NetworkType,
 		defaultDeviceAPNName,
 	)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
@@ -122,14 +122,14 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 		tlvs[0x0172] = tlv.NewT172(c.t172)
 	}
 	tlvs[0x0177] = tlv.NewT177(c.cfg.Client.BuildTime, c.cfg.Client.SDKVersion)
-	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
-	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
-	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(defaultDeviceIMSI)))
+	tlvs[0x0187] = tlv.NewT187(md5.Sum([]byte(c.cfg.Device.MACAddress)))
+	tlvs[0x0188] = tlv.NewT188(md5.Sum([]byte(c.cfg.Device.OSBuildID)))
+	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(c.cfg.Device.IMSI)))
 	// // DISABLED: SetNeedForPayToken
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(
-		md5.Sum(defaultDeviceBSSIDAddress),
-		defaultDeviceSSIDAddress,
+		md5.Sum([]byte(c.cfg.Device.BSSIDAddress)),
+		[]byte(c.cfg.Device.SSIDAddress),
 	)
 	// // DISABLED: tgt
 	// tlvs[0x0544] = tlv.NewT544(

@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"encoding/base64"
-	"net"
 )
 
 var (
@@ -24,24 +23,12 @@ var (
 	defaultDeviceOSType    = "android"
 	defaultDeviceOSVersion = "11"
 
-	defaultDeviceOSBuildID    = []byte("RKQ1.200827.002")
 	defaultDeviceOSBuildBrand = []byte("Xiaomi")
 	defaultDeviceOSBuildModel = "Redmi K20"
 	defaultDeviceOSSDKVersion = uint32(30)
 
-	defaultDeviceIMEI = "860308028836598"
-	defaultDeviceIMSI = "088906035901507678"
-
 	defaultDeviceAPNName   = []byte("wifi")
 	defaultDeviceSIMOPName = []byte("CMCC")
-
-	defaultDeviceNetworkType   = "Wi-Fi"
-	defaultDeviceNetworkTypeID = uint16(0x0002)
-	defaultDeviceNetIPFamily   = "IPv4IPv6"
-	defaultDeviceIPv4Address   = net.IPv4(192, 168, 0, 100)
-	defaultDeviceMACAddress    = []byte("00:50:56:C0:00:08")
-	defaultDeviceBSSIDAddress  = []byte("00:50:56:C0:00:09")
-	defaultDeviceSSIDAddress   = []byte("unknown")
 )
 
 var (
@@ -89,11 +76,14 @@ const (
 	ServiceMethodAccountUpdateStatus       = "StatSvc.register"
 	ServiceMethodAccountGetDeviceLoginInfo = "StatSvc.GetDevLoginInfo"
 
-	ServiceMethodMessageGetMessage = "MessageSvc.PbGetMsg"
+	ServiceMethodMessageDeleteMessage = "MessageSvc.PbDeleteMsg"
+	ServiceMethodMessageGetMessage    = "MessageSvc.PbGetMsg"
+	ServiceMethodMessageSendMessage   = "MessageSvc.PbSendMsg"
 
 	ServiceMethodPushConfigDomain           = "ConfigPushSvc.PushDomain"
 	ServiceMethodPushConfigRequest          = "ConfigPushSvc.PushReq"
 	ServiceMethodPushConfigResponse         = "ConfigPushSvc.PushResp"
 	ServiceMethodPushMessageNotify          = "MessageSvc.PushNotify"
+	ServiceMethodPushOnlineGroupMessage     = "OnlinePush.PbPushGroupMsg"
 	ServiceMethodPushOnlineSIDTicketExpired = "OnlinePush.SidTicketExpired"
 )

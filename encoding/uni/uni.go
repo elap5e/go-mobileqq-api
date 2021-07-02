@@ -2,23 +2,21 @@ package uni
 
 import (
 	"context"
-	"encoding/binary"
-	"io"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
 )
 
 type Message struct {
-	Version     uint16            `jce:",1"`
-	PacketType  uint8             `jce:",2"`
-	MessageType uint32            `jce:",3"`
-	RequestID   uint32            `jce:",4"`
-	ServantName string            `jce:",5"`
-	FuncName    string            `jce:",6"`
-	Buffer      []byte            `jce:",7"`
-	Timeout     uint32            `jce:",8"`
-	Context     map[string]string `jce:",9"`
-	Status      map[string]string `jce:",10"`
+	Version     uint16            `jce:",1" json:"Version,omitempty"`
+	PacketType  uint8             `jce:",2" json:"PacketType,omitempty"`
+	MessageType uint32            `jce:",3" json:"MessageType,omitempty"`
+	RequestID   uint32            `jce:",4" json:"RequestID,omitempty"`
+	ServantName string            `jce:",5" json:"ServantName,omitempty"`
+	FuncName    string            `jce:",6" json:"FuncName,omitempty"`
+	Buffer      []byte            `jce:",7" json:"Buffer,omitempty"`
+	Timeout     uint32            `jce:",8" json:"Timeout,omitempty"`
+	Context     map[string]string `jce:",9" json:"Context,omitempty"`
+	Status      map[string]string `jce:",10" json:"Status,omitempty"`
 }
 
 type MapBuffer map[string]map[string][]byte
@@ -59,13 +57,7 @@ func Marshal(
 			return nil, err
 		}
 	}
-	buf, err := jce.Marshal(msg, true)
-	if err != nil {
-		return nil, err
-	}
-	data := append(make([]byte, 4), buf...)
-	binary.BigEndian.PutUint32(data[0:], uint32(len(data)))
-	return data, nil
+	return jce.Marshal(msg, true)
 }
 
 func Unmarshal(
@@ -74,10 +66,7 @@ func Unmarshal(
 	msg *Message,
 	opts map[string]interface{},
 ) error {
-	if int(data[0])<<24+int(data[1])<<16+int(data[2])<<8+int(data[3]) > len(data) {
-		return io.ErrUnexpectedEOF
-	}
-	if err := jce.Unmarshal(data[4:], msg, true); err != nil {
+	if err := jce.Unmarshal(data, msg, true); err != nil {
 		return err
 	}
 	switch msg.Version {

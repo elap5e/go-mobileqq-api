@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"log"
+	"os"
 	"path"
 	"time"
 
@@ -93,6 +95,14 @@ func (c *Client) GetUserSignature(username string) *UserSignature {
 		sig.Session.Cookie = make([]byte, 4)
 		c.rand.Read(sig.Session.Cookie)
 		c.userSignatures[username] = sig
+		cacheDir := path.Join(c.cfg.CacheDir, username)
+		_, err := os.Stat(cacheDir)
+		if os.IsNotExist(err) {
+			err = os.Mkdir(cacheDir, 0777)
+		}
+		if err != nil {
+			log.Fatalf("failed to mkdir %s, error %s", cacheDir, err.Error())
+		}
 	}
 	return sig
 }

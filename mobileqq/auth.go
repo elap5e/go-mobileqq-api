@@ -138,9 +138,9 @@ func (c *Client) handleAuthResponse(
 			_ = ioutil.WriteFile(
 				path.Join(
 					c.cfg.CacheDir,
+					resp.Username,
 					fmt.Sprintf(
-						"%s-picture-%s.jpg",
-						resp.Username,
+						"picture-%s.jpg",
 						time.Now().Local().Format("20060102150405"),
 					),
 				),

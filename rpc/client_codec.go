@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	_bytes "bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -92,7 +94,9 @@ func (c *clientCodec) encodeBody(msg *ClientToServerMessage) ([]byte, error) {
 	ret := buf.Bytes()
 	binary.BigEndian.PutUint32(ret[0:], uint32(len(ret)))
 	if len(msg.Buffer) != 0 {
-		ret = append(ret, msg.Buffer...)
+		tmp := append(make([]byte, 4), msg.Buffer...)
+		binary.BigEndian.PutUint32(tmp[0:], uint32(len(tmp)))
+		ret = append(ret, tmp...)
 	} else {
 		tmp := make([]byte, 4)
 		binary.BigEndian.PutUint32(tmp, 0x00000004)
@@ -179,7 +183,12 @@ func (c *clientCodec) decodeBody(
 			return err
 		}
 	}
-	msg.Buffer = buf.Bytes()
+	if l, err = buf.DecodeUint32(); err != nil {
+		return err
+	}
+	if msg.Buffer, err = buf.DecodeBytesN(uint16(l - 4)); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -311,6 +320,17 @@ func (c *clientCodec) DecodeBody(msg *ServerToClientMessage) error {
 			hex.Dump(v),
 		)
 		return err
+	}
+	switch msg.Flag {
+	case 0x00000001:
+		var buf _bytes.Buffer
+		reader, err := zlib.NewReader(_bytes.NewReader(msg.Buffer))
+		if err != nil {
+			return err
+		}
+		defer reader.Close()
+		io.Copy(&buf, reader)
+		msg.Buffer = buf.Bytes()
 	}
 	// log.Printf(
 	// 	"->  [recv] seq 0x%08x, uin %s, method %s, dump data:\n%s",

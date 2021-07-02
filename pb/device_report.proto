@@ -3,13 +3,13 @@ syntax = "proto3";
 option go_package = "./;pb";
 
 message DeviceReport {
-  bytes bootloader = 10;
-  bytes procVersion = 18;
-  bytes codename = 26;
-  bytes incremental = 34;
-  bytes fingerprint = 42;
-  bytes bootId = 50;
-  bytes androidId = 58;
-  bytes baseband = 66;
-  bytes innerVersion = 74;
+  bytes bootloader = 1;
+  bytes procVersion = 2;
+  bytes codename = 3;
+  bytes incremental = 4;
+  bytes fingerprint = 5;
+  bytes bootId = 6;
+  bytes androidId = 7;
+  bytes baseband = 8;
+  bytes innerVersion = 9;
 }

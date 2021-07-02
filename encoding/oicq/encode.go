@@ -3,18 +3,12 @@ package oicq
 import (
 	"context"
 	"encoding/binary"
-	"encoding/hex"
-	"log"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
 )
 
 func Marshal(ctx context.Context, msg *Message) ([]byte, error) {
-	head, err := marshalHead(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
 	buf := bytes.NewBuffer([]byte{})
 	switch msg.EncryptMethod {
 	case EncryptMethodECDH:
@@ -36,18 +30,20 @@ func Marshal(ctx context.Context, msg *Message) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("<-- [send] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(data))
+	// log.Printf("<-- [send] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(data))
 	buf.EncodeRawBytes(crypto.NewCipher(msg.ShareKey).Encrypt(data))
 	buf.EncodeUint8(0x03)
+	head, err := marshalHead(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
 	ret := append(head, buf.Bytes()...)
-	binary.BigEndian.PutUint32(ret[0:], uint32(len(ret)))
-	binary.BigEndian.PutUint16(ret[5:], uint16(len(ret)-4))
+	binary.BigEndian.PutUint16(ret[1:], uint16(len(ret)))
 	return ret, nil
 }
 
 func marshalHead(ctx context.Context, msg *Message) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
-	buf.EncodeUint32(0x00000000)
 	buf.EncodeUint8(0x02)
 	buf.EncodeUint16(0x0000)
 	buf.EncodeUint16(msg.Version)

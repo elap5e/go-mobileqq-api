@@ -19,10 +19,10 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(
 			AppClientVersion: 0x00000000,
 			_Uin:             0x00000000,
 			I2:               0x0000,
-			IPv4Address:      defaultDeviceIPv4Address, // nil
-			ServerTime:       0,                        // nil
-			PasswordMD5:      [16]byte{},               // nil
-			_UserA1Key:       [16]byte{},               // nil
+			_IPv4Address:     nil,        // nil
+			ServerTime:       0,          // nil
+			PasswordMD5:      [16]byte{}, // nil
+			_UserA1Key:       [16]byte{}, // nil
 			LoginType:        0x00000000,
 			UserA1:           nil,
 			T16A:             nil,

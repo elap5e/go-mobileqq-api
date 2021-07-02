@@ -63,6 +63,7 @@ func (c *Client) initPushHandlers() {
 	c.handlers = make(map[string]PushHandleFunc)
 	c.handlers[ServiceMethodPushConfigRequest] = c.handlePushConfigRequest
 	c.handlers[ServiceMethodPushMessageNotify] = c.handlePushMessageNotify
+	c.handlers[ServiceMethodPushOnlineGroupMessage] = c.handlePushOnlineMessage
 	c.handlers[ServiceMethodPushOnlineSIDTicketExpired] = c.handlePushOnlineSIDTicketExpired
 }
 
@@ -247,8 +248,8 @@ func (c *Client) preprocess(c2s *ClientToServerMessage) {
 		copy(c2s.EncryptD2Key[:], d2.Key)
 	}
 	c2s.CodecAppID = c.cfg.Client.AppID
-	c2s.CodecIMEI = defaultDeviceIMEI
-	c2s.CodecIMSI = defaultDeviceIMSI
+	c2s.CodecIMEI = c.cfg.Device.IMEI
+	c2s.CodecIMSI = c.cfg.Device.IMSI
 	c2s.CodecNetworkType = 0x01 // 0x00: Others; 0x01: Wi-Fi
 	c2s.CodecNetIPFamily = 0x03 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
 	c2s.CodecRevision = c.cfg.Client.Revision

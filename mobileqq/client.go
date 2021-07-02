@@ -19,11 +19,11 @@ import (
 func init() {
 	for _, dir := range []string{baseDir, cacheDir, logDir} {
 		_, err := os.Stat(dir)
-		if err == nil || os.IsExist(err) {
-			err = os.MkdirAll(dir, 0600)
+		if os.IsNotExist(err) {
+			err = os.Mkdir(dir, 0777)
 		}
 		if err != nil {
-			log.Fatalf(err.Error())
+			log.Fatalf("failed to mkdir %s, error %s", dir, err.Error())
 		}
 	}
 	logFile, err := os.OpenFile(path.Join(

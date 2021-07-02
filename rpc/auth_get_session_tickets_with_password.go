@@ -19,7 +19,7 @@ type AuthGetSessionTicketsWithPasswordRequest struct {
 	AppClientVersion uint32 // constant 0x00000000
 	_Uin             uint64
 	I2               uint16 // constant 0x0000
-	IPv4Address      net.IP
+	_IPv4Address     net.IP // c.cfg.Client.MiscBitmap
 	ServerTime       uint32
 	PasswordMD5      [16]byte
 	_UserA1Key       [16]byte // c.userA1Key
@@ -51,7 +51,7 @@ func NewAuthGetSessionTicketsWithPasswordRequest(
 		AppClientVersion: 0x00000000,
 		_Uin:             0x00000000,
 		I2:               0x0000,
-		IPv4Address:      defaultDeviceIPv4Address,
+		_IPv4Address:     nil,
 		ServerTime:       util.GetServerTime(),
 		PasswordMD5:      md5.Sum([]byte(password)),
 		_UserA1Key:       [16]byte{},
@@ -88,7 +88,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 		req.GetUin(),
 		req.I2,
 	)
-	tlvs[0x0001] = tlv.NewT1(req.GetUin(), req.IPv4Address)
+	tlvs[0x0001] = tlv.NewT1(req.GetUin(), c.cfg.Device.IPv4Address)
 	if len(sig.Tickets["A1"].Sig) == 0 {
 		tlvs[0x0106] = tlv.NewT106(
 			req.DstAppID,
@@ -96,7 +96,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 			req.AppClientVersion,
 			req.GetUin(),
 			req.ServerTime,
-			req.IPv4Address,
+			c.cfg.Device.IPv4Address,
 			true,
 			req.PasswordMD5,
 			0,
@@ -138,7 +138,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 		tlvs[0x0112] = tlv.NewT112([]byte(req.GetUsername()))
 	}
 	tlvs[0x0144] = tlv.NewT144(util.BytesToSTBytes(sig.Tickets["A1"].Key),
-		tlv.NewT109(md5.Sum(defaultDeviceOSBuildID)),
+		tlv.NewT109(md5.Sum([]byte(c.cfg.Device.OSBuildID))),
 		tlv.NewT52D(&pb.DeviceReport{
 			Bootloader:   []byte(c.cfg.Device.Bootloader),
 			ProcVersion:  []byte(c.cfg.Device.ProcVersion),
@@ -153,7 +153,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 		tlv.NewT124(
 			[]byte(defaultDeviceOSType),
 			[]byte(defaultDeviceOSVersion),
-			defaultDeviceNetworkTypeID,
+			c.cfg.Device.NetworkType,
 			defaultDeviceSIMOPName,
 			nil,
 			defaultDeviceAPNName,
@@ -184,7 +184,7 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 	tlvs[0x0154] = tlv.NewT154(req.GetSeq())
 	tlvs[0x0141] = tlv.NewT141(
 		defaultDeviceSIMOPName,
-		defaultDeviceNetworkTypeID,
+		c.cfg.Device.NetworkType,
 		defaultDeviceAPNName,
 	)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
@@ -208,9 +208,9 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 			c.randomSeed,
 		)
 	}
-	tlvs[0x0187] = tlv.NewT187(md5.Sum(defaultDeviceMACAddress))
-	tlvs[0x0188] = tlv.NewT188(md5.Sum(defaultDeviceOSBuildID))
-	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(defaultDeviceIMSI)))
+	tlvs[0x0187] = tlv.NewT187(md5.Sum([]byte(c.cfg.Device.MACAddress)))
+	tlvs[0x0188] = tlv.NewT188(md5.Sum([]byte(c.cfg.Device.OSBuildID)))
+	tlvs[0x0194] = tlv.NewT194(md5.Sum([]byte(c.cfg.Device.IMSI)))
 	if c.cfg.Client.CanCaptcha {
 		tlvs[0x0191] = tlv.NewT191(0x82)
 	} else {
@@ -219,8 +219,8 @@ func (req *AuthGetSessionTicketsWithPasswordRequest) GetTLVs(
 	// // DISABLED: SetNeedForPayToken
 	// tlvs[0x0201] = tlv.NewT201(nil, nil, []byte("qq"), nil)
 	tlvs[0x0202] = tlv.NewT202(
-		md5.Sum(defaultDeviceBSSIDAddress),
-		defaultDeviceSSIDAddress,
+		md5.Sum([]byte(c.cfg.Device.BSSIDAddress)),
+		[]byte(c.cfg.Device.SSIDAddress),
 	)
 	tlvs[0x0177] = tlv.NewT177(c.cfg.Client.BuildTime, c.cfg.Client.SDKVersion)
 	tlvs[0x0516] = tlv.NewTLV(

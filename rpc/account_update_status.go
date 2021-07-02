@@ -18,86 +18,86 @@ var (
 )
 
 type AccountUpdateStatus struct {
-	Uin       uint64   `jce:",1"`
-	PushIDs   []uint64 `jce:",2"` // constant
-	Status    uint32   `jce:",3"`
-	KikPC     bool     `jce:",4"`
-	KikWeak   bool     `jce:",5"` // constant false
-	Timestamp uint64   `jce:",6"`
-	LargeSeq  uint32   `jce:",7"` // constant 0x00000000
+	Uin       uint64   `jce:",1" json:",omitempty"`
+	PushIDs   []uint64 `jce:",2" json:",omitempty"` // constant
+	Status    uint32   `jce:",3" json:",omitempty"`
+	KikPC     bool     `jce:",4" json:",omitempty"`
+	KikWeak   bool     `jce:",5" json:",omitempty"` // constant false
+	Timestamp uint64   `jce:",6" json:",omitempty"`
+	LargeSeq  uint32   `jce:",7" json:",omitempty"` // constant 0x00000000
 }
 
 type AccountUpdateStatusRequest struct {
-	Uin          uint64 `jce:",0"`
-	Bid          uint64 `jce:",1"`
-	ConnType     uint8  `jce:",2"` // constant 0x00
-	Other        string `jce:",3"` // constant ""
-	Status       uint32 `jce:",4"`
-	OnlinePush   bool   `jce:",5"` // constant false
-	IsOnline     bool   `jce:",6"` // constant false
-	IsShowOnline bool   `jce:",7"` // constant false
-	KikPC        bool   `jce:",8"`
-	KikWeak      bool   `jce:",9"` // constant false
-	Timestamp    uint64 `jce:",10"`
-	SDKVersion   uint32 `jce:",11"`
-	NetworkType  uint8  `jce:",12"` // 0x00: mobile; 0x01: wifi
-	BuildVersion string `jce:",13"` // constant ""
-	RegisterType bool   `jce:",14"` // false: appRegister, fillRegProxy, createDefaultRegInfo; true: others
-	DevParam     []byte `jce:",15"` // constant nil
-	GUID         []byte `jce:",16"` // placeholder
-	LocaleID     uint32 `jce:",17"` // constant 0x00000804
-	SlientPush   bool   `jce:",18"` // constant false
-	DeviceName   string `jce:",19"`
-	DeviceType   string `jce:",20"`
-	OSVersion    string `jce:",21"`
-	OpenPush     bool   `jce:",22"` // constant true
-	LargeSeq     uint32 `jce:",23"` // constant 0x00000000
+	Uin          uint64 `jce:",0" json:",omitempty"`
+	Bid          uint64 `jce:",1" json:",omitempty"`
+	ConnType     uint8  `jce:",2" json:",omitempty"` // constant 0x00
+	Other        string `jce:",3" json:",omitempty"` // constant ""
+	Status       uint32 `jce:",4" json:",omitempty"`
+	OnlinePush   bool   `jce:",5" json:",omitempty"` // constant false
+	IsOnline     bool   `jce:",6" json:",omitempty"` // constant false
+	IsShowOnline bool   `jce:",7" json:",omitempty"` // constant false
+	KikPC        bool   `jce:",8" json:",omitempty"`
+	KikWeak      bool   `jce:",9" json:",omitempty"` // constant false
+	Timestamp    uint64 `jce:",10" json:",omitempty"`
+	SDKVersion   uint32 `jce:",11" json:",omitempty"`
+	NetworkType  uint8  `jce:",12" json:",omitempty"` // 0x00: mobile; 0x01: wifi
+	BuildVersion string `jce:",13" json:",omitempty"` // constant ""
+	RegisterType bool   `jce:",14" json:",omitempty"` // false: appRegister, fillRegProxy, createDefaultRegInfo; true: others
+	DevParam     []byte `jce:",15" json:",omitempty"` // constant nil
+	GUID         []byte `jce:",16" json:",omitempty"` // placeholder
+	LocaleID     uint32 `jce:",17" json:",omitempty"` // constant 0x00000804
+	SlientPush   bool   `jce:",18" json:",omitempty"` // constant false
+	DeviceName   string `jce:",19" json:",omitempty"`
+	DeviceType   string `jce:",20" json:",omitempty"`
+	OSVersion    string `jce:",21" json:",omitempty"`
+	OpenPush     bool   `jce:",22" json:",omitempty"` // constant true
+	LargeSeq     uint32 `jce:",23" json:",omitempty"` // constant 0x00000000
 
-	// LastWatchStartTime uint32         `jce:",24"`
-	// BindUin            []uint64       `jce:",25"`
-	// OldSSOIP           uint64         `jce:",26"`
-	// NewSSOIP           uint64         `jce:",27"`
-	// ChannelNo          string         `jce:",28"`
-	// CPID               uint64         `jce:",29"`
-	// VendorName         string         `jce:",30"`
-	// VendorOSName       string         `jce:",31"`
-	// IOSIDFA            string         `jce:",32"`
-	// Reqbody0x769       []byte         `jce:",33"`
-	// IsSetStatus        bool           `jce:",34"`
-	// ServerBuf          []byte         `jce:",35"`
-	// SetMute            bool           `jce:",36"`
-	// NotifySwitch       uint8          `jce:",37"`
-	// ExtOnlineStatus    uint64         `jce:",38"`
-	// BatteryStatus      uint32         `jce:",39"`
-	// VendorPushInfo     VendorPushInfo `jce:",42"`
+	// LastWatchStartTime uint32         `jce:",24" json:",omitempty"`
+	// BindUin            []uint64       `jce:",25" json:",omitempty"`
+	// OldSSOIP           uint64         `jce:",26" json:",omitempty"`
+	// NewSSOIP           uint64         `jce:",27" json:",omitempty"`
+	// ChannelNo          string         `jce:",28" json:",omitempty"`
+	// CPID               uint64         `jce:",29" json:",omitempty"`
+	// VendorName         string         `jce:",30" json:",omitempty"`
+	// VendorOSName       string         `jce:",31" json:",omitempty"`
+	// IOSIDFA            string         `jce:",32" json:",omitempty"`
+	// Reqbody0x769       []byte         `jce:",33" json:",omitempty"`
+	// IsSetStatus        bool           `jce:",34" json:",omitempty"`
+	// ServerBuf          []byte         `jce:",35" json:",omitempty"`
+	// SetMute            bool           `jce:",36" json:",omitempty"`
+	// NotifySwitch       uint8          `jce:",37" json:",omitempty"`
+	// ExtOnlineStatus    uint64         `jce:",38" json:",omitempty"`
+	// BatteryStatus      uint32         `jce:",39" json:",omitempty"`
+	// VendorPushInfo     VendorPushInfo `jce:",42" json:",omitempty"`
 }
 
 type VendorPushInfo struct {
-	Type uint64 `jce:",0"`
+	Type uint64 `jce:",0" json:",omitempty"`
 }
 
 type AccountUpdateStatusResponse struct {
-	Uin            uint64 `jce:",0"`
-	Bid            uint64 `jce:",1"`
-	ReplyCode      uint8  `jce:",2"`
-	Result         string `jce:",3"`
-	ServerTime     uint64 `jce:",4"`
-	LogQQ          bool   `jce:",5"`
-	NeedKik        bool   `jce:",6"`
-	UpdateFlag     bool   `jce:",7"`
-	Timestamp      uint64 `jce:",8"`
-	CrashFlag      bool   `jce:",9"`
-	ClientIP       string `jce:",10"`
-	ClientPort     uint32 `jce:",11"`
-	HelloInterval  uint32 `jce:",12"`
-	LargeSeq       uint32 `jce:",13"`
-	LargeSeqUpdate bool   `jce:",14"`
+	Uin            uint64 `jce:",0" json:",omitempty"`
+	Bid            uint64 `jce:",1" json:",omitempty"`
+	ReplyCode      uint8  `jce:",2" json:",omitempty"`
+	Result         string `jce:",3" json:",omitempty"`
+	ServerTime     uint64 `jce:",4" json:",omitempty"`
+	LogQQ          bool   `jce:",5" json:",omitempty"`
+	NeedKik        bool   `jce:",6" json:",omitempty"`
+	UpdateFlag     bool   `jce:",7" json:",omitempty"`
+	Timestamp      uint64 `jce:",8" json:",omitempty"`
+	CrashFlag      bool   `jce:",9" json:",omitempty"`
+	ClientIP       string `jce:",10" json:",omitempty"`
+	ClientPort     uint32 `jce:",11" json:",omitempty"`
+	HelloInterval  uint32 `jce:",12" json:",omitempty"`
+	LargeSeq       uint32 `jce:",13" json:",omitempty"`
+	LargeSeqUpdate bool   `jce:",14" json:",omitempty"`
 
-	Respbody0x769            []byte `jce:",15"`
-	Status                   uint32 `jce:",16"`
-	ExtraOnlineStatus        uint64 `jce:",17"`
-	ClientBatteryGetInterval uint64 `jce:",18"`
-	ClientAutoStatusInterval uint64 `jce:",19"`
+	Respbody0x769            []byte `jce:",15" json:",omitempty"`
+	Status                   uint32 `jce:",16" json:",omitempty"`
+	ExtraOnlineStatus        uint64 `jce:",17" json:",omitempty"`
+	ClientBatteryGetInterval uint64 `jce:",18" json:",omitempty"`
+	ClientAutoStatusInterval uint64 `jce:",19" json:",omitempty"`
 }
 
 func NewAccountUpdateStatusRequest(

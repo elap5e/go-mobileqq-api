@@ -2,9 +2,7 @@ package oicq
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"log"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
@@ -17,7 +15,7 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 	if err != nil {
 		return err
 	}
-	buf := bytes.NewBuffer(data[5 : n-1])
+	buf := bytes.NewBuffer(data[1 : n-1])
 	if err := unmarshalHead(ctx, buf, msg); err != nil {
 		return err
 	}
@@ -27,21 +25,19 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 		msg.ShareKey = msg.RandomKey
 	}
 	buf = bytes.NewBuffer(crypto.NewCipher(msg.ShareKey).Decrypt(buf.Bytes()))
-	log.Printf("--> [recv] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(buf.Bytes()))
+	// log.Printf("--> [recv] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(buf.Bytes()))
 	if err := unmarshalData(ctx, buf, msg); err != nil {
 		return err
 	}
+	log.Printf("type 0x%04x, code 0x%02x", msg.Type, msg.Code)
 	tlv.DumpTLVs(ctx, msg.TLVs)
 	return nil
 }
 
 func checkVaild(v []byte) (int, error) {
-	n := int(v[0])<<24 | int(v[1])<<16 | int(v[2])<<8 | int(v[3])<<0
-	if len(v) < n {
-		return 4, io.ErrUnexpectedEOF
-	}
-	if v[4] != 0x02 {
-		return 5, fmt.Errorf("unexpected prefix, got 0x%x", v[4])
+	n := len(v)
+	if v[0] != 0x02 {
+		return 1, fmt.Errorf("unexpected prefix, got 0x%x", v[0])
 	}
 	if v[n-1] != 0x03 {
 		return n, fmt.Errorf("unexpected suffix, got 0x%x", v[n-1])

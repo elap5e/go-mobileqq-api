@@ -114,6 +114,9 @@ func NewClientConfigFromViper() *Config {
 			cfg.Client.NetIPFamily = "Dual"
 		}
 	}
+	if viper.IsSet("configs.deviceInfo.randomSeed") {
+		cfg.RPC.Device = rpc.NewDeviceConfigBySeed(viper.GetInt64("configs.deviceInfo.randomSeed"))
+	}
 	if viper.IsSet("configs.protocol") {
 		switch strings.ToLower(viper.GetString("configs.protocol")) {
 		case "android":
