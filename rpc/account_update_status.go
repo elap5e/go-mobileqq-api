@@ -21,8 +21,8 @@ type AccountUpdateStatus struct {
 	Uin       uint64   `jce:",1" json:",omitempty"`
 	PushIDs   []uint64 `jce:",2" json:",omitempty"` // constant
 	Status    uint32   `jce:",3" json:",omitempty"`
-	KikPC     bool     `jce:",4" json:",omitempty"`
-	KikWeak   bool     `jce:",5" json:",omitempty"` // constant false
+	KickPC    bool     `jce:",4" json:",omitempty"`
+	KickWeak  bool     `jce:",5" json:",omitempty"` // constant false
 	Timestamp uint64   `jce:",6" json:",omitempty"`
 	LargeSeq  uint32   `jce:",7" json:",omitempty"` // constant 0x00000000
 }
@@ -36,8 +36,8 @@ type AccountUpdateStatusRequest struct {
 	OnlinePush   bool   `jce:",5" json:",omitempty"` // constant false
 	IsOnline     bool   `jce:",6" json:",omitempty"` // constant false
 	IsShowOnline bool   `jce:",7" json:",omitempty"` // constant false
-	KikPC        bool   `jce:",8" json:",omitempty"`
-	KikWeak      bool   `jce:",9" json:",omitempty"` // constant false
+	KickPC       bool   `jce:",8" json:",omitempty"`
+	KickWeak     bool   `jce:",9" json:",omitempty"` // constant false
 	Timestamp    uint64 `jce:",10" json:",omitempty"`
 	SDKVersion   uint32 `jce:",11" json:",omitempty"`
 	NetworkType  uint8  `jce:",12" json:",omitempty"` // 0x00: mobile; 0x01: wifi
@@ -83,7 +83,7 @@ type AccountUpdateStatusResponse struct {
 	Result         string `jce:",3" json:",omitempty"`
 	ServerTime     uint64 `jce:",4" json:",omitempty"`
 	LogQQ          bool   `jce:",5" json:",omitempty"`
-	NeedKik        bool   `jce:",6" json:",omitempty"`
+	NeedKick       bool   `jce:",6" json:",omitempty"`
 	UpdateFlag     bool   `jce:",7" json:",omitempty"`
 	Timestamp      uint64 `jce:",8" json:",omitempty"`
 	CrashFlag      bool   `jce:",9" json:",omitempty"`
@@ -116,8 +116,8 @@ func NewAccountUpdateStatusRequest(
 			Uin:       uin,
 			PushIDs:   ids,
 			Status:    uint32(status),
-			KikPC:     kick,
-			KikWeak:   false,
+			KickPC:    kick,
+			KickWeak:  false,
 			Timestamp: 0x0000000000000000, // TODO: fix
 			LargeSeq:  0x00000000,
 		},
@@ -131,8 +131,8 @@ func NewAccountUpdateStatusRequest(
 		OnlinePush:   false,
 		IsOnline:     false,
 		IsShowOnline: false,
-		KikPC:        push.AccountUpdateStatus.KikPC,
-		KikWeak:      push.AccountUpdateStatus.KikWeak,
+		KickPC:       push.AccountUpdateStatus.KickPC,
+		KickWeak:     push.AccountUpdateStatus.KickWeak,
 		Timestamp:    push.AccountUpdateStatus.Timestamp,
 		SDKVersion:   defaultDeviceOSSDKVersion,
 		NetworkType:  0x01,
@@ -172,21 +172,22 @@ func (c *Client) AccountUpdateStatus(
 	if err != nil {
 		return nil, err
 	}
-	s2c := new(ServerToClientMessage)
+	s2c := ServerToClientMessage{}
 	if err := c.Call(ServiceMethodAccountUpdateStatus, &ClientToServerMessage{
 		Username: strconv.FormatInt(int64(req.Uin), 10),
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   false,
-	}, s2c); err != nil {
+	}, &s2c); err != nil {
 		return nil, err
 	}
-	msg := new(uni.Message)
-	resp := new(AccountUpdateStatusResponse)
-	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
-		"SvcRespRegister": resp,
+	msg := uni.Message{}
+	resp := AccountUpdateStatusResponse{}
+	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
+		"SvcRespRegister": &resp,
 	}); err != nil {
 		return nil, err
 	}
-	return resp, nil
+	c.dumpServerToClientMessage(&s2c, &resp)
+	return &resp, nil
 }

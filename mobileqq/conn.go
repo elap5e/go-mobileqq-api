@@ -116,21 +116,21 @@ func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(addrs))
-	log.Printf("<== [conn] send tcp dialings")
+	log.Printf("<== [conn] testing tcp connections")
 	for i := range addrs {
 		go func(addr *net.TCPAddr) {
 			defer wg.Done()
-			log.Printf("<-- [conn] send dial tcp %s", addr)
+			// log.Printf("<-- [conn] send dial tcp %s", addr)
 			if err := tcping(addr); err != nil {
 				log.Printf("x_x [conn] %s", err.Error())
 				return
 			}
-			log.Printf("--> [conn] recv dial tcp %s", addr)
+			// log.Printf("--> [conn] recv dial tcp %s", addr)
 			c.addrs = append(c.addrs, addr)
 		}(addrs[i])
 	}
 	wg.Wait()
-	log.Printf("==> [conn] recv tcp dialings")
+	log.Printf("==> [conn] tcp connections tested")
 
 	defer log.Printf("^_^ [conn] connected to server %s", c.addrs[0].String())
 	return net.Dial("tcp", c.addrs[0].String())

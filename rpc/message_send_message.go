@@ -2,41 +2,51 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
-	"log"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/pb"
-	"google.golang.org/protobuf/proto"
 )
 
-type MessageSendMessageRequest struct {
-	pb.SendMessageRequest
-
-	Username string
+func NewMessageSendMessageRequest(
+	routingHead *pb.RoutingHead,
+	contentHead *pb.ContentHead,
+	messageBody *pb.MessageBody,
+	seq uint32,
+	cookie []byte,
+) *pb.MessageSendMessageRequest {
+	return &pb.MessageSendMessageRequest{
+		RoutingHead: routingHead,
+		ContentHead: contentHead,
+		MessageBody: messageBody,
+		MessageSeq:  seq,
+		MessageRand: 0x00000000,
+		SyncCookie:  cookie,
+	}
 }
 
 func (c *Client) MessageSendMessage(
 	ctx context.Context,
-	req *MessageSendMessageRequest,
-) (*pb.SendMessageResponse, error) {
+	username string,
+	req *pb.MessageSendMessageRequest,
+) (*pb.MessageSendMessageResponse, error) {
 	buf, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	s2c := new(ServerToClientMessage)
+	s2c := ServerToClientMessage{}
 	if err := c.Call(ServiceMethodMessageSendMessage, &ClientToServerMessage{
-		Username: req.Username,
+		Username: username,
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   true,
-	}, s2c); err != nil {
+	}, &s2c); err != nil {
 		return nil, err
 	}
-	resp := pb.SendMessageResponse{}
+	resp := pb.MessageSendMessageResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}
-	jresp, _ := json.MarshalIndent(&resp, "", "  ")
-	log.Printf("pb.SendMessageResponse\n%s", jresp)
+	c.dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

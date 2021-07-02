@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"strconv"
 
@@ -92,104 +91,107 @@ func (c *Client) handlePushMessageNotify(
 	ctx context.Context,
 	s2c *ServerToClientMessage,
 ) (*ClientToServerMessage, error) {
-	msg := new(uni.Message)
-	req := new(PushMessageNotifyRequest)
-	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
-		"req_PushNotify": req,
+	msg := uni.Message{}
+	req := PushMessageNotifyRequest{}
+	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
+		"req_PushNotify": &req,
 	}); err != nil {
 		return nil, err
 	}
-	jreq, _ := json.MarshalIndent(&req, "", "  ")
-	log.Printf("rpc.PushMessageNotifyRequest\n%s", jreq)
-	log.Printf(
-		"handlePushMessageNotify, userActive:%d bindedUin:%d command:%s generalFlag:0x%08x pingFlag:0x%016x",
-		req.UserActive, req.BindedUin, req.Command, req.GeneralFlag, req.PingFlag,
+	c.dumpServerToClientMessage(s2c, &req)
+	resp, err := c.MessageGetMessage(
+		ctx, s2c.Username, NewMessageGetMessageRequest(
+			0x00000000, c.syncCookie,
+		),
 	)
-	resp, err := c.MessageGetMessage(ctx, NewMessageGetMessageRequest(
-		s2c.Username, 0x00000000, 0x00000001, 0x00000000,
-	))
 	if err != nil {
 		return nil, err
 	}
-	dataList := []struct {
+	c.syncCookie = resp.GetSyncCookie()
+	// TODO: logic
+	type Data struct {
 		PeerUin uint64
 		FromUin uint64
 		Data    []byte
-	}{}
+	}
+	dataList := []Data{}
 	for {
-		// TODO: logic
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
-			log.Printf("==> [sync] peer %d:", uinPairMessage.GetPeerUin())
+			log.Printf(
+				"==> [sync] lastReadTime:%d peer:%d message:%d",
+				uinPairMessage.GetLastReadTime(),
+				uinPairMessage.GetPeerUin(),
+				len(uinPairMessage.GetMessages()),
+			)
 			for _, msg := range uinPairMessage.GetMessages() {
-				data, err := mark.Marshal(msg)
+				data, err := c.marshalMessage(msg)
 				if err != nil {
 					return nil, err
 				}
-				log.Printf(
-					"==> [sync] peer %d from %d to %d:\n%s",
-					msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
-					msg.GetMessageHead().GetFromUin(),
-					msg.GetMessageHead().GetToUin(),
-					string(data),
-				)
+
 				if s2c.Username == strconv.FormatInt(int64(msg.GetMessageHead().GetFromUin()), 10) {
 					c.setSyncSeq(msg.GetMessageHead().GetGroupInfo().GetGroupCode(), msg.GetMessageHead().GetMessageSeq())
-				} else {
-					dataList = append(dataList, struct {
-						PeerUin uint64
-						FromUin uint64
-						Data    []byte
-					}{
+				} else if msg.GetMessageHead().GetMessageType() == 166 {
+					// add to data list
+					dataList = append(dataList, Data{
 						PeerUin: msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
 						FromUin: msg.GetMessageHead().GetFromUin(),
 						Data:    data,
 					})
 				}
+
+				// message processed
 				switch msg.GetMessageHead().GetMessageType() {
 				case 0, 26, 64, 38, 48, 53, 61, 63, 78, 81, 103, 107, 110, 111, 114, 118:
-					_, _ = c.MessageDeleteMessage(ctx, &MessageDeleteMessageRequest{
-						FromUin:     msg.GetMessageHead().GetFromUin(),
-						ToUin:       msg.GetMessageHead().GetToUin(),
-						MessageType: msg.GetMessageHead().GetMessageType(),
-						MessageSeq:  msg.GetMessageHead().GetMessageSeq(),
-						MessageUid:  msg.GetMessageHead().GetMessageUid(),
-						Username:    s2c.Username,
-					})
+					_, _ = c.MessageDeleteMessage(ctx, s2c.Username, NewMessageDeleteMessageRequest(
+						&pb.MessageDeleteMessageRequest_MessageItem{
+							FromUin:     msg.GetMessageHead().GetFromUin(),
+							ToUin:       msg.GetMessageHead().GetToUin(),
+							MessageType: msg.GetMessageHead().GetMessageType(),
+							MessageSeq:  msg.GetMessageHead().GetMessageSeq(),
+							MessageUid:  msg.GetMessageHead().GetMessageUid(),
+						},
+					))
 				}
 			}
 		}
 		if resp.GetSyncFlag() == 0x00000001 {
-			log.Printf("==> [sync] syncing, 0x01")
-			resp, err = c.MessageGetMessage(ctx, NewMessageGetMessageRequest(
-				s2c.Username, resp.GetSyncFlag(), 0x00000001, 0x00000000,
-			))
+			c.dumpServerToClientMessage(s2c, &req)
+			resp, err := c.MessageGetMessage(
+				ctx, s2c.Username, NewMessageGetMessageRequest(
+					resp.GetSyncFlag(), c.syncCookie,
+				),
+			)
 			if err != nil {
 				return nil, err
 			}
+			c.syncCookie = resp.GetSyncCookie()
 		} else {
 			break
 		}
 	}
+	// echo message
 	for _, data := range dataList {
-		log.Printf(">=< [echo] %d %d %s", data.PeerUin, data.FromUin, string(data.Data))
-	}
-	n := len(dataList)
-	if n != 0 {
-		subMsg := new(pb.Message)
-		if err := mark.Unmarshal(dataList[n-1].Data, subMsg); err != nil {
+		msg := pb.Message{}
+		if err := mark.Unmarshal(data.Data, &msg); err != nil {
 			return nil, err
 		}
-		_, _ = c.MessageSendMessage(ctx, &MessageSendMessageRequest{
-			SendMessageRequest: pb.SendMessageRequest{
-				RoutingHead: &pb.RoutingHead{C2C: &pb.C2C{Uin: dataList[n-1].FromUin}},
-				ContentHead: subMsg.GetContentHead(),
-				MessageBody: subMsg.GetMessageBody(),
-				MessageSeq:  c.getNextSyncSeq(dataList[n-1].PeerUin),
-				MessageRand: 0x00000000,
-				SyncCookie:  c.syncCookie,
-			},
-			Username: s2c.Username,
-		})
+		seq := c.getNextSyncSeq(data.PeerUin)
+		log.Printf(
+			"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
+			data.PeerUin, seq, s2c.Username, data.FromUin, string(data.Data),
+		)
+		if len(dataList) < 2 {
+			_, _ = c.MessageSendMessage(
+				ctx, s2c.Username, NewMessageSendMessageRequest(
+					&pb.RoutingHead{C2C: &pb.C2C{Uin: data.FromUin}},
+					msg.GetContentHead(),
+					msg.GetMessageBody(),
+					seq,
+					c.syncCookie,
+				),
+			)
+		}
 	}
 	return nil, nil
 }

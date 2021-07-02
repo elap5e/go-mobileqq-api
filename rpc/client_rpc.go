@@ -181,31 +181,32 @@ func (c *Client) call(
 ) {
 	if handleFunc, ok := c.handlers[serviceMethod]; ok {
 		log.Printf(
-			"==> [recv] seq 0x%08x, uin %s, method %s, server notify, handle",
+			"==> [recv] seq:0x%08x uin:%s method:%s serverNotify:handle",
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,
 		)
-		c2s, err := handleFunc(context.Background(), s2c)
+		ctx := context.Background()
+		ctx = WithS2C(ctx, s2c)
+		c2s, err := handleFunc(ctx, s2c)
 		if err != nil {
 			log.Printf("x_< [call] handle error: %s", err.Error())
 			return
 		}
-		if c2s == nil {
-			log.Printf(
-				"==> [recv] seq 0x%08x, uin %s, method %s, server notify, no callback",
-				s2c.Seq, s2c.Username, s2c.ServiceMethod,
-			)
-			return
+		if c2s != nil {
+			c.preprocess(c2s)
+			c.c2sMux.Lock()
+			defer c.c2sMux.Unlock()
+			if err := c.codec.Encode(c2s); err != nil {
+				log.Printf("x_< [call] encode error: %s", err.Error())
+				return
+			}
 		}
-		c.preprocess(c2s)
-		c.c2sMux.Lock()
-		defer c.c2sMux.Unlock()
-		if err := c.codec.Encode(c2s); err != nil {
-			log.Printf("x_< [call] encode error: %s", err.Error())
-			return
-		}
+		log.Printf(
+			"<== [send] seq:0x%08x uin:%s method:%s serverNotify:finish",
+			s2c.Seq, s2c.Username, s2c.ServiceMethod,
+		)
 	} else {
 		log.Printf(
-			"==> [recv] seq 0x%08x, uin %s, method %s, server notify, ignore",
+			"<== [send] seq:0x%08x uin:%s method:%s serverNotify:ignore",
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,
 		)
 	}

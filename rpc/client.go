@@ -103,10 +103,10 @@ func (c *Client) init() {
 func (c *Client) initRandomKey() {
 	c.randomKey = [16]byte{}
 	c.rand.Read(c.randomKey[:])
-	log.Printf(
-		"--> [init] dump client random key\n%s",
-		hex.Dump(c.randomKey[:]),
-	)
+	// log.Printf(
+	// 	"--> [init] dump client random key\n%s",
+	// 	hex.Dump(c.randomKey[:]),
+	// )
 }
 
 func (c *Client) initServerPublicKey() {
@@ -267,8 +267,8 @@ func NewClientWithCodec(codec ClientCodec, opts ...Option) *Client {
 	for _, opt := range opts {
 		cfg = *opt.Config
 	}
-	data, _ := json.MarshalIndent(cfg, "", "  ")
-	log.Printf("~v~ [init] dump RPC client config:\n%s", string(data))
+	// data, _ := json.MarshalIndent(cfg, "", "  ")
+	// log.Printf("~v~ [init] dump RPC client config:\n%s", string(data))
 	c := &Client{
 		cfg:       cfg,
 		codec:     codec,
@@ -290,4 +290,14 @@ func (c *Client) WithClient(ctx context.Context) context.Context {
 
 func ForClient(ctx context.Context) *Client {
 	return ctx.Value(clientCtxKey).(*Client)
+}
+
+var s2cCtxKey struct{}
+
+func WithS2C(ctx context.Context, s2c *ServerToClientMessage) context.Context {
+	return context.WithValue(ctx, s2cCtxKey, s2c)
+}
+
+func ForS2C(ctx context.Context) *ServerToClientMessage {
+	return ctx.Value(s2cCtxKey).(*ServerToClientMessage)
 }

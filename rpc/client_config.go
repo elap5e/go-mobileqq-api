@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	Debug    bool
 	BaseDir  string
 	CacheDir string
 	Client   *ClientConfig

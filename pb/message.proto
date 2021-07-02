@@ -494,7 +494,7 @@ message C2C {
   uint64 uin = 1;
 }
 
-message DeleteMessageRequest {
+message MessageDeleteMessageRequest {
   repeated MessageItem messageItems = 1;
   message MessageItem {
     uint64 fromUin = 1;
@@ -505,7 +505,7 @@ message DeleteMessageRequest {
   }
 }
 
-message DeleteMessageResponse {
+message MessageDeleteMessageResponse {
   optional uint32 result = 1;
   optional string errorMessage = 2;
 }
@@ -519,7 +519,7 @@ message DiscussionTemp {
   uint64 toUin = 2;
 }
 
-message GetMessageRequest {
+message MessageGetMessageRequest {
   uint32 syncFlag = 1;
   bytes syncCookie = 2;
   uint32 rambleFlag = 3;
@@ -534,7 +534,7 @@ message GetMessageRequest {
   bytes serverBuffer = 12;
 }
 
-message GetMessageResponse {
+message MessageGetMessageResponse {
   optional uint32 result = 1;
   optional string errorMessage = 2;
   optional bytes syncCookie = 3;
@@ -575,7 +575,7 @@ message RoutingHead {
   // string nearbyAssistantTemp = 20;
 }
 
-message SendMessageRequest {
+message MessageSendMessageRequest {
   RoutingHead routingHead = 1;
   ContentHead contentHead = 2;
   MessageBody messageBody = 3;
@@ -586,7 +586,7 @@ message SendMessageRequest {
   uint32 messageVia = 8;
 }
 
-message SendMessageResponse {
+message MessageSendMessageResponse {
   optional uint32 result = 1;
   optional string errorMessage = 2;
   optional uint32 sendTime = 3;

@@ -2,53 +2,52 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
-	"log"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/pb"
-	"google.golang.org/protobuf/proto"
 )
 
-type MessageDeleteMessageRequest struct {
-	FromUin     uint64
-	ToUin       uint64
-	MessageType uint32
-	MessageSeq  uint32
-	MessageUid  uint64
+// type MessageDeleteMessageRequest struct {
+// 	FromUin     uint64
+// 	ToUin       uint64
+// 	MessageType uint32
+// 	MessageSeq  uint32
+// 	MessageUid  uint64
 
-	Username string
+// 	Username string
+// }
+
+func NewMessageDeleteMessageRequest(
+	items ...*pb.MessageDeleteMessageRequest_MessageItem,
+) *pb.MessageDeleteMessageRequest {
+	return &pb.MessageDeleteMessageRequest{
+		MessageItems: items,
+	}
 }
 
 func (c *Client) MessageDeleteMessage(
 	ctx context.Context,
-	req *MessageDeleteMessageRequest,
-) (*pb.DeleteMessageResponse, error) {
-	buf, err := proto.Marshal(&pb.DeleteMessageRequest{
-		MessageItems: []*pb.DeleteMessageRequest_MessageItem{{
-			FromUin:     req.FromUin,
-			ToUin:       req.ToUin,
-			MessageType: req.MessageType,
-			MessageSeq:  req.MessageSeq,
-			MessageUid:  req.MessageUid,
-		}},
-	})
+	username string,
+	req *pb.MessageDeleteMessageRequest,
+) (*pb.MessageDeleteMessageResponse, error) {
+	buf, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	s2c := new(ServerToClientMessage)
+	s2c := ServerToClientMessage{}
 	if err := c.Call(ServiceMethodMessageDeleteMessage, &ClientToServerMessage{
-		Username: req.Username,
+		Username: username,
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   true,
-	}, s2c); err != nil {
+	}, &s2c); err != nil {
 		return nil, err
 	}
-	resp := pb.DeleteMessageResponse{}
+	resp := pb.MessageDeleteMessageResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}
-	jresp, _ := json.MarshalIndent(&resp, "", "  ")
-	log.Printf("pb.DeleteMessageResponse\n%s", jresp)
+	c.dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

@@ -96,6 +96,9 @@ func NewClientConfigFromViper() *Config {
 	if viper.IsSet("configs.auth.captcha") {
 		cfg.Client.AuthCaptcha = viper.GetBool("configs.auth.captcha")
 	}
+	if viper.IsSet("configs.debug") {
+		cfg.RPC.Debug = viper.GetBool("configs.debug")
+	}
 	if viper.IsSet("configs.networkType") {
 		switch strings.ToLower(viper.GetString("configs.networkType")) {
 		case "wifi", "wi-fi":

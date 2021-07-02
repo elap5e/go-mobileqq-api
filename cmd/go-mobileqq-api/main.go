@@ -31,6 +31,7 @@ configs:
   auth:
     address: 127.0.0.1:0
     captcha: true
+  debug: true
   deviceInfo:
     randomSeed: %d
   protocol: android-tablet

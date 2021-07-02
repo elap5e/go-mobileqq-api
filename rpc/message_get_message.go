@@ -2,67 +2,54 @@ package rpc
 
 import (
 	"context"
-	"encoding/json"
-	"log"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/pb"
-	"google.golang.org/protobuf/proto"
 )
 
-type MessageGetMessageRequest struct {
-	pb.GetMessageRequest
-
-	Username string
-}
-
 func NewMessageGetMessageRequest(
-	username string,
-	flag, onlineFlag uint32,
-	reqType uint32,
-) *MessageGetMessageRequest {
-	return &MessageGetMessageRequest{
-		GetMessageRequest: pb.GetMessageRequest{
-			SyncFlag:            flag,
-			SyncCookie:          []byte{},
-			RambleFlag:          0x00000000,
-			LatestRambleNumber:  0x00000014,
-			OtherRambleNumber:   0x00000003,
-			OnlineSyncFlag:      onlineFlag,
-			ContextFlag:         0x00000001,
-			WhisperSessionId:    0x00000000,
-			RequestType:         reqType,
-			PublicAccountCookie: nil,
-			ControlBuffer:       nil,
-			ServerBuffer:        nil,
-		},
-		Username: username,
+	flag uint32,
+	cookie []byte,
+) *pb.MessageGetMessageRequest {
+	return &pb.MessageGetMessageRequest{
+		SyncFlag:            flag,
+		SyncCookie:          cookie,
+		RambleFlag:          0x00000000,
+		LatestRambleNumber:  0x00000014,
+		OtherRambleNumber:   0x00000003,
+		OnlineSyncFlag:      0x00000001, // fix
+		ContextFlag:         0x00000001,
+		WhisperSessionId:    0x00000000,
+		RequestType:         0x00000000, // fix
+		PublicAccountCookie: nil,
+		ControlBuffer:       nil,
+		ServerBuffer:        nil,
 	}
 }
 
 func (c *Client) MessageGetMessage(
 	ctx context.Context,
-	req *MessageGetMessageRequest,
-) (*pb.GetMessageResponse, error) {
-	req.SyncCookie = c.syncCookie
+	username string,
+	req *pb.MessageGetMessageRequest,
+) (*pb.MessageGetMessageResponse, error) {
 	buf, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	s2c := new(ServerToClientMessage)
+	s2c := ServerToClientMessage{}
 	if err := c.Call(ServiceMethodMessageGetMessage, &ClientToServerMessage{
-		Username: req.Username,
+		Username: username,
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   true,
-	}, s2c); err != nil {
+	}, &s2c); err != nil {
 		return nil, err
 	}
-	resp := pb.GetMessageResponse{}
+	resp := pb.MessageGetMessageResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}
-	c.syncCookie = resp.GetSyncCookie()
-	jresp, _ := json.MarshalIndent(&resp, "", "  ")
-	log.Printf("pb.GetMessageResponse\n%s", jresp)
+	c.dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }
