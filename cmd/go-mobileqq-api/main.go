@@ -74,7 +74,7 @@ func main() {
 	}
 	if err := c.AccountUpdateStatus(
 		username,
-		rpc.PushRegisterInfoStatusOnline,
+		rpc.AccountStatusOnline,
 		false,
 	); err != nil {
 		log.Printf("x_x [auth] error: %s", err.Error())

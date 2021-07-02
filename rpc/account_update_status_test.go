@@ -32,7 +32,7 @@ func TestMarshalAccountUpdateStatus(t *testing.T) {
 		AccountUpdateStatus: AccountUpdateStatus{
 			Uin:       0x0000000000002710,
 			PushIDs:   ids,
-			Status:    uint32(PushRegisterInfoStatusOnline),
+			Status:    uint32(AccountStatusOnline),
 			KikPC:     false,
 			KikWeak:   false,
 			Timestamp: 0x0000000000000000,

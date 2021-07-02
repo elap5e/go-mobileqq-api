@@ -7,6 +7,7 @@ currently being supported with security updates.
 
 | Version       | Supported |
 | ------------- | --------- |
+| v0.0.0+50-dev | :x:       |
 | v0.0.0+21-dev | :x:       |
 
 ## Reporting a Vulnerability

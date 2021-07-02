@@ -7,14 +7,14 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 )
 
-type PushRegisterInfoStatusType uint32
+type AccountStatusType uint32
 
 var (
-	PushRegisterInfoStatusOnline                PushRegisterInfoStatusType = 0x0000000b // 11
-	PushRegisterInfoStatusOffline               PushRegisterInfoStatusType = 0x00000015 // 21
-	PushRegisterInfoStatusAway                  PushRegisterInfoStatusType = 0x0000001f // 31
-	PushRegisterInfoStatusInvisiable            PushRegisterInfoStatusType = 0x00000029 // 41
-	PushRegisterInfoStatusReceiveOfflineMessage PushRegisterInfoStatusType = 0x0000005f // 95
+	AccountStatusOnline                AccountStatusType = 0x0000000b // 11
+	AccountStatusOffline               AccountStatusType = 0x00000015 // 21
+	AccountStatusAway                  AccountStatusType = 0x0000001f // 31
+	AccountStatusInvisiable            AccountStatusType = 0x00000029 // 41
+	AccountStatusReceiveOfflineMessage AccountStatusType = 0x0000005f // 95
 )
 
 type AccountUpdateStatus struct {
@@ -102,7 +102,7 @@ type AccountUpdateStatusResponse struct {
 
 func NewAccountUpdateStatusRequest(
 	uin uint64,
-	status PushRegisterInfoStatusType,
+	status AccountStatusType,
 	kick bool,
 ) *AccountUpdateStatusRequest {
 	ids := []uint64{0x01, 0x02, 0x04}
