@@ -183,16 +183,16 @@ func (c *Client) AuthGetSessionTickets(
 	if err != nil {
 		return nil, err
 	}
-	s2c := new(ServerToClientMessage)
+	s2c := ServerToClientMessage{}
 	if err := c.Call(req.GetServiceMethod(), &ClientToServerMessage{
 		Username: req.GetUsername(),
 		Seq:      req.GetSeq(),
 		Buffer:   buf,
 		Simple:   false,
-	}, s2c); err != nil {
+	}, &s2c); err != nil {
 		return nil, err
 	}
-	resp := new(AuthGetSessionTicketsResponse)
+	resp := AuthGetSessionTicketsResponse{}
 	msg := &oicq.Message{
 		RandomKey:  c.randomKey,
 		KeyVersion: c.serverPublicKeyVersion,
@@ -346,5 +346,5 @@ func (c *Client) AuthGetSessionTickets(
 			resp.Username,
 		))
 	}
-	return resp, nil
+	return &resp, nil
 }

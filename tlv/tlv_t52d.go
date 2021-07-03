@@ -33,8 +33,8 @@ func (t *T52D) Decode(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	deviceInfo := new(pb.DeviceReport)
-	if err := proto.Unmarshal(v.Bytes(), deviceInfo); err != nil {
+	deviceInfo := pb.DeviceReport{}
+	if err := proto.Unmarshal(v.Bytes(), &deviceInfo); err != nil {
 		return err
 	}
 	panic("not implement")

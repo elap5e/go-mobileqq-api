@@ -141,7 +141,7 @@ func (c *Client) revc() {
 			ts2c.Buffer = s2c.Buffer
 			call.done()
 		} else {
-			ts2c := new(ServerToClientMessage)
+			ts2c := ServerToClientMessage{}
 			ts2c.Version = s2c.Version
 			ts2c.EncryptType = s2c.EncryptType
 			ts2c.Username = s2c.Username
@@ -151,7 +151,7 @@ func (c *Client) revc() {
 			ts2c.ServiceMethod = s2c.ServiceMethod
 			ts2c.Cookie = s2c.Cookie
 			ts2c.Buffer = s2c.Buffer
-			go c.call(s2c.ServiceMethod, ts2c)
+			go c.call(s2c.ServiceMethod, &ts2c)
 		}
 	}
 	// Terminate pending calls.
@@ -271,7 +271,7 @@ func (c *Client) Go(
 	s2c *ServerToClientMessage,
 	done chan *ClientCall,
 ) *ClientCall {
-	call := new(ClientCall)
+	call := ClientCall{}
 	call.ServiceMethod = serviceMethod
 	c.preprocess(c2s)
 	call.ClientToServerMessage, call.ServerToClientMessage = c2s, s2c
@@ -287,8 +287,8 @@ func (c *Client) Go(
 		}
 	}
 	call.Done = done
-	c.send(call)
-	return call
+	c.send(&call)
+	return &call
 }
 
 func (c *Client) Call(

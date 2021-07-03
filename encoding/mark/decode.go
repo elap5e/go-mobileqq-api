@@ -2,6 +2,7 @@ package mark
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
@@ -46,7 +47,7 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 			case "/face":
 				id := uri.Query().Get("id")
 				if id != "" {
-					tmp, _ := strconv.Atoi(id)
+					tmp, _ := strconv.ParseUint(id, 10, 32)
 					elems = append(elems, &pb.Element{
 						Face: &pb.Face{
 							Index: uint32(tmp),
@@ -55,7 +56,7 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 				}
 			case "/marketFace":
 				id, _ := base64.URLEncoding.DecodeString(uri.Query().Get("id"))
-				tabId, _ := strconv.Atoi(uri.Query().Get("tabId"))
+				tabId, _ := strconv.ParseUint(uri.Query().Get("tabId"), 10, 32)
 				key, _ := base64.URLEncoding.DecodeString(uri.Query().Get("key"))
 				if len(id) != 0 {
 					elems = append(elems, &pb.Element{
@@ -73,11 +74,11 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 				}
 			case "/image":
 				md5, _ := base64.URLEncoding.DecodeString(uri.Query().Get("md5"))
-				typ, _ := strconv.Atoi(uri.Query().Get("type"))
+				typ, _ := strconv.ParseUint(uri.Query().Get("type"), 10, 32)
 				uin := uri.Query().Get("uin")
-				size, _ := strconv.Atoi(uri.Query().Get("size"))
-				h, _ := strconv.Atoi(uri.Query().Get("h"))
-				w, _ := strconv.Atoi(uri.Query().Get("w"))
+				size, _ := strconv.ParseUint(uri.Query().Get("size"), 10, 32)
+				h, _ := strconv.ParseUint(uri.Query().Get("h"), 10, 32)
+				w, _ := strconv.ParseUint(uri.Query().Get("w"), 10, 32)
 				path := fmt.Sprintf(
 					"/%s/%s-%d-%s",
 					uin, uin, rand.Intn(1e10), strings.ToUpper(hex.EncodeToString(md5)),
@@ -102,6 +103,22 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 				elems = append(elems, &pb.Element{
 					Text: &pb.Text{
 						Data: body[idx[2]:idx[3]],
+					},
+				})
+			case "/at":
+				attr6Buf := make([]byte, 13)
+				attr6Buf[1] = 0x01
+				binary.BigEndian.PutUint16(attr6Buf[4:], uint16(len([]rune(body[idx[2]:idx[3]]))))
+				uin, _ := strconv.ParseUint(uri.Query().Get("uin"), 10, 32)
+				if uin == 0 {
+					attr6Buf[6] = 0x01
+				} else {
+					binary.BigEndian.PutUint32(attr6Buf[7:], uint32(uin))
+				}
+				elems = append(elems, &pb.Element{
+					Text: &pb.Text{
+						Data:        body[idx[2]:idx[3]],
+						Attr6Buffer: attr6Buf,
 					},
 				})
 			}

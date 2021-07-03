@@ -7,8 +7,8 @@ func (c *Client) HeartbeatAlive() error {
 		Buffer:   nil,
 		Simple:   false,
 	}
-	s2c := new(ServerToClientMessage)
-	if err := c.Call("Heartbeat.Alive", c2s, s2c); err != nil {
+	s2c := ServerToClientMessage{}
+	if err := c.Call("Heartbeat.Alive", c2s, &s2c); err != nil {
 		return err
 	}
 	return nil

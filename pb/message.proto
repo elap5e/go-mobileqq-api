@@ -89,7 +89,35 @@ message Element {
   optional QQLiveOld qqLiveOld = 22;
   optional LifeOnlineAccount lifeOnline = 23;
   // optional QQWalletMessage qqWalletMessage = 24;
-  optional bytes bankcodeCtrlInfo = 25;
+  // optional string crm_elem = 25;
+  // optional string conference_tips_info = 26;
+  // optional string redbag_info = 27;
+  // optional string low_version_tips = 28;
+  optional bytes bankcode_ctrl_info = 29;
+  // optional string near_by_msg = 30;
+  // optional string custom_elem = 31;
+  // optional string location_info = 32;
+  // optional string pub_acc_info = 33;
+  // optional string small_emoji = 34;
+  // optional string fsj_msg_elem = 35;
+  // optional string ark_app = 36;
+  // optional string general_flags = 37;
+  // optional string hc_flash_pic = 38;
+  // optional string deliver_gift_msg = 39;
+  // optional string bitapp_msg = 40;
+  // optional string open_qq_data = 41;
+  // optional string apollo_msg = 42;
+  // optional string group_pub_acc_info = 43;
+  // optional string bless_msg = 44;
+  optional SourceMessage sourceMessage = 45;
+  // optional string lola_msg = 46;
+  // optional string group_business_msg = 47;
+  // optional string msg_workflow_notify = 48;
+  // optional string pat_elem = 49;
+  // optional string group_post_elem = 50;
+  // optional string light_app = 51;
+  // optional string eim_info = 52;
+  // optional string common_elem = 53;
 }
 
 message ElementFlags {
@@ -340,6 +368,20 @@ message ShakeWindow {
   uint32 type = 1;
   uint32 reserve = 2;
   uint64 uin = 3;
+}
+
+message SourceMessage {
+  repeated uint32 origSeqs = 1;
+  uint64 fromUin = 2;
+  uint32 time = 3;
+  uint32 flag = 4;
+  repeated Element elements = 5;
+  uint32 type = 6;
+  bytes richMessage = 7;
+  bytes reserve = 8;
+  bytes sourceMessage = 9;
+  uint64 toUin = 10;
+  bytes groupName = 11;
 }
 
 message Text {

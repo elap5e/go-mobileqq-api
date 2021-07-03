@@ -129,13 +129,15 @@ func (c *Client) handlePushMessageNotify(
 					return nil, err
 				}
 
-				if s2c.Username == strconv.FormatInt(int64(msg.GetMessageHead().GetFromUin()), 10) {
-					c.setSyncSeq(msg.GetMessageHead().GetGroupInfo().GetGroupCode(), msg.GetMessageHead().GetMessageSeq())
+				peerUin := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
+				fromUin := msg.GetMessageHead().GetFromUin()
+				if s2c.Username == strconv.FormatInt(int64(fromUin), 10) {
+					c.setSyncSeq(peerUin, msg.GetMessageHead().GetMessageSeq())
 				} else if msg.GetMessageHead().GetMessageType() == 166 {
 					// add to data list
 					dataList = append(dataList, Data{
-						PeerUin: msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
-						FromUin: msg.GetMessageHead().GetFromUin(),
+						PeerUin: peerUin,
+						FromUin: fromUin,
 						Data:    data,
 					})
 				}
@@ -171,19 +173,17 @@ func (c *Client) handlePushMessageNotify(
 		}
 	}
 	// echo message
-	for _, data := range dataList {
+	for i, data := range dataList {
 		msg := pb.Message{}
 		if err := mark.Unmarshal(data.Data, &msg); err != nil {
 			return nil, err
 		}
 		seq := c.getNextSyncSeq(data.PeerUin)
-		if c.cfg.Debug {
-			log.Printf(
-				"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
-				data.PeerUin, seq, s2c.Username, data.FromUin, string(data.Data),
-			)
-		}
-		if len(dataList) < 2 {
+		log.Printf(
+			"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
+			data.PeerUin, seq, s2c.Username, data.FromUin, string(data.Data),
+		)
+		if i == len(dataList)-1 {
 			_, _ = c.MessageSendMessage(
 				ctx, s2c.Username, NewMessageSendMessageRequest(
 					&pb.RoutingHead{C2C: &pb.C2C{Uin: data.FromUin}},

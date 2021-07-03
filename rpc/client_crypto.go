@@ -68,8 +68,8 @@ func (c *Client) updateServerPublicKey() error {
 		return err
 	}
 	defer resp.Body.Close()
-	data := new(ServerPublicKey)
-	err = json.NewDecoder(resp.Body).Decode(data)
+	data := ServerPublicKey{}
+	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return err
 	}

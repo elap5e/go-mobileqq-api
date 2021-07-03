@@ -85,5 +85,7 @@ const (
 	ServiceMethodPushConfigResponse     = "ConfigPushSvc.PushResp"
 	ServiceMethodPushMessageNotify      = "MessageSvc.PushNotify"
 	ServiceMethodPushOnlineGroupMessage = "OnlinePush.PbPushGroupMsg"
+	ServiceMethodPushOnlineRequest      = "OnlinePush.ReqPush"
+	ServiceMethodPushOnlineResponse     = "OnlinePush.RespPush"
 	ServiceMethodPushOnlineSIDExpired   = "OnlinePush.SidTicketExpired"
 )

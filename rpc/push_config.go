@@ -153,20 +153,20 @@ func (c *Client) handlePushConfigRequest(
 	ctx context.Context,
 	s2c *ServerToClientMessage,
 ) (*ClientToServerMessage, error) {
-	msg := new(uni.Message)
-	req := new(PushConfigRequest)
-	if err := uni.Unmarshal(ctx, s2c.Buffer, msg, map[string]interface{}{
-		"PushReq": req,
+	msg := uni.Message{}
+	req := PushConfigRequest{}
+	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
+		"PushReq": &req,
 	}); err != nil {
 		return nil, err
 	}
 	switch req.Type {
 	case 0x01:
-		data := new(SSOServerList)
-		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+		data := SSOServerList{}
+		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {
 			return nil, err
 		}
-		tdata, err := json.MarshalIndent(data, "", "  ")
+		tdata, err := json.MarshalIndent(&data, "", "  ")
 		if err != nil {
 			return nil, err
 		}
@@ -176,11 +176,11 @@ func (c *Client) handlePushConfigRequest(
 			return nil, err
 		}
 	case 0x02:
-		data := new(FileStorageServerList)
-		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+		data := FileStorageServerList{}
+		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {
 			return nil, err
 		}
-		tdata, err := json.MarshalIndent(data, "", "  ")
+		tdata, err := json.MarshalIndent(&data, "", "  ")
 		if err != nil {
 			return nil, err
 		}
@@ -190,13 +190,13 @@ func (c *Client) handlePushConfigRequest(
 			return nil, err
 		}
 	case 0x03:
-		data := new(ClientLogConfig)
-		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+		data := ClientLogConfig{}
+		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {
 			return nil, err
 		}
 	case 0x04:
-		data := new(ProxyIPChannel)
-		if err := jce.Unmarshal(req.Buffer, data, true); err != nil {
+		data := ProxyIPChannel{}
+		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {
 			return nil, err
 		}
 	}

@@ -9,8 +9,7 @@ import (
 )
 
 func Marshal(msg *pb.Message) ([]byte, error) {
-	text := ""
-	text += fmt.Sprintf(
+	head := fmt.Sprintf(
 		"<!--mqqapi://msg/info?time=%d&type=%d&peer=%d&seq=%d&uid=%d&from=%d&to=%d-->\n",
 		msg.GetMessageHead().GetMessageTime(),
 		msg.GetMessageHead().GetMessageType(),
@@ -20,6 +19,7 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 		msg.GetMessageHead().GetFromUin(),
 		msg.GetMessageHead().GetToUin(),
 	)
+	text := ""
 	skip := 0
 	for _, elem := range msg.GetMessageBody().GetRichText().GetElements() {
 		if skip > 0 {
@@ -27,7 +27,25 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			continue
 		}
 		if v := elem.GetText(); v != nil {
-			text += EscapeString(v.GetData())
+			attr6Buf := v.GetAttr6Buffer()
+			if len(attr6Buf) < 13 {
+				if id, ok := mapStringFaceID[v.GetData()]; !ok {
+					text += EscapeString(v.GetData())
+				} else {
+					text += fmt.Sprintf(
+						"![%s](mqqapi://res/face?id=%d)",
+						mapFaceIDString[id],
+						id,
+					)
+				}
+			} else {
+				uin := uint64(attr6Buf[7])<<24 + uint64(attr6Buf[8])<<16 + uint64(attr6Buf[9])<<8 + uint64(attr6Buf[10])
+				text += fmt.Sprintf(
+					"![%s](mqqapi://act/at?uin=%d)",
+					EscapeString(v.GetData()),
+					uin,
+				)
+			}
 		} else if v := elem.GetFace(); v != nil {
 			text += fmt.Sprintf(
 				"![%s](mqqapi://res/face?id=%d)",
@@ -71,9 +89,17 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				v.GetUin(),
 				v.GetType(),
 			)
+		} else if v := elem.GetSourceMessage(); v != nil {
+			head += fmt.Sprintf(
+				"<!--mqqapi://msg/reply?time=%d&peer=%d&seq=%d&from=%d-->\n",
+				v.GetTime(),
+				msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
+				v.GetOrigSeqs()[0],
+				v.GetFromUin(),
+			)
 		}
 	}
-	return []byte(text), nil
+	return []byte(head + text), nil
 }
 
 func EscapeString(s string) string {

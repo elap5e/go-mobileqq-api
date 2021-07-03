@@ -39,18 +39,16 @@ func (c *Client) dumpServerToClientMessage(s2c *ServerToClientMessage, msg inter
 
 func (c *Client) marshalMessage(msg *pb.Message) ([]byte, error) {
 	data, err := mark.Marshal(msg)
-	if c.cfg.Debug {
-		log.Printf(
-			">>> [dump] time:%d type:%d peer:%d seq:%d uid:%d from:%d to:%d markdown:\n%s",
-			msg.GetMessageHead().GetMessageTime(),
-			msg.GetMessageHead().GetMessageType(),
-			msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
-			msg.GetMessageHead().GetMessageSeq(),
-			msg.GetMessageHead().GetMessageUid(),
-			msg.GetMessageHead().GetFromUin(),
-			msg.GetMessageHead().GetToUin(),
-			string(data),
-		)
-	}
+	log.Printf(
+		">>> [dump] time:%d type:%d peer:%d seq:%d uid:%d from:%d to:%d markdown:\n%s",
+		msg.GetMessageHead().GetMessageTime(),
+		msg.GetMessageHead().GetMessageType(),
+		msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
+		msg.GetMessageHead().GetMessageSeq(),
+		msg.GetMessageHead().GetMessageUid(),
+		msg.GetMessageHead().GetFromUin(),
+		msg.GetMessageHead().GetToUin(),
+		string(data),
+	)
 	return data, err
 }

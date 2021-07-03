@@ -43,7 +43,7 @@ func GenerateKey() (*PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	priv := new(PrivateKey)
+	priv := &PrivateKey{}
 	priv.Curve = c
 	priv.PublicKey.X, priv.PublicKey.Y = x, y
 	priv.D = k

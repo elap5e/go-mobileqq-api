@@ -82,7 +82,7 @@ func (c *Client) SaveUserSignatures(file string) error {
 func (c *Client) GetUserSignature(username string) *UserSignature {
 	sig, ok := c.userSignatures[username]
 	if !ok {
-		sig = new(UserSignature)
+		sig = &UserSignature{}
 		sig.Username = username
 		sig.Domains = make(map[string]string)
 		sig.Tickets = make(map[string]Ticket)
