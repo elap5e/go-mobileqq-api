@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+message ConfigDomain {
+  DomainList domainList = 1;
+}
+
+message DomainList {
+  uint32 uip = 1;
+  uint32 uin = 2;
+  repeated DomainIPList domainIPList = 3;
+  repeated DomainIPList domainIPv6List = 4;
+}
+
+message DomainIPList {
+  uint32 result = 1;
+  string domain = 2;
+  uint32 type = 3;
+  uint32 ttl = 4;
+  repeated DomainIP ip = 5;
+}
+
+message DomainIP {
+  string ip = 1;
+  uint32 port = 2;
+}

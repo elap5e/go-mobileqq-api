@@ -73,17 +73,17 @@ const (
 	ServiceMethodAuthUsernameToUin   = "wtlogin.name2uin"
 	ServiceMethodAuthRegisterAccount = "wtlogin.trans_emp"
 
-	ServiceMethodAccountUpdateStatus       = "StatSvc.register"
-	ServiceMethodAccountGetDeviceLoginInfo = "StatSvc.GetDevLoginInfo"
+	ServiceMethodAccountUpdateStatus   = "StatSvc.register"
+	ServiceMethodAccountGetLoginDevice = "StatSvc.GetDevLoginInfo"
 
 	ServiceMethodMessageDeleteMessage = "MessageSvc.PbDeleteMsg"
 	ServiceMethodMessageGetMessage    = "MessageSvc.PbGetMsg"
 	ServiceMethodMessageSendMessage   = "MessageSvc.PbSendMsg"
 
-	ServiceMethodPushConfigDomain           = "ConfigPushSvc.PushDomain"
-	ServiceMethodPushConfigRequest          = "ConfigPushSvc.PushReq"
-	ServiceMethodPushConfigResponse         = "ConfigPushSvc.PushResp"
-	ServiceMethodPushMessageNotify          = "MessageSvc.PushNotify"
-	ServiceMethodPushOnlineGroupMessage     = "OnlinePush.PbPushGroupMsg"
-	ServiceMethodPushOnlineSIDTicketExpired = "OnlinePush.SidTicketExpired"
+	ServiceMethodPushConfigDomain       = "ConfigPushSvc.PushDomain"
+	ServiceMethodPushConfigRequest      = "ConfigPushSvc.PushReq"
+	ServiceMethodPushConfigResponse     = "ConfigPushSvc.PushResp"
+	ServiceMethodPushMessageNotify      = "MessageSvc.PushNotify"
+	ServiceMethodPushOnlineGroupMessage = "OnlinePush.PbPushGroupMsg"
+	ServiceMethodPushOnlineSIDExpired   = "OnlinePush.SidTicketExpired"
 )

@@ -281,14 +281,14 @@ func (c *clientCodec) Decode(msg *ServerToClientMessage) error {
 	c.buf = bytes.NewBuffer(v)
 	if err = c.decodeHead(c.buf, msg); err != nil {
 		log.Printf(
-			">   [recv] seq 0xffffffff, uin %s, method Unknown, error %v, dump recv:\n%s",
-			msg.Username, err,
+			">   [dump] seq:0xffffffff uin:%s method:Unknown error:%s serverToClientMessage.Head:\n%s",
+			msg.Username, err.Error(),
 			hex.Dump(v),
 		)
 		return err
 	}
 	// log.Printf(
-	// 	">   [recv] seq 0xffffffff, uin %s, method Unknown, dump recv:\n%s",
+	// 	">   [dump] seq:0xffffffff uin:%s method:Unknown serverToClientMessage.Head:\n%s",
 	// 	msg.Username,
 	// 	hex.Dump(v),
 	// )
@@ -315,8 +315,8 @@ func (c *clientCodec) DecodeBody(msg *ServerToClientMessage) error {
 	v := c.buf.Bytes()
 	if err := c.decodeBody(c.buf, msg); err != nil {
 		log.Printf(
-			"->  [recv] seq 0x%08x, uin %s, method %s, error %v, dump data:\n%s",
-			msg.Seq, msg.Username, msg.ServiceMethod, err,
+			">>  [dump] seq:0x%08x uin:%s method:%s error:%s serverToClientMessage.Body:\n%s",
+			msg.Seq, msg.Username, msg.ServiceMethod, err.Error(),
 			hex.Dump(v),
 		)
 		return err

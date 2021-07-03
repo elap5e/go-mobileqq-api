@@ -5,8 +5,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/elap5e/go-mobileqq-api/rpc"
 	"github.com/spf13/viper"
+
+	"github.com/elap5e/go-mobileqq-api/rpc"
 )
 
 var (

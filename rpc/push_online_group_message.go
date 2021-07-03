@@ -3,11 +3,12 @@ package rpc
 import (
 	"context"
 
-	"github.com/elap5e/go-mobileqq-api/pb"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (c *Client) handlePushOnlineMessage(
+func (c *Client) handlePushOnlineGroupMessage(
 	ctx context.Context,
 	s2c *ServerToClientMessage,
 ) (*ClientToServerMessage, error) {

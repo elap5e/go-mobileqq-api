@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/hex"
 	"io"
 	"log"
 	"net/rpc"
@@ -61,10 +62,11 @@ type ServerToClientMessage struct {
 
 func (c *Client) initPushHandlers() {
 	c.handlers = make(map[string]PushHandleFunc)
+	c.handlers[ServiceMethodPushConfigDomain] = c.handlePushConfigDomain
 	c.handlers[ServiceMethodPushConfigRequest] = c.handlePushConfigRequest
 	c.handlers[ServiceMethodPushMessageNotify] = c.handlePushMessageNotify
-	c.handlers[ServiceMethodPushOnlineGroupMessage] = c.handlePushOnlineMessage
-	c.handlers[ServiceMethodPushOnlineSIDTicketExpired] = c.handlePushOnlineSIDTicketExpired
+	c.handlers[ServiceMethodPushOnlineGroupMessage] = c.handlePushOnlineGroupMessage
+	c.handlers[ServiceMethodPushOnlineSIDExpired] = c.handlePushOnlineSIDExpired
 }
 
 func (c *Client) send(call *ClientCall) {
@@ -185,7 +187,7 @@ func (c *Client) call(
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,
 		)
 		ctx := context.Background()
-		ctx = WithS2C(ctx, s2c)
+		ctx = c.WithClient(ctx)
 		c2s, err := handleFunc(ctx, s2c)
 		if err != nil {
 			log.Printf("x_< [call] handle error: %s", err.Error())
@@ -205,6 +207,13 @@ func (c *Client) call(
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,
 		)
 	} else {
+		if c.cfg.Debug {
+			log.Printf(
+				">>> [dump] seq:0x%08x uin:%s method:%s serverToClientMessage.Buffer:\n%s",
+				s2c.Seq, s2c.Username, s2c.ServiceMethod,
+				hex.Dump(s2c.Buffer),
+			)
+		}
 		log.Printf(
 			"<== [send] seq:0x%08x uin:%s method:%s serverNotify:ignore",
 			s2c.Seq, s2c.Username, s2c.ServiceMethod,

@@ -239,7 +239,9 @@ func (c *Client) AuthGetSessionTickets(
 			v.Decode(buf)
 			tlvs[v.GetType()] = &v
 		}
-		// tlv.DumpTLVs(ctx, tlvs)
+		if c.cfg.Debug {
+			tlv.DumpTLVs(ctx, tlvs)
+		}
 
 		c.SetUserSignature(ctx, resp.Username, tlvs)
 		c.SetUserAuthSession(resp.Username, nil)
@@ -254,7 +256,7 @@ func (c *Client) AuthGetSessionTickets(
 		))
 
 		log.Printf(
-			"^_^ [info] login success, uin %s, code 0x00",
+			"^_^ [info] login success, uin:%s code:0x00",
 			resp.Username,
 		)
 	case 0x02:

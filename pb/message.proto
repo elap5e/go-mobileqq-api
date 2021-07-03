@@ -173,26 +173,26 @@ message LifeOnlineAccount {
 }
 
 message MarketFace {
-  optional bytes faceName = 1;
-  optional uint32 itemType = 2;
-  optional uint32 faceInfo = 3;
-  optional bytes faceId = 4;
-  optional uint32 tabId = 5;
-  optional uint32 subType = 6;
-  optional bytes key = 7;
-  optional bytes param = 8;
-  optional uint32 mediaType = 9;
-  optional uint32 imageWidth = 10;
-  optional uint32 imageHeight = 11;
-  optional bytes mobileparam = 12;
+  bytes faceName = 1;
+  uint32 itemType = 2;
+  uint32 faceInfo = 3;
+  bytes faceId = 4;
+  uint32 tabId = 5;
+  uint32 subType = 6;
+  bytes key = 7;
+  bytes param = 8;
+  uint32 mediaType = 9;
+  uint32 imageWidth = 10;
+  uint32 imageHeight = 11;
+  bytes mobileparam = 12;
 }
 
 message MarketTrans {
-  optional int32 flag = 1;
-  optional bytes xml = 2;
-  optional bytes messageResId = 3;
-  optional uint32 ability = 4;
-  optional uint32 minAbility = 5;
+  int32 flag = 1;
+  bytes xml = 2;
+  bytes messageResId = 3;
+  uint32 ability = 4;
+  uint32 minAbility = 5;
 }
 
 message MessageBody {
@@ -337,9 +337,9 @@ message SecretFileMessage {
 }
 
 message ShakeWindow {
-  optional uint32 type = 1;
-  optional uint32 reserve = 2;
-  optional uint64 uin = 3;
+  uint32 type = 1;
+  uint32 reserve = 2;
+  uint64 uin = 3;
 }
 
 message Text {

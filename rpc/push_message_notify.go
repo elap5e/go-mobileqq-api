@@ -118,7 +118,7 @@ func (c *Client) handlePushMessageNotify(
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
 			log.Printf(
-				"==> [sync] lastReadTime:%d peer:%d message:%d",
+				"~~> [sync] lastReadTime:%d peer:%d message:%d",
 				uinPairMessage.GetLastReadTime(),
 				uinPairMessage.GetPeerUin(),
 				len(uinPairMessage.GetMessages()),
