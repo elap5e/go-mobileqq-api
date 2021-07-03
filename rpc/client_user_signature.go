@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -91,9 +92,9 @@ func (c *Client) GetUserSignature(username string) *UserSignature {
 			Iss: time.Now().Unix(),
 			Exp: 0,
 		}
-		c.rand.Read(sig.Tickets["A1"].Key)
+		rand.Read(sig.Tickets["A1"].Key)
 		sig.Session.Cookie = make([]byte, 4)
-		c.rand.Read(sig.Session.Cookie)
+		rand.Read(sig.Session.Cookie)
 		c.userSignatures[username] = sig
 		cacheDir := path.Join(c.cfg.CacheDir, username)
 		_, err := os.Stat(cacheDir)

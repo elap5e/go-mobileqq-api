@@ -2,19 +2,8 @@ package rpc
 
 import (
 	"context"
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
 	"io"
-	"log"
 	"math/rand"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -57,9 +46,9 @@ type Client struct {
 	randomKey      [16]byte
 	randomPassword [16]byte
 
-	serverPublicKey        ecdh.PublicKey
+	serverPublicKey        *ecdh.PublicKey
 	serverPublicKeyVersion uint16
-	privateKey             ecdh.PrivateKey
+	privateKey             *ecdh.PrivateKey
 
 	userSignatures    map[string]*UserSignature
 	userSignaturesMux sync.RWMutex
@@ -98,117 +87,6 @@ func (c *Client) init() {
 
 	c.initPushHandlers()
 	c.initSync()
-}
-
-func (c *Client) initRandomKey() {
-	c.randomKey = [16]byte{}
-	c.rand.Read(c.randomKey[:])
-	// log.Printf(
-	// 	"--> [init] dump client random key\n%s",
-	// 	hex.Dump(c.randomKey[:]),
-	// )
-}
-
-func (c *Client) initServerPublicKey() {
-	err := c.setServerPublicKey(defaultServerECDHPublicKey, 0x0001)
-	if err != nil {
-		log.Fatalf(
-			"==> [init] failed to init default server public key, error: %s",
-			err.Error(),
-		)
-	}
-	if err := c.updateServerPublicKey(); err != nil {
-		log.Printf(
-			"==> [init] failed to init updated server public key, error: %s",
-			err.Error(),
-		)
-	}
-}
-
-func (c *Client) setServerPublicKey(key []byte, ver uint16) error {
-	pub, err := x509.ParsePKIXPublicKey(append(ecdh.X509Prefix, key...))
-	if err != nil {
-		return err
-	}
-	c.serverPublicKey = ecdh.PublicKey{
-		Curve: pub.(*ecdsa.PublicKey).Curve,
-		X:     pub.(*ecdsa.PublicKey).X,
-		Y:     pub.(*ecdsa.PublicKey).Y,
-	}
-	c.serverPublicKeyVersion = ver
-	return nil
-}
-
-func (c *Client) updateServerPublicKey() error {
-	type ServerPublicKey struct {
-		QuerySpan         uint32 `json:"QuerySpan"`
-		PublicKeyMetaData struct {
-			KeyVersion    uint16 `json:"KeyVer"`
-			PublicKey     string `json:"PubKey"`
-			PublicKeySign string `json:"PubKeySign"`
-		} `json:"PubKeyMeta"`
-	}
-	resp, err := http.Get(
-		"https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000",
-	)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	data := new(ServerPublicKey)
-	err = json.NewDecoder(resp.Body).Decode(data)
-	if err != nil {
-		return err
-	}
-	rsaPub, err := x509.ParsePKIXPublicKey(defaultServerRSAPublicKey)
-	if err != nil {
-		return err
-	}
-	hashed := sha256.Sum256([]byte(fmt.Sprintf(
-		"%d%d%s",
-		305,
-		data.PublicKeyMetaData.KeyVersion,
-		data.PublicKeyMetaData.PublicKey,
-	)))
-	sig, _ := base64.StdEncoding.DecodeString(
-		data.PublicKeyMetaData.PublicKeySign,
-	)
-	if err := rsa.VerifyPKCS1v15(
-		rsaPub.(*rsa.PublicKey),
-		crypto.SHA256,
-		hashed[:],
-		sig,
-	); err != nil {
-		return err
-	}
-	key, _ := hex.DecodeString(data.PublicKeyMetaData.PublicKey)
-	if err := c.setServerPublicKey(
-		key,
-		data.PublicKeyMetaData.KeyVersion,
-	); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) initPrivateKey() {
-	priv, err := ecdh.GenerateKey()
-	if err != nil {
-		log.Fatalf(
-			"==> [init] failed to init private key, error: %s",
-			err.Error(),
-		)
-	}
-	c.privateKey = *priv
-}
-
-func (c *Client) initRandomPassword() {
-	c.randomPassword = [16]byte{}
-	for i := range c.randomPassword {
-		c.randomPassword[i] = byte(
-			0x41 + c.rand.Intn(1)*0x20 + c.rand.Intn(26),
-		)
-	}
 }
 
 func (c *Client) getNextSeq() uint32 {

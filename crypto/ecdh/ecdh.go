@@ -32,7 +32,7 @@ func (priv *PrivateKey) Public() *PublicKey {
 	return &priv.PublicKey
 }
 
-func (priv *PrivateKey) ShareKey(pub PublicKey) [16]byte {
+func (priv *PrivateKey) ShareKey(pub *PublicKey) [16]byte {
 	sx, _ := priv.PublicKey.Curve.ScalarMult(pub.X, pub.Y, priv.D)
 	return md5.Sum(sx.Bytes()[:16])
 }
