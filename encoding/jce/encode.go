@@ -167,7 +167,7 @@ func typeFields(t reflect.Type) structFields {
 					if name == "" {
 						name = sf.Name
 					}
-					t, _ := strconv.Atoi(tag)
+					t, _ := strconv.ParseUint(tag, 10, 8)
 					field := field{
 						name:  name,
 						tag:   uint8(t),

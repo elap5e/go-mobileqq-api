@@ -38,6 +38,7 @@ configs:
 `, time.Now().UnixNano())
 
 func init() {
+	log.Printf("~v~ [init] Go MobileQQ API (%s)\n", mobileqq.PackageVersion)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
