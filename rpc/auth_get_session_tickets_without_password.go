@@ -24,10 +24,12 @@ type AuthGetSessionTicketsWithoutPasswordRequest struct {
 	_KSID            []byte // sig.Session.KSID
 	_UserD2          []byte // sig.Tickets["D2"].Sig
 	Domains          []string
+
+	changeD2 bool
 }
 
 func NewAuthGetSessionTicketsWithoutPasswordRequest(
-	username string,
+	username string, changeD2 ...bool,
 ) *AuthGetSessionTicketsWithoutPasswordRequest {
 	req := &AuthGetSessionTicketsWithoutPasswordRequest{
 		_Uin:             0x00000000,
@@ -42,6 +44,11 @@ func NewAuthGetSessionTicketsWithoutPasswordRequest(
 		_KSID:            nil,
 		_UserD2:          nil,
 		Domains:          defaultClientDomains,
+	}
+	if len(changeD2) > 0 {
+		req.changeD2 = changeD2[0]
+	} else {
+		req.changeD2 = true
 	}
 	req.SetUsername(username)
 	return req
@@ -63,7 +70,13 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 	tlvs[0x010a] = tlv.NewT10A(sig.Tickets["A2"].Sig)
 	tlvs[0x0116] = tlv.NewT116(c.cfg.Client.MiscBitmap, req.SubSigMap, req.SubAppIDList)
 	tlvs[0x0108] = tlv.NewT108(sig.Session.KSID)
-	tlvs[0x0144] = tlv.NewT144(md5.Sum(sig.Tickets["D2"].Key),
+	key := [16]byte{}
+	if !req.changeD2 {
+		copy(key[:], sig.Tickets["A2"].Key)
+	} else {
+		key = md5.Sum(sig.Tickets["D2"].Key)
+	}
+	tlvs[0x0144] = tlv.NewT144(key,
 		tlv.NewT109(md5.Sum([]byte(c.cfg.Device.OSBuildID))),
 		tlv.NewT52D(&pb.DeviceReport{
 			Bootloader:   []byte(c.cfg.Device.Bootloader),
@@ -95,7 +108,11 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 		),
 		tlv.NewT16E([]byte(defaultDeviceOSBuildModel)),
 	)
-	tlvs[0x0143] = tlv.NewT143(sig.Tickets["D2"].Sig)
+	if !req.changeD2 {
+		tlvs[0x0145] = tlv.NewT145(util.BytesToSTBytes(c.cfg.Device.GUID))
+	} else {
+		tlvs[0x0143] = tlv.NewT143(sig.Tickets["D2"].Sig)
+	}
 	tlvs[0x0142] = tlv.NewT142([]byte(c.cfg.Client.PackageName))
 	tlvs[0x0154] = tlv.NewT154(req.GetSeq())
 	tlvs[0x0018] = tlv.NewT18(
@@ -138,7 +155,11 @@ func (req *AuthGetSessionTicketsWithoutPasswordRequest) GetTLVs(
 	// 	c.cfg.Client.SDKVersion,
 	// 	0x0009,
 	// )
-	req.SetType(0x000b)
+	if !req.changeD2 {
+		req.SetType(0x000a)
+	} else {
+		req.SetType(0x000b)
+	}
 	req.SetServiceMethod(ServiceMethodAuthExchangeAccount)
 	return tlvs, nil
 }

@@ -4,6 +4,33 @@ import (
 	"io"
 )
 
+func (b *Buffer) ReadUint32() (uint32, error) {
+	v := b.buf[b.idx:]
+	if len(v) < 4 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	b.idx += 4
+	return uint32(v[0])<<24 | uint32(v[1])<<16 | uint32(v[2])<<8 | uint32(v[3])<<0, nil
+}
+
+func (b *Buffer) ReadUint32Bytes() ([]byte, error) {
+	l, err := b.ReadUint32()
+	if err != nil {
+		return nil, err
+	}
+	n := int(l) - 4
+	if len(b.buf)-b.idx < n {
+		return nil, io.ErrUnexpectedEOF
+	}
+	b.idx += n
+	return b.buf[b.idx-n : b.idx], nil
+}
+
+func (b *Buffer) ReadUint32String() (string, error) {
+	p, err := b.ReadUint32Bytes()
+	return string(p), err
+}
+
 // DecodeUint8 consumes an encoded unsigned 8-bit integer from the buffer.
 func (b *Buffer) DecodeUint8() (uint8, error) {
 	v := b.buf[b.idx:]

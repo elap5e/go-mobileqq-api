@@ -6,11 +6,12 @@ import (
 	"reflect"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (c *Client) dumpClientToServerMessage(c2s *ClientToServerMessage, msg interface{}) {
-	if c.cfg.Debug {
+func (c *Client) dumpClientToServerMessage(c2s *codec.ClientToServerMessage, msg interface{}) {
+	if c.cfg.LogLevel&LogLevelTrace != 0 {
 		typ := reflect.TypeOf(msg)
 		if typ.Kind() == reflect.Ptr {
 			typ = typ.Elem()
@@ -23,8 +24,8 @@ func (c *Client) dumpClientToServerMessage(c2s *ClientToServerMessage, msg inter
 	}
 }
 
-func (c *Client) dumpServerToClientMessage(s2c *ServerToClientMessage, msg interface{}) {
-	if c.cfg.Debug {
+func (c *Client) dumpServerToClientMessage(s2c *codec.ServerToClientMessage, msg interface{}) {
+	if c.cfg.LogLevel&LogLevelTrace != 0 {
 		typ := reflect.TypeOf(msg)
 		if typ.Kind() == reflect.Ptr {
 			typ = typ.Elem()

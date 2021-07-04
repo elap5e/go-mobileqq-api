@@ -8,13 +8,14 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 func (c *Client) handlePushConfigDomain(
 	ctx context.Context,
-	s2c *ServerToClientMessage,
-) (*ClientToServerMessage, error) {
+	s2c *codec.ServerToClientMessage,
+) (*codec.ClientToServerMessage, error) {
 	data := pb.ConfigDomain{}
 	if err := proto.Unmarshal(s2c.Buffer, &data); err != nil {
 		return nil, err

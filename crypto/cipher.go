@@ -3,6 +3,7 @@ package crypto
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 )
 
 type Cipher struct {
@@ -59,15 +60,20 @@ func (c *Cipher) encryptBlock(dst, src []byte) {
 	binary.BigEndian.PutUint32(dst[4:8], s1)
 }
 
-func (c *Cipher) decrypt(src []byte, off, n int) (dst []byte) {
+func (c *Cipher) decrypt(src []byte, off, n int) (dst []byte, err error) {
 	if (n-off)%8 != 0 {
-		return nil
+		return nil, fmt.Errorf("invalid length")
 	}
 	dst = make([]byte, n-off)
 	for i := 0; i < len(dst); i += 8 {
 		c.decrypt64bit(dst[i:i+8], src[off+i:off+i+8])
 	}
-	return dst[dst[0]&0x07+3 : n-off-7]
+	for _, b := range dst[n-off-7:] {
+		if b != 0x00 {
+			return nil, fmt.Errorf("fail to decrypt")
+		}
+	}
+	return dst[dst[0]&0x07+3 : n-off-7], nil
 }
 
 func (c *Cipher) decrypt64bit(dst, src []byte) {
@@ -93,11 +99,11 @@ func (c *Cipher) decryptBlock(dst, src []byte) {
 	binary.BigEndian.PutUint32(dst[4:8], s1)
 }
 
-func (c *Cipher) Encrypt(src []byte) (dst []byte) {
+func (c *Cipher) Encrypt(src []byte) []byte {
 	return c.encrypt(src, 0, len(src))
 }
 
-func (c *Cipher) Decrypt(src []byte) (dst []byte) {
+func (c *Cipher) Decrypt(src []byte) ([]byte, error) {
 	return c.decrypt(src, 0, len(src))
 }
 

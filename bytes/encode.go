@@ -5,6 +5,56 @@ import (
 	"math"
 )
 
+func (b *Buffer) Write(p []byte) {
+	b.buf = append(b.buf, p...)
+}
+
+func (b *Buffer) WriteUint8(u uint8) {
+	b.buf = append(b.buf, u)
+}
+
+func (b *Buffer) WriteUint16(u uint16) {
+	t := make([]byte, 2)
+	binary.BigEndian.PutUint16(t, u)
+	b.buf = append(b.buf, t...)
+}
+
+func (b *Buffer) WriteUint32(u uint32) {
+	t := make([]byte, 4)
+	binary.BigEndian.PutUint32(t, u)
+	b.buf = append(b.buf, t...)
+}
+
+func (b *Buffer) WriteUint32At(u uint32, off int64) {
+	if g := off + 4 - int64(len(b.buf)); g > 0 {
+		b.buf = append(b.buf, make([]byte, g)...)
+	}
+	binary.BigEndian.PutUint32(b.buf[off:], u)
+}
+
+func (b *Buffer) WriteUint16Bytes(p []byte) {
+	b.WriteUint16(uint16(len(p) + 2))
+	b.Write(p)
+}
+
+func (b *Buffer) WriteUint16String(s string) {
+	b.WriteUint16Bytes([]byte(s))
+}
+
+func (b *Buffer) WriteUint16LengthBytes(p []byte) {
+	b.WriteUint16(uint16(len(p)))
+	b.Write(p)
+}
+
+func (b *Buffer) WriteUint32Bytes(p []byte) {
+	b.WriteUint32(uint32(len(p) + 4))
+	b.Write(p)
+}
+
+func (b *Buffer) WriteUint32String(s string) {
+	b.WriteUint32Bytes([]byte(s))
+}
+
 // EncodeUint8 appends an unsigned 8-bit integer to the buffer.
 func (b *Buffer) EncodeUint8(v uint8) {
 	b.buf = append(b.buf, v)
@@ -42,10 +92,8 @@ func (b *Buffer) EncodeInt16(v int16) {
 }
 
 // EncodeUint32 appends an unsigned 32-bit big-endian integer to the buffer.
-func (b *Buffer) EncodeUint32(v uint32) {
-	t := make([]byte, 4)
-	binary.BigEndian.PutUint32(t, v)
-	b.buf = append(b.buf, t...)
+func (b *Buffer) EncodeUint32(u uint32) {
+	b.WriteUint32(u)
 }
 
 // EncodeInt32 appends a signed 32-bit big-endian integer to the buffer.
@@ -114,4 +162,9 @@ func (b *Buffer) EncodeRawBytes(v []byte) {
 // EncodeRawString appends a raw string to the buffer.
 func (b *Buffer) EncodeRawString(v string) {
 	b.EncodeRawBytes([]byte(v))
+}
+
+func (b *Buffer) Reset() {
+	b.buf = b.buf[:0]
+	b.idx = 0
 }

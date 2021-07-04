@@ -17,12 +17,12 @@ import (
 const PATH_TO_USER_SIGNATURE_JSON = "user_signatures.json"
 
 type UserSignature struct {
-	Username    string            `json:"username"`
-	PasswordMD5 []byte            `json:"-"`
-	DeviceToken []byte            `json:"deviceToken,omitempty"`
-	Domains     map[string]string `json:"domains,omitempty"`
-	Tickets     map[string]Ticket `json:"tickets,omitempty"`
-	Session     Session           `json:"session"`
+	Username    string             `json:"username"`
+	PasswordMD5 []byte             `json:"-"`
+	DeviceToken []byte             `json:"deviceToken,omitempty"`
+	Domains     map[string]string  `json:"domains,omitempty"`
+	Tickets     map[string]*Ticket `json:"tickets,omitempty"`
+	Session     *Session           `json:"session"`
 }
 
 type Ticket struct {
@@ -85,8 +85,9 @@ func (c *Client) GetUserSignature(username string) *UserSignature {
 		sig = &UserSignature{}
 		sig.Username = username
 		sig.Domains = make(map[string]string)
-		sig.Tickets = make(map[string]Ticket)
-		sig.Tickets["A1"] = Ticket{
+		sig.Tickets = make(map[string]*Ticket)
+		sig.Session = &Session{}
+		sig.Tickets["A1"] = &Ticket{
 			Sig: nil,
 			Key: make([]byte, 16),
 			Iss: time.Now().Unix(),
@@ -135,7 +136,6 @@ func (c *Client) SetUserSignature(
 			if val.Exp != 0 {
 				ssig.Exp = val.Exp
 			}
-			sig.Tickets[key] = ssig
 		} else {
 			sig.Tickets[key] = val
 		}
@@ -185,10 +185,10 @@ func ParseUserSignature(
 		}
 	}
 
-	tickets := map[string]Ticket{}
+	tickets := map[string]*Ticket{}
 	{
 		if v, ok := tlvs[0x0106]; ok {
-			tickets["A1"] = Ticket{
+			tickets["A1"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x010c].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
@@ -196,7 +196,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x010a]; ok {
-			tickets["A2"] = Ticket{
+			tickets["A2"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x010d].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
@@ -204,7 +204,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x010b]; ok {
-			tickets["A5"] = Ticket{
+			tickets["A5"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
@@ -212,7 +212,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x0102]; ok {
-			tickets["A8"] = Ticket{
+			tickets["A8"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
@@ -220,7 +220,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x0143]; ok {
-			tickets["D2"] = Ticket{
+			tickets["D2"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x0305].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
@@ -228,7 +228,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x011c]; ok {
-			tickets["LSKey"] = Ticket{
+			tickets["LSKey"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
@@ -236,15 +236,15 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x0120]; ok {
-			tickets["SKey"] = Ticket{
+			tickets["SKey"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
 				Exp: int64(chgt[0x0120]),
 			}
 		}
-		if v, ok := tlvs[0x0164]; ok {
-			tickets["Sig64"] = Ticket{
+		if v, ok := tlvs[0x0121]; ok {
+			tickets["Sig64"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
@@ -252,7 +252,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x0164]; ok {
-			tickets["SID"] = Ticket{
+			tickets["SID"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
@@ -260,7 +260,7 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x0114]; ok {
-			tickets["ST"] = Ticket{
+			tickets["ST"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: tlvs[0x010e].(*tlv.TLV).MustGetValue().Bytes(),
 				Iss: time.Now().Unix(),
@@ -268,15 +268,23 @@ func ParseUserSignature(
 			}
 		}
 		if v, ok := tlvs[0x0103]; ok {
-			tickets["STWeb"] = Ticket{
+			tickets["STWeb"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
 				Exp: int64(chgt[0x0103]),
 			}
 		}
+		if v, ok := tlvs[0x016d]; ok {
+			tickets["SuperKey"] = &Ticket{
+				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
+				Key: nil,
+				Iss: time.Now().Unix(),
+				Exp: 0,
+			}
+		}
 		if v, ok := tlvs[0x0136]; ok {
-			tickets["VKey"] = Ticket{
+			tickets["VKey"] = &Ticket{
 				Sig: v.(*tlv.TLV).MustGetValue().Bytes(),
 				Key: nil,
 				Iss: time.Now().Unix(),
@@ -295,12 +303,6 @@ func ParseUserSignature(
 		// 	Iss: time.Now().Unix(),
 		// 	Exp: 0,
 		// }, // ??? AccessToken 0x0132
-		// 0x00100000: {
-		// 	Sig: nil,
-		// 	Key: nil,
-		// 	Iss: time.Now().Unix(),
-		// 	Exp: 0,
-		// }, // ??? SuperKey 0x016d
 		// 0x00200000: {
 		// 	Sig: nil,
 		// 	Key: nil,

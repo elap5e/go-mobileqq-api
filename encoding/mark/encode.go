@@ -10,7 +10,7 @@ import (
 
 func Marshal(msg *pb.Message) ([]byte, error) {
 	head := fmt.Sprintf(
-		"<!--mqqapi://msg/info?time=%d&type=%d&peer=%d&seq=%d&uid=%d&from=%d&to=%d-->\n",
+		"<!--goqq://msg/info?time=%d&type=%d&peer=%d&seq=%d&uid=%d&from=%d&to=%d-->\n",
 		msg.GetMessageHead().GetMessageTime(),
 		msg.GetMessageHead().GetMessageType(),
 		msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
@@ -33,7 +33,7 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 					text += EscapeString(v.GetData())
 				} else {
 					text += fmt.Sprintf(
-						"![%s](mqqapi://res/face?id=%d)",
+						"![%s](goqq://res/face?id=%d)",
 						mapFaceIDString[id],
 						id,
 					)
@@ -41,20 +41,20 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			} else {
 				uin := uint64(attr6Buf[7])<<24 + uint64(attr6Buf[8])<<16 + uint64(attr6Buf[9])<<8 + uint64(attr6Buf[10])
 				text += fmt.Sprintf(
-					"![%s](mqqapi://act/at?uin=%d)",
+					"![%s](goqq://act/at?uin=%d)",
 					EscapeString(v.GetData()),
 					uin,
 				)
 			}
 		} else if v := elem.GetFace(); v != nil {
 			text += fmt.Sprintf(
-				"![%s](mqqapi://res/face?id=%d)",
+				"![%s](goqq://res/face?id=%d)",
 				mapFaceIDString[v.GetIndex()],
 				v.GetIndex(),
 			)
 		} else if v := elem.GetMarketFace(); v != nil {
 			text += fmt.Sprintf(
-				"![%s](mqqapi://res/marketFace?id=%s&tabId=%d&key=%s)",
+				"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s)",
 				string(v.GetFaceName()),
 				base64.URLEncoding.EncodeToString(v.GetFaceId()),
 				v.GetTabId(),
@@ -63,7 +63,7 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			skip++
 		} else if v := elem.GetCustomFace(); v != nil {
 			text += fmt.Sprintf(
-				"![%s](mqqapi://res/image?md5=%s&type=%d&uin=%d&size=%d&h=%d&w=%d)",
+				"![%s](goqq://res/image?md5=%s&type=%d&uin=%d&size=%d&h=%d&w=%d)",
 				EscapeString(string(v.GetFilePath())),
 				base64.URLEncoding.EncodeToString(v.GetMd5()),
 				v.GetBizType(),
@@ -74,7 +74,7 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			)
 		} else if v := elem.GetNotOnlineImage(); v != nil {
 			text += fmt.Sprintf(
-				"![%s](mqqapi://res/image?md5=%s&type=%d&uin=%d&size=%d&h=%d&w=%d)",
+				"![%s](goqq://res/image?md5=%s&type=%d&uin=%d&size=%d&h=%d&w=%d)",
 				EscapeString(string(v.GetFilePath())),
 				base64.URLEncoding.EncodeToString(v.GetPicMd5()),
 				v.GetBizType(),
@@ -85,13 +85,13 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			)
 		} else if v := elem.GetShakeWindow(); v != nil {
 			text += fmt.Sprintf(
-				"![[shakeWindow]](mqqapi://act/shakeWindow?uin=%d&type=%d)",
+				"![[shakeWindow]](goqq://act/shakeWindow?uin=%d&type=%d)",
 				v.GetUin(),
 				v.GetType(),
 			)
 		} else if v := elem.GetSourceMessage(); v != nil {
 			head += fmt.Sprintf(
-				"<!--mqqapi://msg/reply?time=%d&peer=%d&seq=%d&from=%d-->\n",
+				"<!--goqq://msg/reply?time=%d&peer=%d&seq=%d&from=%d-->\n",
 				v.GetTime(),
 				msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
 				v.GetOrigSeqs()[0],

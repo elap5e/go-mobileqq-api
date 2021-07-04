@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -30,12 +31,15 @@ func (c *Client) MessageSendMessage(
 	username string,
 	req *pb.MessageSendMessageRequest,
 ) (*pb.MessageSendMessageResponse, error) {
+	if len(req.SyncCookie) == 0 {
+		req.SyncCookie = c.syncCookie
+	}
 	buf, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	s2c := ServerToClientMessage{}
-	if err := c.Call(ServiceMethodMessageSendMessage, &ClientToServerMessage{
+	s2c := codec.ServerToClientMessage{}
+	if err := c.Call(ServiceMethodMessageSendMessage, &codec.ClientToServerMessage{
 		Username: username,
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,

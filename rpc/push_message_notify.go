@@ -7,6 +7,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -89,8 +90,8 @@ type TempMessageHead struct {
 
 func (c *Client) handlePushMessageNotify(
 	ctx context.Context,
-	s2c *ServerToClientMessage,
-) (*ClientToServerMessage, error) {
+	s2c *codec.ServerToClientMessage,
+) (*codec.ClientToServerMessage, error) {
 	msg := uni.Message{}
 	req := PushMessageNotifyRequest{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
@@ -107,7 +108,6 @@ func (c *Client) handlePushMessageNotify(
 	if err != nil {
 		return nil, err
 	}
-	c.syncCookie = resp.GetSyncCookie()
 	// TODO: logic
 	type Data struct {
 		PeerUin uint64

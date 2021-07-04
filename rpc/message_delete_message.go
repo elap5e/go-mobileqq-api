@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -35,8 +36,8 @@ func (c *Client) MessageDeleteMessage(
 	if err != nil {
 		return nil, err
 	}
-	s2c := ServerToClientMessage{}
-	if err := c.Call(ServiceMethodMessageDeleteMessage, &ClientToServerMessage{
+	s2c := codec.ServerToClientMessage{}
+	if err := c.Call(ServiceMethodMessageDeleteMessage, &codec.ClientToServerMessage{
 		Username: username,
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
 type PushOnlineRequest struct {
@@ -20,8 +21,8 @@ type PushOnlineResponse struct {
 
 func (c *Client) handlePushOnlineRequest(
 	ctx context.Context,
-	s2c *ServerToClientMessage,
-) (*ClientToServerMessage, error) {
+	s2c *codec.ServerToClientMessage,
+) (*codec.ClientToServerMessage, error) {
 	msg := uni.Message{}
 	req := PushOnlineRequest{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{

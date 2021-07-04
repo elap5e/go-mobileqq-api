@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
 type AccountStatusType uint32
@@ -172,8 +173,8 @@ func (c *Client) AccountUpdateStatus(
 	if err != nil {
 		return nil, err
 	}
-	s2c := ServerToClientMessage{}
-	if err := c.Call(ServiceMethodAccountUpdateStatus, &ClientToServerMessage{
+	s2c := codec.ServerToClientMessage{}
+	if err := c.Call(ServiceMethodAccountUpdateStatus, &codec.ClientToServerMessage{
 		Username: strconv.FormatInt(int64(req.Uin), 10),
 		Seq:      c.getNextSeq(),
 		Buffer:   buf,

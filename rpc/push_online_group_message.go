@@ -8,13 +8,14 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 func (c *Client) handlePushOnlineGroupMessage(
 	ctx context.Context,
-	s2c *ServerToClientMessage,
-) (*ClientToServerMessage, error) {
+	s2c *codec.ServerToClientMessage,
+) (*codec.ClientToServerMessage, error) {
 	push := pb.OnlinePushMessage{}
 	if err := proto.Unmarshal(s2c.Buffer, &push); err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func (c *Client) handlePushOnlineGroupMessage(
 			return nil, err
 		}
 		seq := c.getNextSyncSeq(peerUin)
-		if c.cfg.Debug {
+		if c.cfg.LogLevel&LogLevelTrace != 0 {
 			log.Printf(
 				"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
 				peerUin, seq, s2c.Username, fromUin, string(data),

@@ -29,7 +29,7 @@ func init() {
 	logFile, err := os.OpenFile(path.Join(
 		logDir,
 		fmt.Sprintf(
-			"mqqapi-%s.log",
+			"goqq-%s.log",
 			time.Now().Local().Format("20060102150405"),
 		),
 	), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)

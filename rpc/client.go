@@ -9,30 +9,25 @@ import (
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec/tcp"
 )
-
-type ClientCodec interface {
-	Encode(msg *ClientToServerMessage) error
-	Decode(msg *ServerToClientMessage) error
-	DecodeBody(msg *ServerToClientMessage) error
-
-	Close() error
-}
 
 type Client struct {
 	cfg Config
 
 	// codec
-	codec ClientCodec
+	codec codec.ClientCodec
 
 	// rpc
-	c2s    *ClientToServerMessage
+	mux sync.Mutex
+
+	c2s    *codec.ClientToServerMessage
 	c2sMux sync.Mutex
 
-	mutex    sync.Mutex
 	seq      uint32
 	pending  map[uint32]*ClientCall
-	handlers map[string]PushHandleFunc
+	handlers map[string]HandleFunc
 	closing  bool
 	shutdown bool
 
@@ -40,15 +35,15 @@ type Client struct {
 	syncCookie []byte
 	syncSeq    map[uint64]*uint32
 
-	// random
+	// crypto
 	rand *rand.Rand
 
 	randomKey      [16]byte
 	randomPassword [16]byte
 
+	privateKey             *ecdh.PrivateKey
 	serverPublicKey        *ecdh.PublicKey
 	serverPublicKeyVersion uint16
-	privateKey             *ecdh.PrivateKey
 
 	userSignatures    map[string]*UserSignature
 	userSignaturesMux sync.RWMutex
@@ -79,13 +74,12 @@ type Client struct {
 func (c *Client) init() {
 	c.initRandomKey()
 	c.initRandomPassword()
-
-	c.initServerPublicKey()
 	c.initPrivateKey()
+	c.initServerPublicKey()
 
 	c.initUserSignatures()
 
-	c.initPushHandlers()
+	c.initHandlers()
 	c.initSync()
 }
 
@@ -122,6 +116,10 @@ func (c *Client) getSyncSeq(uin uint64) uint32 {
 	return *c.syncSeq[uin]
 }
 
+func (c *Client) GetNextSyncSeq(uin uint64) uint32 {
+	return c.getNextSyncSeq(uin)
+}
+
 func (c *Client) getNextSyncSeq(uin uint64) uint32 {
 	if _, ok := c.syncSeq[uin]; !ok {
 		c.syncSeq[uin] = &[]uint32{0}[0]
@@ -134,10 +132,10 @@ func (c *Client) getNextSyncSeq(uin uint64) uint32 {
 }
 
 func NewClient(conn io.ReadWriteCloser, opts ...Option) *Client {
-	return NewClientWithCodec(NewClientCodec(conn), opts...)
+	return NewClientWithCodec(tcp.NewClientCodec(conn), opts...)
 }
 
-func NewClientWithCodec(codec ClientCodec, opts ...Option) *Client {
+func NewClientWithCodec(codec codec.ClientCodec, opts ...Option) *Client {
 	cfg := Config{
 		Client: NewClientConfig(),
 		Device: NewDeviceConfig(),
@@ -172,10 +170,10 @@ func ForClient(ctx context.Context) *Client {
 
 var s2cCtxKey struct{}
 
-func WithS2C(ctx context.Context, s2c *ServerToClientMessage) context.Context {
+func WithS2C(ctx context.Context, s2c *codec.ServerToClientMessage) context.Context {
 	return context.WithValue(ctx, s2cCtxKey, s2c)
 }
 
-func ForS2C(ctx context.Context) *ServerToClientMessage {
-	return ctx.Value(s2cCtxKey).(*ServerToClientMessage)
+func ForS2C(ctx context.Context) *codec.ServerToClientMessage {
+	return ctx.Value(s2cCtxKey).(*codec.ServerToClientMessage)
 }

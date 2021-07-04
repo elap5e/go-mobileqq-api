@@ -10,6 +10,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
 	"github.com/elap5e/go-mobileqq-api/encoding/oicq"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
@@ -183,8 +184,8 @@ func (c *Client) AuthGetSessionTickets(
 	if err != nil {
 		return nil, err
 	}
-	s2c := ServerToClientMessage{}
-	if err := c.Call(req.GetServiceMethod(), &ClientToServerMessage{
+	s2c := codec.ServerToClientMessage{}
+	if err := c.Call(req.GetServiceMethod(), &codec.ClientToServerMessage{
 		Username: req.GetUsername(),
 		Seq:      req.GetSeq(),
 		Buffer:   buf,
@@ -218,17 +219,19 @@ func (c *Client) AuthGetSessionTickets(
 		key := [16]byte{}
 		switch msg.Type {
 		default:
+			log.Printf("x_x [oicq] type:0x%04x", msg.Type)
 			copy(key[:], sig.Tickets["A1"].Key)
-		case 0x0009:
+		case 0x0009, 0x000f, 0x0014: // ???
 			copy(key[:], sig.Tickets["A1"].Key)
+		case 0x000a:
+			copy(key[:], sig.Tickets["A2"].Key)
 		case 0x000b:
 			key = md5.Sum(sig.Tickets["D2"].Key)
-		case 0x000f:
-			copy(key[:], sig.Tickets["A1"].Key)
-		case 0x0014:
-			copy(key[:], sig.Tickets["A1"].Key)
 		}
-		t119 := crypto.NewCipher(key).Decrypt(resp.T119)
+		t119, err := crypto.NewCipher(key).Decrypt(resp.T119)
+		if err != nil {
+			return nil, err
+		}
 
 		// log.Printf("--> [recv] dump tlv 0x0119(decrypt):\n%s", hex.Dump(t119))
 		tlvs := map[uint16]tlv.TLVCodec{}
@@ -239,7 +242,7 @@ func (c *Client) AuthGetSessionTickets(
 			v.Decode(buf)
 			tlvs[v.GetType()] = &v
 		}
-		if c.cfg.Debug {
+		if c.cfg.LogLevel&LogLevelTrace != 0 {
 			tlv.DumpTLVs(ctx, tlvs)
 		}
 

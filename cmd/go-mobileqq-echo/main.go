@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -21,41 +19,13 @@ var (
 	password   string
 )
 
-var configYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
-
-accounts:
-  - username: 10000
-    password: 123456
-
-configs:
-  auth:
-    address: 127.0.0.1:0
-    captcha: true
-  debug: true
-  deviceInfo:
-    randomSeed: %d
-  protocol: android-tablet
-`, time.Now().UnixNano())
-
 func init() {
 	log.Printf("~v~ [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-			configPath := path.Join(baseDir, "config.yaml")
-			_ = ioutil.WriteFile(
-				configPath,
-				[]byte(configYAML),
-				0600,
-			)
-			log.Fatalf("$_$ [init] create config.yaml in %s", configPath)
-		} else {
-			// Config file was found but another error was produced
-			log.Fatalf("x_x [init] failed to load config.yaml")
-		}
+		log.Fatalf("x_x [init] failed to load config.yaml")
 	} else {
 		username = viper.GetString("accounts.0.username")
 		password = viper.GetString("accounts.0.password")
@@ -81,5 +51,12 @@ func main() {
 	); err != nil {
 		log.Printf("x_x [auth] error: %s", err.Error())
 	}
-	select {}
+	for range time.NewTicker(300 * time.Second).C {
+		if err := c.MessageSendMessage(
+			username,
+			"\n![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)"+time.Now().Local().String(),
+		); err != nil {
+			log.Printf("x_x [test] error: %s", err.Error())
+		}
+	}
 }

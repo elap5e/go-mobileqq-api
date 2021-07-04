@@ -10,8 +10,19 @@ import (
 	"github.com/elap5e/go-mobileqq-api/util"
 )
 
+const (
+	LogLevelFatal = 0b00000001
+	LogLevelError = 0b00000010
+	LogLevelAudit = 0b00000100
+	LogLevelWarn  = 0b00001000
+	LogLevelInfo  = 0b00010000
+	LogLevelDebug = 0b00100000
+	LogLevelTrace = 0b10000000
+)
+
 type Config struct {
 	Debug    bool
+	LogLevel uint8
 	BaseDir  string
 	CacheDir string
 	Client   *ClientConfig

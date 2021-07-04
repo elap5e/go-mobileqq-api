@@ -87,6 +87,7 @@ func NewClientConfigFromViper() *Config {
 		RPC: &rpc.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
+			LogLevel: 0b00011111,
 			Client:   rpc.NewClientConfigForAndroidTablet(),
 			Device:   rpc.NewDeviceConfig(),
 		},
@@ -97,8 +98,19 @@ func NewClientConfigFromViper() *Config {
 	if viper.IsSet("configs.auth.captcha") {
 		cfg.Client.AuthCaptcha = viper.GetBool("configs.auth.captcha")
 	}
-	if viper.IsSet("configs.debug") {
-		cfg.RPC.Debug = viper.GetBool("configs.debug")
+	if viper.IsSet("configs.logLevel") {
+		switch strings.ToLower(viper.GetString("configs.logLevel")) {
+		case "error":
+			cfg.RPC.LogLevel = 0b00000011
+		case "warn":
+			cfg.RPC.LogLevel = 0b00001111
+		case "info":
+			cfg.RPC.LogLevel = 0b00011111
+		case "debug":
+			cfg.RPC.LogLevel = 0b01111111
+		case "trace":
+			cfg.RPC.LogLevel = 0b11111111
+		}
 	}
 	if viper.IsSet("configs.networkType") {
 		switch strings.ToLower(viper.GetString("configs.networkType")) {

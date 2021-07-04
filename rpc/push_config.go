@@ -8,6 +8,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
 type PushConfigRequest struct {
@@ -151,8 +152,8 @@ type ProxyIPInfo struct {
 
 func (c *Client) handlePushConfigRequest(
 	ctx context.Context,
-	s2c *ServerToClientMessage,
-) (*ClientToServerMessage, error) {
+	s2c *codec.ServerToClientMessage,
+) (*codec.ClientToServerMessage, error) {
 	msg := uni.Message{}
 	req := PushConfigRequest{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
@@ -222,7 +223,7 @@ func (c *Client) handlePushConfigRequest(
 	if err != nil {
 		return nil, err
 	}
-	return &ClientToServerMessage{
+	return &codec.ClientToServerMessage{
 		Username:      s2c.Username,
 		Seq:           s2c.Seq,
 		ServiceMethod: ServiceMethodPushConfigResponse,

@@ -23,7 +23,11 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 	case EncryptMethod0x03:
 		msg.ShareKey = msg.RandomKey
 	}
-	buf = bytes.NewBuffer(crypto.NewCipher(msg.ShareKey).Decrypt(buf.Bytes()))
+	tmp, err := crypto.NewCipher(msg.ShareKey).Decrypt(buf.Bytes())
+	if err != nil {
+		return err
+	}
+	buf = bytes.NewBuffer(tmp)
 	// log.Printf("--> [recv] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(buf.Bytes()))
 	if err := unmarshalData(ctx, buf, msg); err != nil {
 		return err
