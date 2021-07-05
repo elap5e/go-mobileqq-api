@@ -4,14 +4,9 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
-	"github.com/elap5e/go-mobileqq-api/mobileqq/api"
 	"github.com/elap5e/go-mobileqq-api/pb"
 	"github.com/elap5e/go-mobileqq-api/rpc"
 )
-
-func (c *Client) SendMessage(req *api.SendMessageRequest) (*api.Message, error) {
-	return nil, nil
-}
 
 func (c *Client) MessageSendMessage(username string, text string) error {
 	msg := pb.Message{}

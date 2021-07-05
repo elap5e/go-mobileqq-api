@@ -8,36 +8,10 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
-	"path"
 	"sync"
-	"time"
 
 	"github.com/elap5e/go-mobileqq-api/rpc"
 )
-
-func init() {
-	for _, dir := range []string{baseDir, cacheDir, logDir} {
-		_, err := os.Stat(dir)
-		if os.IsNotExist(err) {
-			err = os.Mkdir(dir, 0777)
-		}
-		if err != nil {
-			log.Fatalf("failed to mkdir %s, error %s", dir, err.Error())
-		}
-	}
-	logFile, err := os.OpenFile(path.Join(
-		logDir,
-		fmt.Sprintf(
-			"goqq-%s.log",
-			time.Now().Local().Format("20060102150405"),
-		),
-	), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
-}
 
 type Option struct {
 	Config *Config
@@ -50,8 +24,8 @@ type Client struct {
 	cancel context.CancelFunc // immutable
 
 	addrs    []*net.TCPAddr
-	conn     io.ReadWriteCloser
-	connMux  sync.Mutex
+	_conn    io.ReadWriteCloser
+	_connMux sync.Mutex
 	conns    []io.ReadWriteCloser
 	connsMux sync.Mutex
 
@@ -82,16 +56,12 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	log.Printf("==> [init] create connection")
-	c.connMux.Lock()
-	c.conn, _ = c.createConn(context.Background())
-	c.connMux.Unlock()
+	c._connMux.Lock()
+	c._conn, _ = c.createConn(context.Background())
+	c._connMux.Unlock()
 	log.Printf("==> [init] create rpc client")
-	c.rpc = rpc.NewClient(c.conn, rpc.Option{Config: c.cfg.RPC})
+	c.rpc = rpc.NewClient(c._conn, rpc.Option{Config: c.cfg.RPC})
 	c.ctx = c.rpc.WithClient(c.ctx)
-}
-
-func (c *Client) restoreConnection(ctx context.Context) error {
-	return nil
 }
 
 func (c *Client) runUntilClosed(ctx context.Context) error {
@@ -116,13 +86,5 @@ func (c *Client) Run(
 		}
 	}()
 
-	if err = c.restoreConnection(ctx); err != nil {
-		return err
-	}
-
 	return c.runUntilClosed(ctx)
-}
-
-func (c *Client) HeartbeatAlive() error {
-	return c.rpc.HeartbeatAlive()
 }

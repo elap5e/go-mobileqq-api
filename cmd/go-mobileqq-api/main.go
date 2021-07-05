@@ -1,17 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"time"
 
 	"github.com/spf13/viper"
 
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
-	"github.com/elap5e/go-mobileqq-api/rpc"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 )
 
 var (
@@ -38,7 +39,7 @@ configs:
 `, time.Now().UnixNano())
 
 func init() {
-	log.Printf("~v~ [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
+	log.Info().Msg(log.MsgInitInfof("Go MobileQQ API (%s)", mobileqq.PackageVersion))
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
@@ -51,10 +52,10 @@ func init() {
 				[]byte(configYAML),
 				0600,
 			)
-			log.Fatalf("$_$ [init] create config.yaml in %s", configPath)
+			log.Fatal().Msg(log.MsgInitErrorf("create config.yaml in %s", configPath))
 		} else {
 			// Config file was found but another error was produced
-			log.Fatalf("x_x [init] failed to load config.yaml")
+			log.Fatal().Msg(log.MsgInitError("failed to load config.yaml"))
 		}
 	} else {
 		username = viper.GetString("accounts.0.username")
@@ -63,23 +64,25 @@ func init() {
 }
 
 func main() {
-	c := mobileqq.NewClient(
-		mobileqq.Option{
-			Config: mobileqq.NewClientConfigFromViper(),
-		},
-	)
-	if err := c.HeartbeatAlive(); err != nil {
-		log.Printf("x_x [test] error: %s", err.Error())
+	cfg := mobileqq.NewClientConfigFromViper()
+	ctx := context.Background()
+	engine := rpc.NewEngine(&rpc.Config{
+		Network:     "tcp",
+		Address:     "msfwifi.3g.qq.com:8080",
+		FixID:       cfg.RPC.Client.AppID,
+		AppID:       cfg.RPC.Client.AppID,
+		NetworkType: 0x01,
+		NetIPFamily: 0x03,
+		IMEI:        cfg.RPC.Device.IMEI,
+		IMSI:        cfg.RPC.Device.IMSI,
+		Revision:    cfg.RPC.Client.Revision,
+	})
+	for {
+		engine.Start(ctx)
+		err := <-engine.Error()
+		log.Error().
+			Err(err).
+			Msg("x-x [conn] failed to start rpc engine, retry in 5 seconds...")
+		time.Sleep(5 * time.Second)
 	}
-	if err := c.Auth(username, password); err != nil {
-		log.Printf("x_x [auth] error: %s", err.Error())
-	}
-	if err := c.AccountUpdateStatus(
-		username,
-		rpc.AccountStatusOnline,
-		false,
-	); err != nil {
-		log.Printf("x_x [auth] error: %s", err.Error())
-	}
-	select {}
 }
