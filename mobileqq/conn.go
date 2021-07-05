@@ -1,14 +1,13 @@
 package mobileqq
 
 import (
-	"context"
-	"io"
-	"log"
 	"net"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/elap5e/go-mobileqq-api/log"
 )
 
 var (
@@ -84,28 +83,21 @@ var (
 	}
 )
 
-func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
-	rawURIs := append(
-		connSocketMobileWiFiIPv4Default,
-		connSocketMobileWiFiIPv6Default...,
-	)
-
+func (c *Client) benchmark(strs []string) (string, error) {
 	var addrs []*net.TCPAddr
-	for _, rawURI := range rawURIs {
-		uri, err := url.Parse(rawURI)
+	for _, str := range strs {
+		uri, err := url.Parse(str)
 		if err != nil {
-			log.Printf(
-				"x_x [conn] failed to parse raw uri %s, with error %s",
-				rawURI, err.Error(),
-			)
+			log.Warn().
+				Err(err).
+				Msgf("x_x [race] failed to parse raw uri %s", str)
 			continue
 		}
 		ips, err := net.LookupIP(uri.Hostname())
 		if err != nil {
-			log.Printf(
-				"x_x [conn] failed to nslookup %s, with error %s",
-				uri.Hostname(), err.Error(),
-			)
+			log.Warn().
+				Err(err).
+				Msgf("x_x [race] failed to nslookup %s", uri.Hostname())
 			continue
 		}
 		port, _ := strconv.Atoi(uri.Port())
@@ -116,24 +108,25 @@ func (c *Client) createConn(ctx context.Context) (io.ReadWriteCloser, error) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(addrs))
-	log.Printf("<== [conn] testing tcp connections")
+	log.Info().
+		Msg("··· [race] benchmarking tcp connections...")
 	for i := range addrs {
 		go func(addr *net.TCPAddr) {
 			defer wg.Done()
-			// log.Printf("<-- [conn] send dial tcp %s", addr)
 			if err := tcping(addr); err != nil {
-				log.Printf("x_x [conn] %s", err.Error())
+				log.Warn().
+					Err(err).
+					Msg("x_x [race] failed to tcping")
 				return
 			}
-			// log.Printf("--> [conn] recv dial tcp %s", addr)
 			c.addrs = append(c.addrs, addr)
 		}(addrs[i])
 	}
 	wg.Wait()
-	log.Printf("==> [conn] tcp connections tested")
+	log.Info().
+		Msg("··· [race] tcp connections benchmarked")
 
-	defer log.Printf("^_^ [conn] connected to server %s", c.addrs[0].String())
-	return net.Dial("tcp", c.addrs[0].String())
+	return c.addrs[0].String(), nil
 }
 
 func tcping(addr *net.TCPAddr) error {

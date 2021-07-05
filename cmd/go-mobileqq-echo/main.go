@@ -1,15 +1,16 @@
 package main
 
 import (
-	"log"
+	"context"
 	"os"
 	"path"
-	"time"
+	"strconv"
 
 	"github.com/spf13/viper"
 
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
-	"github.com/elap5e/go-mobileqq-api/rpc"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 )
 
 var (
@@ -20,12 +21,12 @@ var (
 )
 
 func init() {
-	log.Printf("~v~ [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
+	log.Info().Msgf("··· [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("x_x [init] failed to load config.yaml")
+		log.Fatal().Msg("x_x [init] failed to load config.yaml")
 	} else {
 		username = viper.GetString("accounts.0.username")
 		password = viper.GetString("accounts.0.password")
@@ -33,27 +34,29 @@ func init() {
 }
 
 func main() {
-	c := mobileqq.NewClient(
-		mobileqq.Option{
-			Config: mobileqq.NewClientConfigFromViper(),
-		},
-	)
-	if err := c.Auth(username, password); err != nil {
-		log.Printf("x_x [auth] error: %s", err.Error())
-	}
-	if err := c.AccountUpdateStatus(
-		username,
-		rpc.AccountStatusOnline,
-		false,
-	); err != nil {
-		log.Printf("x_x [auth] error: %s", err.Error())
-	}
-	for range time.NewTicker(300 * time.Second).C {
-		if err := c.MessageSendMessage(
-			username,
-			"\n![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)"+time.Now().Local().String(),
-		); err != nil {
-			log.Printf("x_x [test] error: %s", err.Error())
+	ctx := context.Background()
+	cfg := mobileqq.NewClientConfigFromViper()
+	mqq := mobileqq.NewClient(&mobileqq.Options{
+		BaseDir:  baseDir,
+		LogLevel: viper.GetString("configs.logLevel"),
+		Client:   cfg,
+	})
+
+	if err := mqq.Run(ctx, func(ctx context.Context) error {
+		if err := mqq.Auth(username, password); err != nil {
+			return err
 		}
+		rpc := mqq.GetClient()
+		uin, _ := strconv.ParseInt(username, 10, 64)
+		if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
+			uint64(uin),
+			client.AccountStatusOnline,
+			false,
+		)); err != nil {
+			return err
+		}
+		select {}
+	}); err != nil {
+		log.Panic().Err(err).Msg("client unexpected exit")
 	}
 }

@@ -6,13 +6,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/spf13/viper"
 
+	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
-	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 var (
@@ -32,14 +35,14 @@ configs:
   auth:
     address: 127.0.0.1:0
     captcha: true
-  debug: true
   deviceInfo:
     randomSeed: %d
+  logLevel: info
   protocol: android-tablet
 `, time.Now().UnixNano())
 
 func init() {
-	log.Info().Msg(log.MsgInitInfof("Go MobileQQ API (%s)", mobileqq.PackageVersion))
+	log.Info().Msgf("··· [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
@@ -52,10 +55,10 @@ func init() {
 				[]byte(configYAML),
 				0600,
 			)
-			log.Fatal().Msg(log.MsgInitErrorf("create config.yaml in %s", configPath))
+			log.Fatal().Msgf("x_x [init] create config.yaml in %s", configPath)
 		} else {
 			// Config file was found but another error was produced
-			log.Fatal().Msg(log.MsgInitError("failed to load config.yaml"))
+			log.Fatal().Msgf("x_x [init] failed to load config.yaml")
 		}
 	} else {
 		username = viper.GetString("accounts.0.username")
@@ -64,25 +67,47 @@ func init() {
 }
 
 func main() {
-	cfg := mobileqq.NewClientConfigFromViper()
 	ctx := context.Background()
-	engine := rpc.NewEngine(&rpc.Config{
-		Network:     "tcp",
-		Address:     "msfwifi.3g.qq.com:8080",
-		FixID:       cfg.RPC.Client.AppID,
-		AppID:       cfg.RPC.Client.AppID,
-		NetworkType: 0x01,
-		NetIPFamily: 0x03,
-		IMEI:        cfg.RPC.Device.IMEI,
-		IMSI:        cfg.RPC.Device.IMSI,
-		Revision:    cfg.RPC.Client.Revision,
+	cfg := mobileqq.NewClientConfigFromViper()
+	mqq := mobileqq.NewClient(&mobileqq.Options{
+		BaseDir:  baseDir,
+		LogLevel: viper.GetString("configs.logLevel"),
+		Client:   cfg,
 	})
-	for {
-		engine.Start(ctx)
-		err := <-engine.Error()
-		log.Error().
-			Err(err).
-			Msg("x-x [conn] failed to start rpc engine, retry in 5 seconds...")
-		time.Sleep(5 * time.Second)
+
+	if err := mqq.Run(ctx, func(ctx context.Context) error {
+		if err := mqq.Auth(username, password); err != nil {
+			return err
+		}
+		rpc := mqq.GetClient()
+		uin, _ := strconv.ParseInt(username, 10, 64)
+		if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
+			uint64(uin),
+			client.AccountStatusOnline,
+			false,
+		)); err != nil {
+			return err
+		}
+		for range time.NewTicker(1800 * time.Second).C {
+			text := "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)" + time.Now().Local().String()
+			msg := pb.Message{}
+			if err := mark.Unmarshal([]byte(text), &msg); err != nil {
+				return err
+			}
+			if _, err := rpc.MessageSendMessage(
+				ctx, username, client.NewMessageSendMessageRequest(
+					&pb.RoutingHead{C2C: &pb.C2C{Uin: viper.GetUint64("targets.0.uin")}},
+					msg.GetContentHead(),
+					msg.GetMessageBody(),
+					0,
+					nil,
+				),
+			); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		log.Panic().Err(err).Msg("client unexpected exit")
 	}
 }

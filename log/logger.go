@@ -4,24 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/rs/zerolog"
 )
 
 // Logger is the global logger.
-var Logger = zerolog.New(zerolog.ConsoleWriter{
-	Out:                 os.Stdout,
-	TimeFormat:          consoleTimeFormat,
-	FormatLevel:         consoleFormatLevel,
-	FormatCaller:        consoleFormatCaller,
-	FormatMessage:       consoleFormatMessage,
-	FormatFieldName:     consoleFormatFieldName,
-	FormatFieldValue:    consoleFormatFieldValue,
-	FormatErrFieldName:  consoleFormatErrFieldName,
-	FormatErrFieldValue: consoleFormatErrFieldValue,
-}).With().Timestamp().Logger()
+var Logger = zerolog.New(ConsoleWriter).With().Timestamp().Logger()
 
 func init() {
 	zerolog.TimeFieldFormat = time.RFC3339Nano

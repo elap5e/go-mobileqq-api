@@ -3,88 +3,115 @@ package mobileqq
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"log"
 	"net"
 	"sync"
+	"time"
 
-	"github.com/elap5e/go-mobileqq-api/rpc"
+	"github.com/elap5e/go-mobileqq-api/log"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 )
 
-type Option struct {
-	Config *Config
-}
-
 type Client struct {
-	cfg Config
+	opt    *Options
+	rpc    rpc.Engine
+	client *client.Client
 
-	ctx    context.Context    // immutable
-	cancel context.CancelFunc // immutable
+	addrs []net.Addr
 
-	addrs    []*net.TCPAddr
-	_conn    io.ReadWriteCloser
-	_connMux sync.Mutex
-	conns    []io.ReadWriteCloser
-	connsMux sync.Mutex
+	ctx    context.Context
+	cancel context.CancelFunc
 
-	rpc *rpc.Client
+	ready chan struct{}
 }
 
-func NewClient(opts ...Option) *Client {
-	cfg := Config{
-		RPC: &rpc.Config{
-			Client: rpc.NewClientConfig(),
-			Device: rpc.NewDeviceConfig(),
-		},
-	}
-	for _, opt := range opts {
-		cfg = *opt.Config
-	}
-	data, _ := json.MarshalIndent(cfg, "", "  ")
-	log.Printf("~v~ [init] dump MobileQQ client config:\n%s", string(data))
+func NewClient(opt *Options) *Client {
+	opt.init()
+	data, _ := json.MarshalIndent(opt, "", "  ")
+	log.Debug().
+		Msgf("··· [dump] Go MobileQQ API client option:\n%s", string(data))
 	ctx, cancel := context.WithCancel(context.Background())
-	client := &Client{
-		cfg:    cfg,
+	c := &Client{
+		opt:    opt,
 		ctx:    ctx,
 		cancel: cancel,
 	}
-	client.init()
-	return client
+	c.init()
+	return c
 }
 
 func (c *Client) init() {
-	log.Printf("==> [init] create connection")
-	c._connMux.Lock()
-	c._conn, _ = c.createConn(context.Background())
-	c._connMux.Unlock()
-	log.Printf("==> [init] create rpc client")
-	c.rpc = rpc.NewClient(c._conn, rpc.Option{Config: c.cfg.RPC})
-	c.ctx = c.rpc.WithClient(c.ctx)
+	c.rpc = rpc.NewEngine(c.opt.Engine)
+	c.client = client.NewClient(c.opt.Client.Engine, c.rpc)
+	c.ctx = c.client.WithClient(c.ctx)
+	c.ready = make(chan struct{}, 1)
 }
 
-func (c *Client) runUntilClosed(ctx context.Context) error {
-	return nil
+func (c *Client) reconnectUntilClosed(ctx context.Context) {
+	go func() {
+		for {
+			cfg := c.rpc.GetConfig()
+			uris := append(
+				connSocketMobileWiFiIPv4Default,
+				connSocketMobileWiFiIPv6Default...,
+			)
+			cfg.Address, _ = c.benchmark(uris)
+			c.rpc.SetConfig(cfg)
+			c.rpc.Ready(c.ready)
+			if err := c.rpc.Start(ctx); err != nil {
+				log.Error().
+					Err(err).
+					Msg("x-x [conn] failed to start rpc engine, retry in 5 seconds...")
+				time.Sleep(5 * time.Second)
+			} else {
+				return
+			}
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		if err := ctx.Err(); err != nil {
+			log.Error().
+				Err(err).
+				Msg("x-x [conn] canceled by context")
+		} else {
+			log.Info().
+				Msg("··· [conn] canceled by context")
+		}
+		c.cancel()
+	case <-c.ctx.Done():
+		if err := ctx.Err(); err != nil {
+			log.Error().
+				Err(err).
+				Msg("x-x [conn] canceled by client context")
+		} else {
+			log.Info().
+				Msg("··· [conn] canceled by client context")
+		}
+	}
 }
 
 func (c *Client) Run(
 	ctx context.Context,
-	f func(ctx context.Context) error,
-) error {
-	var err error
-
-	defer c.cancel()
-	defer func() {
-		c.connsMux.Lock()
-		defer c.connsMux.Unlock()
-		for _, conn := range c.conns {
-			closeErr := conn.Close()
-			if !errors.Is(closeErr, context.Canceled) {
-				err = fmt.Errorf("%v closeErr:%v;", err, closeErr)
-			}
-		}
+	run func(ctx context.Context) error,
+) (err error) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		c.reconnectUntilClosed(ctx)
+		wg.Done()
 	}()
+	wg.Add(1)
+	go func() {
+		<-c.ready
+		err = run(ctx)
+		c.cancel()
+		wg.Done()
+	}()
+	wg.Wait()
+	return err
+}
 
-	return c.runUntilClosed(ctx)
+func (c *Client) GetClient() *client.Client {
+	return c.client
 }

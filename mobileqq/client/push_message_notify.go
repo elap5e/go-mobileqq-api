@@ -1,12 +1,13 @@
-package rpc
+package client
 
 import (
 	"context"
-	"log"
 	"strconv"
+	"time"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
@@ -179,10 +180,14 @@ func (c *Client) handlePushMessageNotify(
 			return nil, err
 		}
 		seq := c.getNextSyncSeq(data.PeerUin)
-		log.Printf(
-			"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
-			data.PeerUin, seq, s2c.Username, data.FromUin, string(data.Data),
-		)
+		log.Info().
+			Str("@mark", string(data.Data)).
+			Str("from", s2c.Username).
+			Uint64("peer", data.PeerUin).
+			Uint32("seq", seq).
+			Uint64("to", data.FromUin).
+			Int64("time", time.Now().Unix()).
+			Msg("<== [send] message")
 		if i == len(dataList)-1 {
 			_, _ = c.MessageSendMessage(
 				ctx, s2c.Username, NewMessageSendMessageRequest(

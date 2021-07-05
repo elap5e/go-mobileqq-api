@@ -20,8 +20,8 @@ type ClientToServerMessage struct {
 	Seq           uint32
 	FixID         uint32
 	AppID         uint32
-	NetworkType   uint8
-	NetIPFamily   uint8
+	NetworkType   uint8 // 0x00: Others; 0x01: Wi-Fi
+	NetIPFamily   uint8 // 0x00: Others; 0x01: IPv4; 0x02: IPv6; 0x03: Dual
 	UserA2        []byte
 	ServiceMethod string
 	Cookie        []byte

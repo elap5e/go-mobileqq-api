@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"context"
@@ -42,9 +42,8 @@ func (c *Client) MessageGetMessage(
 		return nil, err
 	}
 	s2c := codec.ServerToClientMessage{}
-	if err := c.Call(ServiceMethodMessageGetMessage, &codec.ClientToServerMessage{
+	if err := c.rpc.Call(ServiceMethodMessageGetMessage, &codec.ClientToServerMessage{
 		Username: username,
-		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   true,
 	}, &s2c); err != nil {

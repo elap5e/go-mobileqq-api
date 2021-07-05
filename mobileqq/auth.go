@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -15,7 +14,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/elap5e/go-mobileqq-api/rpc"
+	"github.com/elap5e/go-mobileqq-api/log"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/util"
 )
 
@@ -59,22 +59,22 @@ const tmplAuthCaptcha = `<!DOCTYPE html>
 var reader = bufio.NewReader(os.Stdin)
 
 func (c *Client) handleAuthResponse(
-	resp *rpc.AuthGetSessionTicketsResponse,
-) (*rpc.AuthGetSessionTicketsResponse, error) {
+	resp *client.AuthGetSessionTicketsResponse,
+) (*client.AuthGetSessionTicketsResponse, error) {
 	switch resp.Code {
 	case 0x00:
 		return resp, nil
 	case 0x02:
 		if resp.CaptchaSign != "" {
-			l, err := net.Listen("tcp", c.cfg.Client.AuthAddress)
+			l, err := net.Listen("tcp", c.opt.Client.AuthAddress)
 			if err != nil {
-				log.Fatalf("listen:%+s\n", err)
+				log.Fatal().Msgf("listen:%+s\n", err)
 			}
 			addr := l.Addr().(*net.TCPAddr).String()
 			u, _ := url.Parse(string(resp.CaptchaSign))
 			info := ".......... ........ >_< [info] 1st, submit captcha manually: " + resp.CaptchaSign + "\n"
 			info += ".......... ........ >_< [info] 2nd, submit captcha by popup: http://" + addr + "/api/captcha?" + u.RawQuery
-			log.Printf(">_< [info] verify captcha:\n%s\n", info)
+			log.Info().Msgf(">_< [info] verify captcha:\n%s\n", info)
 			done := make(chan string, 1)
 			// ctx, cancel := context.WithCancel(context.Background())
 			// go func() {
@@ -94,7 +94,7 @@ func (c *Client) handleAuthResponse(
 						ticket := r.FormValue("ticket")
 						// fmt.Println()
 						// cancel()
-						log.Printf(
+						log.Info().Msgf(
 							">_< [info] got captcha verify code: %s",
 							ticket,
 						)
@@ -108,7 +108,7 @@ func (c *Client) handleAuthResponse(
 			go func() {
 				err := srv.Serve(l)
 				if err != nil && err != http.ErrServerClosed {
-					log.Fatalf("listen:%+s\n", err)
+					log.Fatal().Msgf("listen:%+s\n", err)
 				}
 			}()
 			ticket := <-done
@@ -120,24 +120,24 @@ func (c *Client) handleAuthResponse(
 				cancel()
 			}()
 			if err := srv.Shutdown(ctxShutDown); err != nil {
-				log.Fatalf("server Shutdown Failed:%+s", err)
+				log.Fatal().Msgf("server Shutdown Failed:%+s", err)
 			}
-			return c.rpc.AuthCheckCaptchaAndGetSessionTickets(
+			return c.client.AuthCheckCaptchaAndGetSessionTickets(
 				c.ctx,
-				rpc.NewAuthCheckCaptchaAndGetSessionTicketsRequest(
+				client.NewAuthCheckCaptchaAndGetSessionTicketsRequest(
 					resp.Username,
 					[]byte(ticket),
 				),
 			)
 		} else {
 			info := ".......... ........ >_< [info] picture verify code: "
-			log.Printf(
+			log.Info().Msgf(
 				">_< [info] picture verify:\n\033]1337;File=name=picture.jpg;inline=1;width=11;height=2:%s\a(please check out picture.jpg)\n%s",
 				base64.StdEncoding.EncodeToString(resp.PictureData), info,
 			)
 			_ = ioutil.WriteFile(
 				path.Join(
-					c.cfg.CacheDir,
+					c.opt.CacheDir,
 					resp.Username,
 					fmt.Sprintf(
 						"picture-%s.jpg",
@@ -148,9 +148,9 @@ func (c *Client) handleAuthResponse(
 				0600,
 			)
 			code, _ := util.ReadLine(reader)
-			return c.rpc.AuthCheckPictureAndGetSessionTickets(
+			return c.client.AuthCheckPictureAndGetSessionTickets(
 				c.ctx,
-				rpc.NewAuthCheckPictureAndGetSessionTicketsRequest(
+				client.NewAuthCheckPictureAndGetSessionTicketsRequest(
 					resp.Username,
 					[]byte(code),
 					resp.PictureSign,
@@ -165,14 +165,14 @@ func (c *Client) handleAuthResponse(
 		return nil, fmt.Errorf("service temporarily unavailable(0x9a)")
 	case 0xa0: // TODO: check
 		info := ".......... ........ >_< [info] sms verification code: "
-		log.Printf(
+		log.Info().Msgf(
 			">_< [info] sms verification mobile %s\n%s",
 			resp.SMSMobile, info,
 		)
 		code, _ := util.ReadLine(reader)
-		return c.rpc.AuthCheckSMSAndGetSessionTickets(
+		return c.client.AuthCheckSMSAndGetSessionTickets(
 			c.ctx,
-			rpc.NewAuthCheckSMSAndGetSessionTicketsRequest(
+			client.NewAuthCheckSMSAndGetSessionTicketsRequest(
 				resp.Username,
 				[]byte(code),
 			),
@@ -188,14 +188,14 @@ func (c *Client) handleAuthResponse(
 	case 0xef:
 		if resp.SMSMobile != "" {
 			info := ".......... ........ >_< [info] press ENTER to send sms verification request: "
-			log.Printf(
+			log.Info().Msgf(
 				">_< [info] sms verification mobile %s\n%s",
 				resp.SMSMobile, info,
 			)
 			_, _ = util.ReadLine(reader)
-			return c.rpc.AuthRefreshSMSData(
+			return c.client.AuthRefreshSMSData(
 				c.ctx,
-				rpc.NewAuthRefreshSMSDataRequest(resp.Username),
+				client.NewAuthRefreshSMSDataRequest(resp.Username),
 			)
 		}
 	}
@@ -204,16 +204,16 @@ func (c *Client) handleAuthResponse(
 
 func (c *Client) Auth(username, password string) error {
 	var err error
-	var resp *rpc.AuthGetSessionTicketsResponse
-	sig := c.rpc.GetUserSignature(username)
+	var resp *client.AuthGetSessionTicketsResponse
+	sig := c.client.GetUserSignature(username)
 	if len(password) != 0 {
 		sig.PasswordMD5 = util.STBytesTobytes(md5.Sum([]byte(password)))
 	}
 	d2, ok := sig.Tickets["D2"]
 	if (ok && time.Now().After(time.Unix(d2.Iss+d2.Exp, 0))) || !ok {
-		if resp, err = c.rpc.AuthGetSessionTicketsWithPassword(
+		if resp, err = c.client.AuthGetSessionTicketsWithPassword(
 			c.ctx,
-			rpc.NewAuthGetSessionTicketsWithPasswordRequest(
+			client.NewAuthGetSessionTicketsWithPasswordRequest(
 				username,
 				password,
 			),
@@ -221,9 +221,9 @@ func (c *Client) Auth(username, password string) error {
 			return err
 		}
 	} else {
-		if resp, err = c.rpc.AuthGetSessionTicketsWithoutPassword(
+		if resp, err = c.client.AuthGetSessionTicketsWithoutPassword(
 			c.ctx,
-			rpc.NewAuthGetSessionTicketsWithoutPasswordRequest(username),
+			client.NewAuthGetSessionTicketsWithoutPasswordRequest(username),
 		); err != nil {
 			return err
 		}

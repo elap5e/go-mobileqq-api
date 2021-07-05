@@ -1,9 +1,8 @@
-package rpc
+package client
 
 import (
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -11,10 +10,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
+	"math/rand"
 	"net/http"
 
 	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
+	"github.com/elap5e/go-mobileqq-api/log"
 )
 
 var (
@@ -38,16 +38,17 @@ func (c *Client) initRandomKey() {
 }
 
 func (c *Client) initServerPublicKey() {
+	log.Info().Msg("··· [ecdh] updating server public key...")
 	err := c.setServerPublicKey(defaultServerECDHPublicKey, 0x0001)
 	if err != nil {
-		log.Fatalf(
-			"==> [init] failed to init default server public key, error: %s",
+		log.Fatal().Msgf(
+			"··· [ecdh] failed to init default server public key, error: %s",
 			err.Error(),
 		)
 	}
 	if err := c.updateServerPublicKey(); err != nil {
-		log.Printf(
-			"==> [init] failed to init updated server public key, error: %s",
+		log.Error().Msgf(
+			"··· [ecdh] failed to init updated server public key, error: %s",
 			err.Error(),
 		)
 	}
@@ -121,8 +122,8 @@ func (c *Client) updateServerPublicKey() error {
 func (c *Client) initPrivateKey() {
 	var err error
 	if c.privateKey, err = ecdh.GenerateKey(); err != nil {
-		log.Fatalf(
-			"==> [init] failed to init private key, error: %s",
+		log.Fatal().Msgf(
+			"··· [ecdh] failed to init private key, error: %s",
 			err.Error(),
 		)
 	}
@@ -132,7 +133,7 @@ func (c *Client) initRandomPassword() {
 	c.randomPassword = [16]byte{}
 	for i := range c.randomPassword {
 		c.randomPassword[i] = byte(
-			0x41 + c.rand.Intn(1)*0x20 + c.rand.Intn(26), // TODO: fix
+			0x41 + rand.Intn(1)*0x20 + rand.Intn(26), // TODO: fix
 		)
 	}
 }

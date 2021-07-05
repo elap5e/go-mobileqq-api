@@ -15,7 +15,8 @@ import (
 )
 
 func Unmarshal(v []byte, msg *pb.Message) error {
-	body := strings.SplitN(string(v), "\n", 2)[1]
+	// body := strings.SplitN(string(v), "\n", 2)[1]
+	body := string(v)
 	idxes := regexp.MustCompile(`!\[(.*?)\]\((.*?)\)`).FindAllStringSubmatchIndex(body, -1)
 	elems := []*pb.Element{}
 	off := 0

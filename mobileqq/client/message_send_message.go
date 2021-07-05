@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"context"
@@ -31,7 +31,11 @@ func (c *Client) MessageSendMessage(
 	username string,
 	req *pb.MessageSendMessageRequest,
 ) (*pb.MessageSendMessageResponse, error) {
-	if len(req.SyncCookie) == 0 {
+	if req.GetMessageSeq() == 0 {
+		peerUin := req.GetRoutingHead().GetGroup().GetCode()
+		req.MessageSeq = c.getNextSyncSeq(peerUin)
+	}
+	if len(req.GetSyncCookie()) == 0 {
 		req.SyncCookie = c.syncCookie
 	}
 	buf, err := proto.Marshal(req)
@@ -39,9 +43,8 @@ func (c *Client) MessageSendMessage(
 		return nil, err
 	}
 	s2c := codec.ServerToClientMessage{}
-	if err := c.Call(ServiceMethodMessageSendMessage, &codec.ClientToServerMessage{
+	if err := c.rpc.Call(ServiceMethodMessageSendMessage, &codec.ClientToServerMessage{
 		Username: username,
-		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   true,
 	}, &s2c); err != nil {

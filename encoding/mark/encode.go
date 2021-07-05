@@ -9,19 +9,21 @@ import (
 )
 
 func Marshal(msg *pb.Message) ([]byte, error) {
-	head := fmt.Sprintf(
-		"<!--goqq://msg/info?time=%d&type=%d&peer=%d&seq=%d&uid=%d&from=%d&to=%d-->\n",
-		msg.GetMessageHead().GetMessageTime(),
-		msg.GetMessageHead().GetMessageType(),
-		msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
-		msg.GetMessageHead().GetMessageSeq(),
-		msg.GetMessageHead().GetMessageUid(),
-		msg.GetMessageHead().GetFromUin(),
-		msg.GetMessageHead().GetToUin(),
-	)
+	// head := fmt.Sprintf(
+	// 	"<!--goqq://msg/info?time=%d&type=%d&peer=%d&seq=%d&uid=%d&from=%d&to=%d-->\n",
+	// 	msg.GetMessageHead().GetMessageTime(),
+	// 	msg.GetMessageHead().GetMessageType(),
+	// 	msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
+	// 	msg.GetMessageHead().GetMessageSeq(),
+	// 	msg.GetMessageHead().GetMessageUid(),
+	// 	msg.GetMessageHead().GetFromUin(),
+	// 	msg.GetMessageHead().GetToUin(),
+	// )
+	head := ""
 	text := ""
 	skip := 0
-	for _, elem := range msg.GetMessageBody().GetRichText().GetElements() {
+	elems := msg.GetMessageBody().GetRichText().GetElements()
+	for i, elem := range elems {
 		if skip > 0 {
 			skip--
 			continue
@@ -53,9 +55,13 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				v.GetIndex(),
 			)
 		} else if v := elem.GetMarketFace(); v != nil {
+			name := string(v.GetFaceName())
+			if name == "" {
+				name = elems[i+1].GetText().GetData()
+			}
 			text += fmt.Sprintf(
 				"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s)",
-				string(v.GetFaceName()),
+				name,
 				base64.URLEncoding.EncodeToString(v.GetFaceId()),
 				v.GetTabId(),
 				base64.URLEncoding.EncodeToString(v.GetKey()),

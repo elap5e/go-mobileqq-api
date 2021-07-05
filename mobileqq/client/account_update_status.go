@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"context"
@@ -174,9 +174,8 @@ func (c *Client) AccountUpdateStatus(
 		return nil, err
 	}
 	s2c := codec.ServerToClientMessage{}
-	if err := c.Call(ServiceMethodAccountUpdateStatus, &codec.ClientToServerMessage{
+	if err := c.rpc.Call(ServiceMethodAccountUpdateStatus, &codec.ClientToServerMessage{
 		Username: strconv.FormatInt(int64(req.Uin), 10),
-		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   false,
 	}, &s2c); err != nil {

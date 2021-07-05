@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func (req *AuthCheckSMSAndGetSessionTicketsRequest) GetTLVs(
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(
-		c.GetUserSignature(req.GetUsername()).Session.Auth,
+		c.rpc.GetUserSignature(req.GetUsername()).Session.Auth,
 	)
 	tlvs[0x0116] = tlv.NewT116(
 		c.cfg.Client.MiscBitmap,

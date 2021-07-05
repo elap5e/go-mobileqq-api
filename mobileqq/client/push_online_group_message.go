@@ -1,13 +1,14 @@
-package rpc
+package client
 
 import (
 	"context"
-	"log"
 	"strconv"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
@@ -35,12 +36,14 @@ func (c *Client) handlePushOnlineGroupMessage(
 			return nil, err
 		}
 		seq := c.getNextSyncSeq(peerUin)
-		if c.cfg.LogLevel&LogLevelTrace != 0 {
-			log.Printf(
-				"<<< [dump] peer:%d seq:%d from:%s to:%d markdown:\n%s",
-				peerUin, seq, s2c.Username, fromUin, string(data),
-			)
-		}
+		log.Info().
+			Str("@mark", string(data)).
+			Str("from", s2c.Username).
+			Uint64("peer", peerUin).
+			Uint32("seq", seq).
+			Uint64("to", fromUin).
+			Int64("time", time.Now().Unix()).
+			Msg("<== [send] message")
 		_, _ = c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
 				&pb.RoutingHead{Group: &pb.Group{Code: peerUin}},

@@ -1,74 +1,72 @@
-package rpc
+package client
 
 import (
 	"context"
 
-	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthRefreshSMSDataRequest struct {
+type AuthCheckCaptchaAndGetSessionTicketsRequest struct {
 	authGetSessionTicketsRequest
 
 	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
-	SMSAppID     uint64
-	_T174        []byte // c.t174
+	Code         []byte
+	Sign         []byte
 	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	_ExtraData   []byte // c.extraData[0x0542]
+	_ExtraData   []byte // c.t547
 
-	lockType uint8
+	isCaptcha bool
 }
 
-func NewAuthRefreshSMSDataRequest(
+func NewAuthCheckCaptchaAndGetSessionTicketsRequest(
 	username string,
-) *AuthRefreshSMSDataRequest {
-	req := &AuthRefreshSMSDataRequest{
+	code []byte,
+) *AuthCheckCaptchaAndGetSessionTicketsRequest {
+	req := &AuthCheckCaptchaAndGetSessionTicketsRequest{
 		_AuthSession: nil,
-		SMSAppID:     defaultClientSMSAppID,
-		_T174:        nil,
+		Code:         code,
+		Sign:         nil, // nil
 		_MiscBitmap:  0x00000000,
 		SubSigMap:    defaultClientSubSigMap,
 		SubAppIDList: defaultClientSubAppIDList,
 		_ExtraData:   nil,
 
-		lockType: 0x00,
+		isCaptcha: true,
 	}
 	req.SetUsername(username)
 	return req
 }
 
-func (req *AuthRefreshSMSDataRequest) GetTLVs(
+func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(
 	ctx context.Context,
 ) (map[uint16]tlv.TLVCodec, error) {
 	c := ForClient(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
+	if req.isCaptcha {
+		tlvs[0x0193] = tlv.NewT193(req.Code)
+	} else {
+		tlvs[0x0002] = tlv.NewT2(req.Code, req.Sign)
+	}
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(
-		c.GetUserSignature(req.GetUsername()).Session.Auth,
+		c.rpc.GetUserSignature(req.GetUsername()).Session.Auth,
 	)
 	tlvs[0x0116] = tlv.NewT116(
 		c.cfg.Client.MiscBitmap,
 		req.SubSigMap,
 		req.SubAppIDList,
 	)
-	tlvs[0x0174] = tlv.NewT174(c.t174)
-	tlvs[0x017a] = tlv.NewT17A(req.SMSAppID)
-	tlvs[0x0197] = tlv.NewTLV(
-		0x0197,
-		0x0000,
-		bytes.NewBuffer([]byte{req.lockType}),
-	)
-	tlvs[0x0542] = tlv.NewT542(c.extraData[0x0542])
-	req.SetType(0x0008)
+	tlvs[0x0547] = tlv.NewT547(c.extraData[0x0547])
+	req.SetType(0x0002)
 	req.SetServiceMethod(ServiceMethodAuthLogin)
 	return tlvs, nil
 }
 
-func (c *Client) AuthRefreshSMSData(
+func (c *Client) AuthCheckCaptchaAndGetSessionTickets(
 	ctx context.Context,
-	req *AuthRefreshSMSDataRequest,
+	req *AuthCheckCaptchaAndGetSessionTicketsRequest,
 ) (*AuthGetSessionTicketsResponse, error) {
 	return c.AuthGetSessionTickets(ctx, req)
 }

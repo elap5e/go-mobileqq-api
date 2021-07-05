@@ -41,6 +41,7 @@ func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 					Uint32("seq", s2c.Seq).
 					Str("uin", s2c.Username).
 					Msg("··· [send] handled")
+				return
 			}
 		}
 		log.Error().
@@ -50,7 +51,7 @@ func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 			Str("uin", s2c.Username).
 			Msg("··· [send] handled")
 	} else {
-		log.Debug().
+		log.Warn().
 			Str("method", s2c.ServiceMethod).
 			Uint32("seq", s2c.Seq).
 			Str("uin", s2c.Username).

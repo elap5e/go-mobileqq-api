@@ -20,9 +20,9 @@ var rand = _rand.New(_rand.NewSource(time.Now().UnixNano()))
 var ErrShutdown = errors.New("connection is shut down")
 
 type Engine interface {
-	Start(ctx context.Context)
+	Start(ctx context.Context) error
+	Ready(ch chan struct{})
 	Close() error
-	Error() chan error
 
 	Call(
 		serviceMethod string,
@@ -42,6 +42,7 @@ type Engine interface {
 	GetUserSignature(username string) *UserSignature
 
 	SetConfig(cfg *Config)
+	SetUserSignature(username string, sig *UserSignature)
 }
 
 type engine struct {
@@ -63,9 +64,10 @@ type engine struct {
 	shutdown bool
 
 	// heartbeat
-	callback func()
 	interval time.Duration
 	lastRecv *time.Timer
+
+	ready chan struct{}
 }
 
 type Call struct {
@@ -146,14 +148,13 @@ func (e *engine) withContextS2C(s2c *codec.ServerToClientMessage) {
 	}
 }
 
-func (e *engine) Start(ctx context.Context) {
+func (e *engine) Start(ctx context.Context) error {
 	e.ctx = ctx
 	switch strings.ToLower(e.cfg.Network) {
 	case "tcp":
 		conn, err := net.Dial(e.cfg.Network, e.cfg.Address)
 		if err != nil {
-			e.err <- err
-			return
+			return err
 		}
 		log.Info().
 			Msgf("<-> [conn] connected to server %s", conn.RemoteAddr().String())
@@ -162,7 +163,7 @@ func (e *engine) Start(ctx context.Context) {
 		e.shutdown = false
 	}
 	go e.recv()
-	e.interval = 30 * time.Second
+	e.interval = 120 * time.Second
 	e.lastRecv = time.AfterFunc(0, func() {
 		if err := e.HeartbeatAlive(); err != nil {
 			log.Error().
@@ -174,6 +175,18 @@ func (e *engine) Start(ctx context.Context) {
 				Msg("<-> [conn] heartbeat alive")
 		}
 	})
+	e.ready <- struct{}{}
+	select {
+	case err := <-e.err:
+		return err
+	case <-ctx.Done():
+		// TODO: context cancel
+		return nil
+	}
+}
+
+func (e *engine) Ready(ch chan struct{}) {
+	e.ready = ch
 }
 
 func (e *engine) Close() error {
@@ -186,10 +199,6 @@ func (e *engine) Close() error {
 	e.closing = true
 	e.mux.Unlock()
 	return e.codec.Close()
-}
-
-func (e *engine) Error() chan error {
-	return e.err
 }
 
 func (e *engine) Go(
@@ -236,7 +245,7 @@ func (e *engine) GetNextSeq() uint32 {
 	if seq > 1000000 {
 		e.seq = uint32(rand.Int31n(100000)) + 60000
 	}
-	return seq - 1
+	return seq
 }
 
 func (e *engine) GetUserSignature(username string) *UserSignature {
@@ -253,4 +262,8 @@ func (e *engine) SetConfig(cfg *Config) {
 	e.mux.Lock()
 	e.cfg = cfg
 	e.mux.Unlock()
+}
+
+func (e *engine) SetUserSignature(username string, sig *UserSignature) {
+	e.sigs[username] = sig
 }

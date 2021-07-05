@@ -1,4 +1,4 @@
-package rpc
+package client
 
 import (
 	"context"
@@ -37,9 +37,8 @@ func (c *Client) MessageDeleteMessage(
 		return nil, err
 	}
 	s2c := codec.ServerToClientMessage{}
-	if err := c.Call(ServiceMethodMessageDeleteMessage, &codec.ClientToServerMessage{
+	if err := c.rpc.Call(ServiceMethodMessageDeleteMessage, &codec.ClientToServerMessage{
 		Username: username,
-		Seq:      c.getNextSeq(),
 		Buffer:   buf,
 		Simple:   true,
 	}, &s2c); err != nil {

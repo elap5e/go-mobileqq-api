@@ -1,4 +1,4 @@
-package rpc
+package client
 
 var (
 	defaultDeviceOSType    = "android"

@@ -1,4 +1,4 @@
-package rpc
+package client
 
 type PushServiceRequest struct {
 	Uin uint64 `jce:",0" json:",omitempty"`
