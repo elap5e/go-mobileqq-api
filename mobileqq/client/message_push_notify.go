@@ -12,7 +12,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-type PushMessageNotifyRequest struct {
+type MessagePushNotifyRequest struct {
 	Uin         uint64 `jce:",0" json:",omitempty"`
 	Type        uint8  `jce:",1" json:",omitempty"`
 	Service     string `jce:",2" json:",omitempty"`
@@ -27,26 +27,7 @@ type PushMessageNotifyRequest struct {
 	MessageCtrlBuf string       `jce:",10" json:",omitempty"`
 	ServerBuf      []byte       `jce:",11" json:",omitempty"`
 	PingFlag       uint64       `jce:",12" json:",omitempty"`
-	VRIP           uint16       `jce:",13" json:",omitempty"`
-
-	Unknown14 []byte                             `jce:",14" json:",omitempty"`
-	Unknown15 *PushMessageNotifyRequestUnknown15 `jce:",15" json:",omitempty"`
-	Unknown16 *PushMessageNotifyRequestUnknown15 `jce:",16" json:",omitempty"`
-	Unknown17 *PushMessageNotifyRequestUnknown17 `jce:",17" json:",omitempty"`
-}
-
-type PushMessageNotifyRequestUnknown15 struct {
-	Unknown0 uint64 `jce:",0" json:",omitempty"`
-	Unknown1 uint64 `jce:",1" json:",omitempty"`
-	Unknown2 uint64 `jce:",2" json:",omitempty"`
-	Unknown3 uint64 `jce:",3" json:",omitempty"`
-	Unknown4 uint64 `jce:",4" json:",omitempty"`
-}
-
-type PushMessageNotifyRequestUnknown17 struct {
-	Unknown0 string `jce:",0" json:",omitempty"`
-	Unknown1 string `jce:",1" json:",omitempty"`
-	Unknown2 string `jce:",2" json:",omitempty"`
+	Svrip          uint16       `jce:",13" json:",omitempty"`
 }
 
 type MessageInfo struct {
@@ -89,12 +70,12 @@ type TempMessageHead struct {
 	ServiceType uint32 `jce:",1" json:",omitempty"`
 }
 
-func (c *Client) handlePushMessageNotify(
+func (c *Client) handleMessagePushNotify(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
 	msg := uni.Message{}
-	req := PushMessageNotifyRequest{}
+	req := MessagePushNotifyRequest{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
 		"req_PushNotify": &req,
 	}); err != nil {

@@ -39,8 +39,8 @@ func (e *engine) send(call *Call) {
 		}
 	} else {
 		log.Debug().
+			Uint32("@seq", e.c2s.Seq).
 			Str("method", e.c2s.ServiceMethod).
-			Uint32("seq", e.c2s.Seq).
 			Str("uin", e.c2s.Username).
 			Msg("<-- [send]")
 	}

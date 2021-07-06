@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/hex"
 	"strings"
 
 	"github.com/elap5e/go-mobileqq-api/log"
@@ -15,8 +16,8 @@ type HandleFunc func(
 
 func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 	log.Debug().
+		Uint32("@seq", s2c.Seq).
 		Str("method", s2c.ServiceMethod).
-		Uint32("seq", s2c.Seq).
 		Str("uin", s2c.Username).
 		Msg("--> [recv] notify ")
 	if handleFunc, ok := e.handlers[strings.ToLower(s2c.ServiceMethod)]; ok {
@@ -29,16 +30,16 @@ func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 				defer e.c2sMux.Unlock()
 				if err = e.codec.Write(c2s); err == nil {
 					log.Debug().
-						Str("method", s2c.ServiceMethod).
-						Uint32("seq", s2c.Seq).
-						Str("uin", s2c.Username).
+						Uint32("@seq", c2s.Seq).
+						Str("method", c2s.ServiceMethod).
+						Str("uin", c2s.Username).
 						Msg("<-- [send] handled")
 					return
 				}
 			} else {
 				log.Debug().
+					Uint32("@seq", s2c.Seq).
 					Str("method", s2c.ServiceMethod).
-					Uint32("seq", s2c.Seq).
 					Str("uin", s2c.Username).
 					Msg("··· [send] handled")
 				return
@@ -46,14 +47,15 @@ func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 		}
 		log.Error().
 			Err(err).
+			Uint32("@seq", s2c.Seq).
 			Str("method", s2c.ServiceMethod).
-			Uint32("seq", s2c.Seq).
 			Str("uin", s2c.Username).
 			Msg("··· [send] handled")
 	} else {
+		log.Debug().Msg(">>> [dump] \n" + hex.Dump(s2c.Buffer))
 		log.Warn().
+			Uint32("@seq", s2c.Seq).
 			Str("method", s2c.ServiceMethod).
-			Uint32("seq", s2c.Seq).
 			Str("uin", s2c.Username).
 			Msg("··· [send] ignored")
 	}

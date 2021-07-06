@@ -3,10 +3,11 @@ package client
 import (
 	"context"
 
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
-func (c *Client) handlePushOnlineSIDExpired(
+func (c *Client) handleOnlinePushSIDTicketExpired(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
@@ -17,10 +18,11 @@ func (c *Client) handlePushOnlineSIDExpired(
 	// 		NewAuthGetSessionTicketsWithoutPasswordRequest(s2c.Username, false),
 	// 	)
 	// }()
+	log.Warn().Msg("<-> [todo] OnlinePushSIDTicketExpired, user SID ticket needs to be update")
 	return &codec.ClientToServerMessage{
 		Username:      s2c.Username,
 		Seq:           s2c.Seq,
-		ServiceMethod: ServiceMethodPushOnlineSIDExpired,
+		ServiceMethod: ServiceMethodOnlinePushSIDTicketExpired,
 		Buffer:        nil,
 		Simple:        true,
 	}, nil

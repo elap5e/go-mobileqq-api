@@ -70,21 +70,18 @@ func (c *Client) init() {
 }
 
 func (c *Client) initHandlers() {
-	c.rpc.Register(ServiceMethodPushConfigDomain, c.handlePushConfigDomain)
-	c.rpc.Register(ServiceMethodPushConfigRequest, c.handlePushConfigRequest)
-	c.rpc.Register(ServiceMethodPushMessageNotify, c.handlePushMessageNotify)
-	c.rpc.Register(ServiceMethodPushOnlineGroupMessage, c.handlePushOnlineGroupMessage)
-	c.rpc.Register(ServiceMethodPushOnlineSIDExpired, c.handlePushOnlineSIDExpired)
+	c.rpc.Register(ServiceMethodConfigPushDomain, c.handleConfigPushDomain)
+	c.rpc.Register(ServiceMethodConfigPushRequest, c.handleConfigPushRequest)
+	c.rpc.Register(ServiceMethodMessagePushNotify, c.handleMessagePushNotify)
+	c.rpc.Register(ServiceMethodMessagePushReaded, c.handleMessagePushReaded)
+	c.rpc.Register(ServiceMethodOnlinePushMessageSyncC2C, c.handleOnlinePushMessage)
+	c.rpc.Register(ServiceMethodOnlinePushMessageSyncGroup, c.handleOnlinePushMessage)
+	c.rpc.Register(ServiceMethodOnlinePushSIDTicketExpired, c.handleOnlinePushSIDTicketExpired)
 }
 
 func (c *Client) initSync() {
-	// c.syncCookie = make(map[uint64][]byte)
 	c.syncSeq = make(map[uint64]*uint32)
 }
-
-// func (c *Client) getSyncCookie(uin uint64) []byte {
-// 	return c.syncCookie[uin]
-// }
 
 func (c *Client) setSyncSeq(uin uint64, seq uint32) bool {
 	if _, ok := c.syncSeq[uin]; !ok {

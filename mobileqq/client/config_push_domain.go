@@ -12,11 +12,11 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (c *Client) handlePushConfigDomain(
+func (c *Client) handleConfigPushDomain(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
-	data := pb.ConfigDomain{}
+	data := pb.ConfigPushDomain{}
 	if err := proto.Unmarshal(s2c.Buffer, &data); err != nil {
 		return nil, err
 	}

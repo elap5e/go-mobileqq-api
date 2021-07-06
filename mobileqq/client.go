@@ -27,9 +27,9 @@ type Client struct {
 
 func NewClient(opt *Options) *Client {
 	opt.init()
-	data, _ := json.MarshalIndent(opt, "", "  ")
+	data, _ := json.Marshal(opt)
 	log.Debug().
-		Msgf("··· [dump] Go MobileQQ API client option:\n%s", string(data))
+		Msgf("··· [dump] Go MobileQQ API client option:%s", string(data))
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
 		opt:    opt,

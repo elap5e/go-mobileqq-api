@@ -638,7 +638,7 @@ message MessageSendMessageResponse {
 
 message OnlinePushMessage {
   optional Message message = 1;
-  optional bytes svrip = 2;
+  optional int32 svrip = 2;
   optional bytes pushToken = 3;
   optional uint32 pingFlag = 4;
   optional uint32 generalFlag = 5;

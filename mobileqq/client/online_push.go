@@ -7,24 +7,24 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
-type PushOnlineRequest struct {
+type OnlinePushRequest struct {
 	Type   uint32 `jce:",1" json:",omitempty"`
 	Seq    uint64 `jce:",3" json:",omitempty"`
 	Buffer []byte `jce:",2" json:",omitempty"`
 }
 
-type PushOnlineResponse struct {
+type OnlinePushResponse struct {
 	Type   uint32 `jce:",1" json:",omitempty"`
 	Seq    uint64 `jce:",2" json:",omitempty"`
 	Buffer []byte `jce:",3" json:",omitempty"`
 }
 
-func (c *Client) handlePushOnlineRequest(
+func (c *Client) handleOnlinePushRequest(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
 	msg := uni.Message{}
-	req := PushOnlineRequest{}
+	req := OnlinePushRequest{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
 		"req": &req,
 	}); err != nil {

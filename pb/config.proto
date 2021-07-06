@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option go_package = "./;pb";
 
-message ConfigDomain {
+message ConfigPushDomain {
   DomainList domainList = 1;
 }
 

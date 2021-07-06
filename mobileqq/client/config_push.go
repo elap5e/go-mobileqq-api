@@ -11,13 +11,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
-type PushConfigRequest struct {
+type ConfigPushRequest struct {
 	Type   uint32 `jce:",1" json:",omitempty"`
 	Seq    uint64 `jce:",3" json:",omitempty"`
 	Buffer []byte `jce:",2" json:",omitempty"`
 }
 
-type PushConfigResponse struct {
+type ConfigPushResponse struct {
 	Type   uint32 `jce:",1" json:",omitempty"`
 	Seq    uint64 `jce:",2" json:",omitempty"`
 	Buffer []byte `jce:",3" json:",omitempty"`
@@ -150,12 +150,12 @@ type ProxyIPInfo struct {
 	Port uint32 `jce:",2" json:",omitempty"`
 }
 
-func (c *Client) handlePushConfigRequest(
+func (c *Client) handleConfigPushRequest(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
 	msg := uni.Message{}
-	req := PushConfigRequest{}
+	req := ConfigPushRequest{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
 		"PushReq": &req,
 	}); err != nil {
@@ -201,7 +201,7 @@ func (c *Client) handlePushConfigRequest(
 			return nil, err
 		}
 	}
-	resp := &PushConfigResponse{
+	resp := &ConfigPushResponse{
 		Type:   req.Type,
 		Seq:    req.Seq,
 		Buffer: req.Buffer,
@@ -211,7 +211,7 @@ func (c *Client) handlePushConfigRequest(
 		PacketType:  0x00,
 		MessageType: 0x00000000,
 		RequestID:   0x00000000,
-		ServantName: "QQService.PushConfigSvc.MainServant",
+		ServantName: "QQService.ConfigPushSvc.MainServant",
 		FuncName:    "PushResp",
 		Buffer:      []byte{},
 		Timeout:     0x00000000,
@@ -226,7 +226,7 @@ func (c *Client) handlePushConfigRequest(
 	return &codec.ClientToServerMessage{
 		Username:      s2c.Username,
 		Seq:           s2c.Seq,
-		ServiceMethod: ServiceMethodPushConfigResponse,
+		ServiceMethod: ServiceMethodConfigPushResponse,
 		Buffer:        buf,
 		Simple:        true,
 	}, nil

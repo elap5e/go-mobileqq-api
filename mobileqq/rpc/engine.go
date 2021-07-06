@@ -82,14 +82,14 @@ func (call *Call) done() {
 	if call.Error != nil {
 		log.Error().
 			Err(call.Error).
+			Uint32("@seq", call.ClientToServerMessage.Seq).
 			Str("method", call.ServiceMethod).
-			Uint32("seq", call.ClientToServerMessage.Seq).
 			Str("uin", call.ClientToServerMessage.Username).
 			Msg("--> [recv]")
 	} else {
 		log.Debug().
+			Uint32("@seq", call.ClientToServerMessage.Seq).
 			Str("method", call.ServiceMethod).
-			Uint32("seq", call.ClientToServerMessage.Seq).
 			Str("uin", call.ClientToServerMessage.Username).
 			Msg("--> [recv]")
 	}
@@ -163,16 +163,20 @@ func (e *engine) Start(ctx context.Context) error {
 		e.shutdown = false
 	}
 	go e.recv()
-	e.interval = 120 * time.Second
+	e.interval = 60 * time.Second
 	e.lastRecv = time.AfterFunc(0, func() {
 		if err := e.HeartbeatAlive(); err != nil {
 			log.Error().
 				Err(err).
-				Msg("<-x [conn] heartbeat alive")
+				Uint32("@seq", e.c2s.Seq).
+				Str("uin", e.c2s.Username).
+				Msg("<-> [conn] Heartbeat.Alive")
 			e.err <- err
 		} else {
 			log.Info().
-				Msg("<-> [conn] heartbeat alive")
+				Uint32("@seq", e.c2s.Seq).
+				Str("uin", e.c2s.Username).
+				Msg("<-> [conn] Heartbeat.Alive")
 		}
 	})
 	e.ready <- struct{}{}

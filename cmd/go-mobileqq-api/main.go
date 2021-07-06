@@ -39,7 +39,9 @@ configs:
     randomSeed: %d
   logLevel: info
   protocol: android-tablet
-`, time.Now().UnixNano())
+
+targets:
+  - uin: 0`, time.Now().UnixNano())
 
 func init() {
 	log.Info().Msgf("··· [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
@@ -88,7 +90,7 @@ func main() {
 		)); err != nil {
 			return err
 		}
-		for range time.NewTicker(1800 * time.Second).C {
+		for range time.NewTicker(300 * time.Second).C {
 			text := "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)" + time.Now().Local().String()
 			msg := pb.Message{}
 			if err := mark.Unmarshal([]byte(text), &msg); err != nil {

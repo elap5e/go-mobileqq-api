@@ -24,9 +24,6 @@ type Config struct {
 	AuthAddress string
 	AuthCaptcha bool
 
-	NetworkType string
-	NetIPFamily string // None, IPv4, IPv6, Dual
-
 	Engine *client.Config
 }
 
@@ -40,8 +37,6 @@ func NewClientConfigForAndroid() *Config {
 		CacheDir:    cacheDir,
 		AuthAddress: "127.0.0.1:0",
 		AuthCaptcha: true,
-		NetworkType: "Wi-Fi",
-		NetIPFamily: "Dual",
 		Engine: &client.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
@@ -57,8 +52,6 @@ func NewClientConfigForAndroidTablet() *Config {
 		CacheDir:    cacheDir,
 		AuthAddress: "127.0.0.1:0",
 		AuthCaptcha: true,
-		NetworkType: "Wi-Fi",
-		NetIPFamily: "Dual",
 		Engine: &client.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
@@ -74,8 +67,6 @@ func NewClientConfigFromViper() *Config {
 		CacheDir:    cacheDir,
 		AuthAddress: "127.0.0.1:0",
 		AuthCaptcha: true,
-		NetworkType: "Wi-Fi",
-		NetIPFamily: "Dual",
 		Engine: &client.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
@@ -88,24 +79,6 @@ func NewClientConfigFromViper() *Config {
 	}
 	if viper.IsSet("configs.auth.captcha") {
 		cfg.AuthCaptcha = viper.GetBool("configs.auth.captcha")
-	}
-	if viper.IsSet("configs.networkType") {
-		switch strings.ToLower(viper.GetString("configs.networkType")) {
-		case "wifi", "wi-fi":
-			cfg.NetworkType = "Wi-Fi"
-		}
-	}
-	if viper.IsSet("configs.netIPFamily") {
-		switch strings.ToLower(viper.GetString("configs.netIPFamily")) {
-		case "none":
-			cfg.NetIPFamily = "None"
-		case "ipv4":
-			cfg.NetIPFamily = "IPv4"
-		case "ipv6":
-			cfg.NetIPFamily = "IPv6"
-		case "dual":
-			cfg.NetIPFamily = "Dual"
-		}
 	}
 	if viper.IsSet("configs.deviceInfo.randomSeed") {
 		cfg.Engine.Device = client.NewDeviceConfigBySeed(viper.GetInt64("configs.deviceInfo.randomSeed"))
