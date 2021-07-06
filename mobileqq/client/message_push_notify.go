@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -27,7 +28,7 @@ type MessagePushNotifyRequest struct {
 	MessageCtrlBuf string       `jce:",10" json:",omitempty"`
 	ServerBuf      []byte       `jce:",11" json:",omitempty"`
 	PingFlag       uint64       `jce:",12" json:",omitempty"`
-	Svrip          uint16       `jce:",13" json:",omitempty"`
+	Svrip          int32        `jce:",13" json:",omitempty"`
 }
 
 type MessageInfo struct {
@@ -97,6 +98,7 @@ func (c *Client) handleMessagePushNotify(
 		Data    []byte
 	}
 	dataList := []Data{}
+	infoList := []MessageDeleteInfo{}
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
 			log.Info().
@@ -123,7 +125,17 @@ func (c *Client) handleMessagePushNotify(
 
 				// message processed
 				switch msg.GetMessageHead().GetMessageType() {
-				case 0, 26, 64, 38, 48, 53, 61, 63, 78, 81, 103, 107, 110, 111, 114, 118:
+				case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167:
+					switch msg.GetMessageHead().GetC2CCmd() {
+					case 11, 175:
+						infoList = append(infoList, MessageDeleteInfo{
+							FromUin:     fromUin,
+							MessageTime: uint64(msg.GetMessageHead().GetMessageTime()),
+							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
+						})
+					}
+				case 0, 26, 64, 38, 48, 53, 61, 63:
+				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = c.MessageDeleteMessage(ctx, s2c.Username, NewMessageDeleteMessageRequest(
 						&pb.MessageDeleteMessageRequest_MessageItem{
 							FromUin:     msg.GetMessageHead().GetFromUin(),
@@ -160,12 +172,10 @@ func (c *Client) handleMessagePushNotify(
 		seq := c.getNextSyncSeq(data.PeerUin)
 		if i == len(dataList)-1 {
 			log.Info().
-				Str("@mark", string(data.Data)).
-				Uint64("@peer", data.PeerUin).
+				Str("@peer", fmt.Sprintf("%d:%s:%d", data.PeerUin, s2c.Username, data.FromUin)).
 				Uint32("@seq", seq).
 				Int64("@time", time.Now().Unix()).
-				Str("from", s2c.Username).
-				Uint64("to", data.FromUin).
+				Str("mark", string(data.Data)).
 				Msg("<-- [send] message")
 			_, _ = c.MessageSendMessage(
 				ctx, s2c.Username, NewMessageSendMessageRequest(
@@ -178,5 +188,5 @@ func (c *Client) handleMessagePushNotify(
 			)
 		}
 	}
-	return nil, nil
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, infoList, req.Svrip, s2c.Seq)
 }

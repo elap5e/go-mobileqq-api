@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
@@ -37,14 +38,15 @@ func (c *Client) dumpServerToClientMessage(s2c *codec.ServerToClientMessage, msg
 }
 
 func (c *Client) marshalMessage(msg *pb.Message) ([]byte, error) {
+	peerUin := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
+	fromUin := msg.GetMessageHead().GetFromUin()
+	toUin := msg.GetMessageHead().GetToUin()
 	data, err := mark.Marshal(msg)
 	log.Info().
-		Str("@mark", string(data)).
-		Uint64("@peer", msg.GetMessageHead().GetGroupInfo().GetGroupCode()).
+		Str("@peer", fmt.Sprintf("%d:%d:%d", peerUin, fromUin, toUin)).
 		Uint32("@seq", msg.GetMessageHead().GetMessageSeq()).
 		Uint32("@time", msg.GetMessageHead().GetMessageTime()).
-		Uint64("from", msg.GetMessageHead().GetFromUin()).
-		Uint64("to", msg.GetMessageHead().GetToUin()).
+		Str("mark", string(data)).
 		Uint32("type", msg.GetMessageHead().GetMessageType()).
 		Uint64("uid", msg.GetMessageHead().GetMessageUid()).
 		Msg("--> [recv] message")

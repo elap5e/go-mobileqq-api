@@ -99,13 +99,11 @@ func main() {
 			}
 			toUin := viper.GetUint64("targets.0.uin")
 			log.Info().
-				Str("@mark", text).
-				Uint64("@peer", 0).
+				Str("@peer", fmt.Sprintf("0:%s:%d", username, toUin)).
 				Uint32("@seq", 0).
 				Int64("@time", time.Now().Unix()).
-				Str("from", username).
-				Uint64("to", toUin).
-				Msg("<== [send] message")
+				Str("mark", text).
+				Msg("<-- [send] message")
 			if _, err := rpc.MessageSendMessage(
 				ctx, username, client.NewMessageSendMessageRequest(
 					&pb.RoutingHead{C2C: &pb.C2C{Uin: toUin}},
