@@ -52,12 +52,12 @@ func (c *Client) handleOnlinePushMessage(
 		seq := c.getNextSyncSeq(peerUin)
 		log.Info().
 			Str("@mark", string(data)).
+			Uint64("@peer", peerUin).
+			Uint32("@seq", seq).
+			Int64("@time", time.Now().Unix()).
 			Str("from", s2c.Username).
-			Uint64("peer", peerUin).
-			Uint32("seq", seq).
 			Uint64("to", fromUin).
-			Int64("time", time.Now().Unix()).
-			Msg("<== [send] message")
+			Msg("<-- [send] message")
 		_, _ = c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
 				&pb.RoutingHead{Group: &pb.Group{Code: peerUin}},

@@ -99,18 +99,15 @@ func (c *Client) handleMessagePushNotify(
 	dataList := []Data{}
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
-			log.Printf(
-				"~~> [sync] lastReadTime:%d peer:%d message:%d",
-				uinPairMessage.GetLastReadTime(),
-				uinPairMessage.GetPeerUin(),
-				len(uinPairMessage.GetMessages()),
-			)
+			log.Info().
+				Uint32("@peer", uinPairMessage.GetPeerUin()).
+				Uint32("lastReadTime", uinPairMessage.GetLastReadTime()).
+				Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetMessages()))
 			for _, msg := range uinPairMessage.GetMessages() {
 				data, err := c.marshalMessage(msg)
 				if err != nil {
 					return nil, err
 				}
-
 				peerUin := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
 				fromUin := msg.GetMessageHead().GetFromUin()
 				if s2c.Username == strconv.FormatInt(int64(fromUin), 10) {
@@ -161,15 +158,15 @@ func (c *Client) handleMessagePushNotify(
 			return nil, err
 		}
 		seq := c.getNextSyncSeq(data.PeerUin)
-		log.Info().
-			Str("@mark", string(data.Data)).
-			Str("from", s2c.Username).
-			Uint64("peer", data.PeerUin).
-			Uint32("seq", seq).
-			Uint64("to", data.FromUin).
-			Int64("time", time.Now().Unix()).
-			Msg("<== [send] message")
 		if i == len(dataList)-1 {
+			log.Info().
+				Str("@mark", string(data.Data)).
+				Uint64("@peer", data.PeerUin).
+				Uint32("@seq", seq).
+				Int64("@time", time.Now().Unix()).
+				Str("from", s2c.Username).
+				Uint64("to", data.FromUin).
+				Msg("<-- [send] message")
 			_, _ = c.MessageSendMessage(
 				ctx, s2c.Username, NewMessageSendMessageRequest(
 					&pb.RoutingHead{C2C: &pb.C2C{Uin: data.FromUin}},

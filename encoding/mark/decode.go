@@ -149,9 +149,11 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 
 func UnscapeString(s string) string {
 	// s = strings.ReplaceAll(s, "\\n", "\n")
+	// s = strings.ReplaceAll(s, "%5D", "]")
 	// s = strings.ReplaceAll(s, "%5C", "\\")
-	s = strings.ReplaceAll(s, "%5D", "]")
-	s = strings.ReplaceAll(s, "%21", "!")
-	s = strings.ReplaceAll(s, "%5B", "[")
+	// s = strings.ReplaceAll(s, "%5B", "[")
+	// s = strings.ReplaceAll(s, "%21", "!")
+	s = strings.ReplaceAll(s, "%21%5B", "![")
+	s = strings.ReplaceAll(s, "%5D%28", "](")
 	return strings.ReplaceAll(s, "%25", "%")
 }

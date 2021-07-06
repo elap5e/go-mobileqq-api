@@ -41,7 +41,8 @@ configs:
   protocol: android-tablet
 
 targets:
-  - uin: 0`, time.Now().UnixNano())
+  - uin: 0
+`, time.Now().UnixNano())
 
 func init() {
 	log.Info().Msgf("··· [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
@@ -96,9 +97,18 @@ func main() {
 			if err := mark.Unmarshal([]byte(text), &msg); err != nil {
 				return err
 			}
+			toUin := viper.GetUint64("targets.0.uin")
+			log.Info().
+				Str("@mark", text).
+				Uint64("@peer", 0).
+				Uint32("@seq", 0).
+				Int64("@time", time.Now().Unix()).
+				Str("from", username).
+				Uint64("to", toUin).
+				Msg("<== [send] message")
 			if _, err := rpc.MessageSendMessage(
 				ctx, username, client.NewMessageSendMessageRequest(
-					&pb.RoutingHead{C2C: &pb.C2C{Uin: viper.GetUint64("targets.0.uin")}},
+					&pb.RoutingHead{C2C: &pb.C2C{Uin: toUin}},
 					msg.GetContentHead(),
 					msg.GetMessageBody(),
 					0,
