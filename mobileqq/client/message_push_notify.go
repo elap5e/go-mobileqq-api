@@ -28,7 +28,7 @@ type MessagePushNotifyRequest struct {
 	MessageCtrlBuf string       `jce:",10" json:",omitempty"`
 	ServerBuf      []byte       `jce:",11" json:",omitempty"`
 	PingFlag       uint64       `jce:",12" json:",omitempty"`
-	Svrip          int32        `jce:",13" json:",omitempty"`
+	ServerIP       int32        `jce:",13" json:",omitempty"`
 }
 
 type MessageInfo struct {
@@ -102,25 +102,73 @@ func (c *Client) handleMessagePushNotify(
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
 			log.Info().
-				Uint32("@peer", uinPairMessage.GetPeerUin()).
-				Uint32("lastReadTime", uinPairMessage.GetLastReadTime()).
+				Uint32("peer", uinPairMessage.GetPeerUin()).
+				Uint32("readAt", uinPairMessage.GetLastReadTime()).
 				Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetMessages()))
+
 			for _, msg := range uinPairMessage.GetMessages() {
-				data, err := c.marshalMessage(msg)
+				chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
+				peerID := uint64(uinPairMessage.GetPeerUin())
+				fromID := msg.GetMessageHead().GetFromUin()
+				seq := msg.GetMessageHead().GetMessageSeq()
+
+				if msg.GetMessageHead().GetC2CCmd() == 0 {
+					chatID = peerID
+					peerID = 0
+					fromID = 0
+				}
+
+				log.Debug().
+					Str("chat", fmt.Sprintf("%d:%d", chatID, peerID)).
+					Uint64("from", fromID).
+					Uint32("seq", seq).
+					Uint32("time", msg.GetMessageHead().GetMessageTime()).
+					Uint32("type", msg.GetMessageHead().GetMessageType()).
+					Uint64("uid", msg.GetMessageHead().GetMessageUid()).
+					Msg("--> [recv]")
+			}
+
+			for _, msg := range uinPairMessage.GetMessages() {
+				data, err := mark.Marshal(msg)
 				if err != nil {
 					return nil, err
 				}
-				peerUin := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-				fromUin := msg.GetMessageHead().GetFromUin()
-				if s2c.Username == strconv.FormatInt(int64(fromUin), 10) {
-					c.setSyncSeq(peerUin, msg.GetMessageHead().GetMessageSeq())
+
+				show := true
+				chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
+				peerID := uint64(uinPairMessage.GetPeerUin())
+				fromID := msg.GetMessageHead().GetFromUin()
+				chatName := strconv.Itoa(int(chatID))
+				peerName := strconv.Itoa(int(peerID))
+				fromName := strconv.Itoa(int(fromID))
+				seq := msg.GetMessageHead().GetMessageSeq()
+				text := string(data)
+
+				if msg.GetMessageHead().GetC2CCmd() == 0 {
+					chatID = peerID
+					peerID = 0
+					fromID = 0
+					chatName = peerName
+					peerName = ""
+					fromName = ""
+				}
+
+				if s2c.Username == strconv.FormatInt(int64(fromID), 10) {
+					show = c.setSyncSeq(chatID, msg.GetMessageHead().GetMessageSeq())
 				} else if msg.GetMessageHead().GetMessageType() == 166 {
 					// add to data list
 					dataList = append(dataList, Data{
-						PeerUin: peerUin,
-						FromUin: fromUin,
+						PeerUin: chatID,
+						FromUin: fromID,
 						Data:    data,
 					})
+				}
+
+				if show {
+					log.PrintMessage(
+						time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
+						chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
+					)
 				}
 
 				// message processed
@@ -129,7 +177,7 @@ func (c *Client) handleMessagePushNotify(
 					switch msg.GetMessageHead().GetC2CCmd() {
 					case 11, 175:
 						infoList = append(infoList, MessageDeleteInfo{
-							FromUin:     fromUin,
+							FromUin:     fromID,
 							MessageTime: uint64(msg.GetMessageHead().GetMessageTime()),
 							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
 						})
@@ -171,13 +219,7 @@ func (c *Client) handleMessagePushNotify(
 		}
 		seq := c.getNextSyncSeq(data.PeerUin)
 		if i == len(dataList)-1 {
-			log.Info().
-				Str("@peer", fmt.Sprintf("%d:%s:%d", data.PeerUin, s2c.Username, data.FromUin)).
-				Uint32("@seq", seq).
-				Int64("@time", time.Now().Unix()).
-				Str("mark", string(data.Data)).
-				Msg("<-- [send] message")
-			_, _ = c.MessageSendMessage(
+			resp, err := c.MessageSendMessage(
 				ctx, s2c.Username, NewMessageSendMessageRequest(
 					&pb.RoutingHead{C2C: &pb.C2C{Uin: data.FromUin}},
 					msg.GetContentHead(),
@@ -186,7 +228,25 @@ func (c *Client) handleMessagePushNotify(
 					c.syncCookie,
 				),
 			)
+			if err != nil {
+				return nil, err
+			}
+			chatName := strconv.Itoa(int(data.PeerUin))
+			peerName := strconv.Itoa(int(data.FromUin))
+			fromName := s2c.Username
+			chatID := data.PeerUin
+			peerID := data.FromUin
+			fromID, _ := strconv.Atoi(s2c.Username)
+			data, err := mark.Marshal(&msg)
+			if err != nil {
+				return nil, err
+			}
+			text := string(data)
+			log.PrintMessage(
+				time.Unix(int64(resp.GetSendTime()), 0),
+				chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+			)
 		}
 	}
-	return NewOnlinePushMessageResponse(ctx, s2c.Username, infoList, req.Svrip, s2c.Seq)
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, infoList, req.ServerIP, s2c.Seq)
 }

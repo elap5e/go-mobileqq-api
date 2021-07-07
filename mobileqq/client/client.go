@@ -26,6 +26,9 @@ type Client struct {
 	userSignaturesMux sync.RWMutex
 
 	// message
+	channels map[uint64]string
+	contacts map[uint64]string
+
 	syncCookie []byte
 	syncSeq    map[uint64]*uint32
 
@@ -92,6 +95,10 @@ func (c *Client) setSyncSeq(uin uint64, seq uint32) bool {
 		return true
 	}
 	return false
+}
+
+func (c *Client) GetNextSyncSeq(uin uint64) uint32 {
+	return c.getNextSyncSeq(uin)
 }
 
 func (c *Client) getNextSyncSeq(uin uint64) uint32 {

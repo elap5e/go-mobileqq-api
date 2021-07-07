@@ -1,10 +1,14 @@
 package mark
 
 import (
+	"bytes"
+	"compress/zlib"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/elap5e/go-mobileqq-api/encoding/mark/emoticon"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -28,15 +32,25 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			skip--
 			continue
 		}
-		if v := elem.GetText(); v != nil {
+		if v := elem.GetRichMessage(); v != nil {
+			richMessage := v.GetTemplate1()[1:]
+			if v.GetTemplate1()[0] == 1 {
+				reader, _ := zlib.NewReader(bytes.NewReader(richMessage))
+				defer reader.Close()
+				var buf bytes.Buffer
+				io.Copy(&buf, reader)
+				richMessage = buf.Bytes()
+			}
+			text += string(richMessage)
+		} else if v := elem.GetText(); v != nil {
 			attr6Buf := v.GetAttr6Buffer()
 			if len(attr6Buf) < 13 {
-				if id, ok := mapStringFaceID[v.GetData()]; !ok {
+				if id, err := emoticon.ParseFaceType(v.GetData()); err != nil {
 					text += EscapeString(v.GetData())
 				} else {
 					text += fmt.Sprintf(
 						"![%s](goqq://res/face?id=%d)",
-						mapFaceIDString[id],
+						id.String(),
 						id,
 					)
 				}
@@ -49,10 +63,11 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				)
 			}
 		} else if v := elem.GetFace(); v != nil {
+			id := emoticon.FaceType(v.GetIndex())
 			text += fmt.Sprintf(
 				"![%s](goqq://res/face?id=%d)",
-				mapFaceIDString[v.GetIndex()],
-				v.GetIndex(),
+				id.String(),
+				id,
 			)
 		} else if v := elem.GetMarketFace(); v != nil {
 			name := string(v.GetFaceName())
@@ -60,11 +75,13 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				name = elems[i+1].GetText().GetData()
 			}
 			text += fmt.Sprintf(
-				"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s)",
+				"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s&h=%d&w=%d)",
 				name,
 				base64.URLEncoding.EncodeToString(v.GetFaceId()),
 				v.GetTabId(),
 				base64.URLEncoding.EncodeToString(v.GetKey()),
+				v.GetImageHeight(),
+				v.GetImageWidth(),
 			)
 			skip++
 		} else if v := elem.GetCustomFace(); v != nil {
@@ -97,11 +114,12 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			)
 		} else if v := elem.GetSourceMessage(); v != nil {
 			head += fmt.Sprintf(
-				"<!--goqq://msg/reply?time=%d&peer=%d&seq=%d&from=%d-->\n",
+				"<!--goqq://msg/reply?time=%d&chat=%d&peer=%d&from=%d&seq=%d-->\n",
 				v.GetTime(),
 				msg.GetMessageHead().GetGroupInfo().GetGroupCode(),
-				v.GetOrigSeqs()[0],
+				msg.GetMessageHead().GetFromUin(),
 				v.GetFromUin(),
+				v.GetOrigSeqs()[0],
 			)
 		}
 	}

@@ -98,23 +98,29 @@ func main() {
 				return err
 			}
 			toUin := viper.GetUint64("targets.0.uin")
-			log.Info().
-				Str("@peer", fmt.Sprintf("0:%s:%d", username, toUin)).
-				Uint32("@seq", 0).
-				Int64("@time", time.Now().Unix()).
-				Str("mark", text).
-				Msg("<-- [send] message")
-			if _, err := rpc.MessageSendMessage(
+			seq := rpc.GetNextSyncSeq(0)
+			resp, err := rpc.MessageSendMessage(
 				ctx, username, client.NewMessageSendMessageRequest(
 					&pb.RoutingHead{C2C: &pb.C2C{Uin: toUin}},
 					msg.GetContentHead(),
 					msg.GetMessageBody(),
-					0,
+					seq,
 					nil,
 				),
-			); err != nil {
+			)
+			if err != nil {
 				return err
 			}
+			chatName := ""
+			peerName := strconv.Itoa(int(toUin))
+			fromName := username
+			chatID := uint64(0)
+			peerID := toUin
+			fromID, _ := strconv.Atoi(username)
+			log.PrintMessage(
+				time.Unix(int64(resp.GetSendTime()), 0),
+				chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+			)
 		}
 		return nil
 	}); err != nil {

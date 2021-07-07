@@ -10,7 +10,7 @@ import (
 )
 
 func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
-	n, err := checkVaild(data)
+	n, err := checkValid(data)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 	return nil
 }
 
-func checkVaild(v []byte) (int, error) {
+func checkValid(v []byte) (int, error) {
 	n := len(v)
 	if v[0] != 0x02 {
 		return 1, fmt.Errorf("unexpected prefix, got 0x%x", v[0])

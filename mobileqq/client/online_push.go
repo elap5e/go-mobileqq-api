@@ -30,5 +30,6 @@ func (c *Client) handleOnlinePushRequest(
 	}); err != nil {
 		return nil, err
 	}
+	c.dumpServerToClientMessage(s2c, &req)
 	return nil, nil
 }

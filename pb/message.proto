@@ -2,6 +2,15 @@ syntax = "proto3";
 
 option go_package = "./;pb";
 
+/* hummer common element */
+
+message MessageElementInfoServiceType33 {
+  uint32 index = 1;
+  bytes text = 2;
+  bytes compat = 3;
+  bytes buffer = 4;
+}
+
 /* im message body */
 
 message AnonymousGroupMessage {
@@ -25,6 +34,12 @@ message Attribute {
   optional uint32 pitchAndAamily = 8;
   optional string fontName = 9;
   optional bytes reserveData = 10;
+}
+
+message CommonElement {
+  uint32 serviceType = 1;
+  bytes pbElement = 2;
+  uint32 businessType = 3;
 }
 
 message CustomFace {
@@ -117,7 +132,7 @@ message Element {
   // optional string group_post_elem = 50;
   // optional string light_app = 51;
   // optional string eim_info = 52;
-  // optional string common_elem = 53;
+  optional CommonElement commonElement = 53;
 }
 
 message ElementFlags {
@@ -638,7 +653,7 @@ message MessageSendMessageResponse {
 
 message OnlinePushMessage {
   optional Message message = 1;
-  optional int32 svrip = 2;
+  optional int32 serverIp = 2;
   optional bytes pushToken = 3;
   optional uint32 pingFlag = 4;
   optional uint32 generalFlag = 5;
