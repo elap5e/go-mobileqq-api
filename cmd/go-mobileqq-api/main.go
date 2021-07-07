@@ -118,7 +118,7 @@ func main() {
 			peerID := toUin
 			fromID, _ := strconv.Atoi(username)
 			log.PrintMessage(
-				time.Unix(int64(resp.GetSendTime()), 0),
+				time.Unix(resp.GetSendTime(), 0),
 				chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
 			)
 		}

@@ -45,6 +45,9 @@ func (c *Client) handleOnlinePushMessage(
 
 	chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
 	peerID := uint64(0)
+	if chatID == 0 {
+		peerID = msg.GetMessageHead().GetToUin() // TODO: C2C
+	}
 	fromID := int(msg.GetMessageHead().GetFromUin())
 	chatName := strconv.Itoa(int(chatID))
 	peerName := strconv.Itoa(int(peerID))
@@ -61,19 +64,23 @@ func (c *Client) handleOnlinePushMessage(
 		Uint64("uid", msg.GetMessageHead().GetMessageUid()).
 		Msg("--> [recv]")
 
-	infoList := []MessageDeleteInfo{}
-	if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
+	infoList := []MessageDeleteInfo{{
+		FromUin:     uint64(fromID),
+		MessageTime: uint64(msg.GetMessageHead().GetMessageTime()),
+		MessageSeq:  uint16(seq),
+	}}
+
+	if s2c.Username == strconv.FormatInt(int64(fromID), 10) {
+		// c.setSyncSeq(chatID, msg.GetMessageHead().GetMessageSeq())
 		log.PrintMessage(
 			time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
 			chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
 		)
-
-		infoList = append(infoList, MessageDeleteInfo{
-			FromUin:     uint64(fromID),
-			MessageTime: uint64(msg.GetMessageHead().GetMessageTime()),
-			MessageSeq:  uint16(seq),
-		})
-
+	} else {
+		log.PrintMessage(
+			time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
+			chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+		)
 		c.setSyncSeq(chatID, seq)
 		msg := pb.Message{}
 		if err := mark.Unmarshal(data, &msg); err != nil {
@@ -100,7 +107,7 @@ func (c *Client) handleOnlinePushMessage(
 		}
 		text = string(data)
 		log.PrintMessage(
-			time.Unix(int64(resp.GetSendTime()), 0),
+			time.Unix(resp.GetSendTime(), 0),
 			chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
 		)
 	}

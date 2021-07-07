@@ -164,13 +164,6 @@ func (c *Client) handleMessagePushNotify(
 					})
 				}
 
-				if show {
-					log.PrintMessage(
-						time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
-						chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
-					)
-				}
-
 				// message processed
 				switch msg.GetMessageHead().GetMessageType() {
 				case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167:
@@ -181,7 +174,28 @@ func (c *Client) handleMessagePushNotify(
 							MessageTime: uint64(msg.GetMessageHead().GetMessageTime()),
 							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
 						})
+					case 129, 131, 133:
+					case 169, 241, 242, 243:
 					}
+				case 208:
+				case 193:
+				case 734:
+				case 0x0210:
+					// subMsg := pb.MessageType0X210{}
+					// if err = proto.Unmarshal(msg.GetMessageBody().GetMessageContent(), &subMsg); err != nil {
+					// 	log.Error().Err(err).Msg("--> [0210] unmarshal 0x0210")
+					// } else {
+					// 	switch subMsg.GetType() {
+					// 	case 138, 139:
+					// 		subSubMsg := pb.MessageSubType0X8ARequest{}
+					// 		if err = proto.Unmarshal(subMsg.GetContent(), &subSubMsg); err != nil {
+					// 			log.Error().Err(err).Msg("--> [0210] unmarshal 0x0210_0x8a")
+					// 		}
+					// 		subData, _ := json.Marshal(&subSubMsg)
+					// 		fmt.Println(string(subData))
+					// 	}
+					// }
+				case 0x0211:
 				case 0, 26, 64, 38, 48, 53, 61, 63:
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = c.MessageDeleteMessage(ctx, s2c.Username, NewMessageDeleteMessageRequest(
@@ -193,6 +207,13 @@ func (c *Client) handleMessagePushNotify(
 							MessageUid:  msg.GetMessageHead().GetMessageUid(),
 						},
 					))
+				}
+
+				if show {
+					log.PrintMessage(
+						time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
+						chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
+					)
 				}
 			}
 		}
@@ -243,7 +264,7 @@ func (c *Client) handleMessagePushNotify(
 			}
 			text := string(data)
 			log.PrintMessage(
-				time.Unix(int64(resp.GetSendTime()), 0),
+				time.Unix(resp.GetSendTime(), 0),
 				chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
 			)
 		}

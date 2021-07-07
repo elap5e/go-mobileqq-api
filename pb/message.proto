@@ -519,6 +519,36 @@ message MessageHead {
   optional MutilTransHead mutilTransHead = 20;
 }
 
+message MessageType0x210 {
+  uint32 type = 1;
+  bytes content = 2;
+}
+
+message MessageSubType0x8aRequest {
+  repeated Info infos = 1;
+  optional uint32 appId = 2;
+  optional uint32 instId = 3;
+  optional uint32 flag = 4;
+  optional bytes reserved = 5;
+  message Info {
+    optional uint64 fromUin = 1;
+    optional uint64 toUin = 2;
+    optional uint32 messageSeq = 3;
+    optional uint64 messageUid = 4;
+    optional uint64 messageTime = 5;
+    optional uint32 messageRandom = 6;
+    optional uint32 pkgNum = 7;
+    optional uint32 pkgIndex = 8;
+    optional uint32 divSeq = 9;
+    optional uint32 flag = 10;
+    optional WithdrawWordingInfo withdrawWordingInfo = 11;
+    message WithdrawWordingInfo {
+      optional int32 itemId = 1;
+      optional string itemName = 2;
+    }
+  }
+}
+
 message MutilTransHead {
   optional uint32 status = 1;
 }
@@ -644,9 +674,9 @@ message MessageSendMessageRequest {
 }
 
 message MessageSendMessageResponse {
-  optional uint32 result = 1;
+  optional int32 result = 1;
   optional string errorMessage = 2;
-  optional uint32 sendTime = 3;
+  optional int64 sendTime = 3;
 }
 
 /* message online push */
