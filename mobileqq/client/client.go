@@ -62,9 +62,7 @@ func NewClient(cfg *Config, rpc rpc.Engine) *Client {
 }
 
 func (c *Client) init() {
-	c.initRandomKey()
-	c.initPrivateKey()
-	c.initServerPublicKey()
+	c.initCrypto()
 
 	c.initUserSignatures()
 

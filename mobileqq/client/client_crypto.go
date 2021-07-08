@@ -3,6 +3,7 @@ package client
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -10,7 +11,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 
 	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
@@ -18,39 +18,48 @@ import (
 )
 
 var (
-	defaultServerECDHPublicKey = []byte{
-		0x04, 0xeb, 0xca, 0x94, 0xd7, 0x33, 0xe3, 0x99,
-		0xb2, 0xdb, 0x96, 0xea, 0xcd, 0xd3, 0xf6, 0x9a,
-		0x8b, 0xb0, 0xf7, 0x42, 0x24, 0xe2, 0xb4, 0x4e,
-		0x33, 0x57, 0x81, 0x22, 0x11, 0xd2, 0xe6, 0x2e,
-		0xfb, 0xc9, 0x1b, 0xb5, 0x53, 0x09, 0x8e, 0x25,
-		0xe3, 0x3a, 0x79, 0x9a, 0xdc, 0x7f, 0x76, 0xfe,
-		0xb2, 0x08, 0xda, 0x7c, 0x65, 0x22, 0xcd, 0xb0,
-		0x71, 0x9a, 0x30, 0x51, 0x80, 0xcc, 0x54, 0xa8,
-		0x2e,
-	}
-	defaultServerRSAPublicKey, _ = base64.StdEncoding.DecodeString("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJTW4abQJXeVdAODw1CamZH4QJZChyT08ribet1Gp0wpSabIgyKFZAOxeArcCbknKyBrRY3FFI9HgY1AyItH8DOUe6ajDEb6c+vrgjgeCiOiCVyum4lI5Fmp38iHKH14xap6xGaXcBccdOZNzGT82sPDM2Oc6QYSZpfs8EO7TYT7KSB2gaHz99RQ4A/Lel1Vw0krk+DescN6TgRCaXjSGn268jD7lOO23x5JS1mavsUJtOZpXkK9GqCGSTCTbCwZhI33CpwdQ2EHLhiP5RaXZCio6lksu+d8sKTWU1eEiEb3cQ7nuZXLYH7leeYFoPtbFV4RicIWp0/YG+RP7rLPCwIDAQAB")
+	serverECDHPublicKey, _ = hex.DecodeString("04ebca94d733e399b2db96eacdd3f69a8bb0f74224e2b44e3357812211d2e62efbc91bb553098e25e33a799adc7f76feb208da7c6522cdb0719a305180cc54a82e")
+	serverRSAPublicKey, _  = base64.StdEncoding.DecodeString("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJTW4abQJXeVdAODw1CamZH4QJZChyT08ribet1Gp0wpSabIgyKFZAOxeArcCbknKyBrRY3FFI9HgY1AyItH8DOUe6ajDEb6c+vrgjgeCiOiCVyum4lI5Fmp38iHKH14xap6xGaXcBccdOZNzGT82sPDM2Oc6QYSZpfs8EO7TYT7KSB2gaHz99RQ4A/Lel1Vw0krk+DescN6TgRCaXjSGn268jD7lOO23x5JS1mavsUJtOZpXkK9GqCGSTCTbCwZhI33CpwdQ2EHLhiP5RaXZCio6lksu+d8sKTWU1eEiEb3cQ7nuZXLYH7leeYFoPtbFV4RicIWp0/YG+RP7rLPCwIDAQAB")
 )
+
+func (c *Client) initCrypto() {
+	c.initRandomKey()
+	c.initRandomPassword()
+	c.initPrivateKey()
+	c.initServerPublicKey()
+}
 
 func (c *Client) initRandomKey() {
 	c.randomKey = [16]byte{}
 	rand.Read(c.randomKey[:])
 }
 
+func (c *Client) initRandomPassword() {
+	c.randomPassword = [16]byte{}
+	rand.Read(c.randomPassword[:])
+	strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	for i := range c.randomPassword {
+		c.randomPassword[i] = strs[c.randomPassword[i]%52]
+	}
+}
+
+func (c *Client) initPrivateKey() {
+	var err error
+	if c.privateKey, err = ecdh.GenerateKey(); err != nil {
+		log.Fatal().Err(err).
+			Msg("··· [init] failed to generate client ECDH private key")
+	}
+}
+
 func (c *Client) initServerPublicKey() {
-	log.Info().Msg("··· [ecdh] updating server public key...")
-	err := c.setServerPublicKey(defaultServerECDHPublicKey, 0x0001)
-	if err != nil {
-		log.Fatal().Msgf(
-			"··· [ecdh] failed to init default server public key, error: %s",
-			err.Error(),
-		)
+	log.Info().Msg("··· [init] updating server ECDH public key...")
+	if err := c.setServerPublicKey(serverECDHPublicKey, 0x0001); err != nil {
+		log.Fatal().Err(err).
+			Msg("··· [init] failed to set default server ECDH public key")
 	}
 	if err := c.updateServerPublicKey(); err != nil {
-		log.Error().Msgf(
-			"··· [ecdh] failed to init updated server public key, error: %s",
-			err.Error(),
-		)
+		log.Error().Err(err).
+			Msg("··· [init] failed to update server ECDH public key")
 	}
 }
 
@@ -69,9 +78,9 @@ func (c *Client) setServerPublicKey(key []byte, ver uint16) error {
 }
 
 func (c *Client) updateServerPublicKey() error {
-	type ServerPublicKey struct {
+	type serverPublicKey struct {
 		QuerySpan         uint32 `json:"QuerySpan"`
-		PublicKeyMetaData struct {
+		PublicKeyMetadata struct {
 			KeyVersion    uint16 `json:"KeyVer"`
 			PublicKey     string `json:"PubKey"`
 			PublicKeySign string `json:"PubKeySign"`
@@ -84,56 +93,37 @@ func (c *Client) updateServerPublicKey() error {
 		return err
 	}
 	defer resp.Body.Close()
-	data := ServerPublicKey{}
+	data := serverPublicKey{}
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return err
 	}
-	rsaPub, err := x509.ParsePKIXPublicKey(defaultServerRSAPublicKey)
+	pub, err := x509.ParsePKIXPublicKey(serverRSAPublicKey)
 	if err != nil {
 		return err
 	}
 	hashed := sha256.Sum256([]byte(fmt.Sprintf(
 		"305%d%s",
-		data.PublicKeyMetaData.KeyVersion,
-		data.PublicKeyMetaData.PublicKey,
+		data.PublicKeyMetadata.KeyVersion,
+		data.PublicKeyMetadata.PublicKey,
 	)))
 	sig, _ := base64.StdEncoding.DecodeString(
-		data.PublicKeyMetaData.PublicKeySign,
+		data.PublicKeyMetadata.PublicKeySign,
 	)
 	if err := rsa.VerifyPKCS1v15(
-		rsaPub.(*rsa.PublicKey),
+		pub.(*rsa.PublicKey),
 		crypto.SHA256,
 		hashed[:],
 		sig,
 	); err != nil {
 		return err
 	}
-	key, _ := hex.DecodeString(data.PublicKeyMetaData.PublicKey)
+	key, _ := hex.DecodeString(data.PublicKeyMetadata.PublicKey)
 	if err := c.setServerPublicKey(
 		key,
-		data.PublicKeyMetaData.KeyVersion,
+		data.PublicKeyMetadata.KeyVersion,
 	); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (c *Client) initPrivateKey() {
-	var err error
-	if c.privateKey, err = ecdh.GenerateKey(); err != nil {
-		log.Fatal().Msgf(
-			"··· [ecdh] failed to init private key, error: %s",
-			err.Error(),
-		)
-	}
-}
-
-func (c *Client) initRandomPassword() {
-	c.randomPassword = [16]byte{}
-	for i := range c.randomPassword {
-		c.randomPassword[i] = byte(
-			0x41 + rand.Intn(1)*0x20 + rand.Intn(26), // TODO: fix
-		)
-	}
 }

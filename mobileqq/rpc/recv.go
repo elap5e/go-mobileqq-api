@@ -1,7 +1,9 @@
 package rpc
 
 import (
+	"fmt"
 	"io"
+	"os"
 
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
@@ -23,12 +25,15 @@ func (e *engine) recv() {
 		}
 		seq := s2c.Seq
 		e.mux.Lock()
-		e.lastRecv.Reset(e.interval)
+		e.watchDog.Reset(e.interval)
 		call := e.pending[seq]
 		delete(e.pending, seq)
 		e.mux.Unlock()
 
 		if call != nil {
+			if s2c.Code != 0 {
+				call.Error = fmt.Errorf("%s(%d)", s2c.Message, s2c.Code)
+			}
 			if ts2c := call.ServerToClientMessage; ts2c != nil {
 				codec.CopyServerToClientMessage(ts2c, &s2c)
 			}
@@ -58,7 +63,7 @@ func (e *engine) recv() {
 	}
 	e.mux.Unlock()
 	e.c2sMux.Unlock()
-	if err != io.EOF && !closing {
+	if err != io.EOF && !os.IsTimeout(err) && !closing {
 		log.Error().Err(err).Msg("rpc: client protocol error")
 	}
 }

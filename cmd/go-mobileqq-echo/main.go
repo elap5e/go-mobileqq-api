@@ -42,7 +42,7 @@ func main() {
 		Client:   cfg,
 	})
 
-	if err := mqq.Run(ctx, func(ctx context.Context) error {
+	if err := mqq.Run(ctx, func(ctx context.Context, restart chan struct{}) error {
 		if err := mqq.Auth(username, password); err != nil {
 			return err
 		}
@@ -55,7 +55,8 @@ func main() {
 		)); err != nil {
 			return err
 		}
-		select {}
+		<-restart
+		return nil
 	}); err != nil {
 		log.Panic().Err(err).Msg("client unexpected exit")
 	}

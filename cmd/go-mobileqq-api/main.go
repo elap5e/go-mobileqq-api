@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 var (
@@ -44,8 +46,9 @@ targets:
   - uin: 0
 `, time.Now().UnixNano())
 
+var reader = bufio.NewReader(os.Stdin)
+
 func init() {
-	log.Info().Msgf("··· [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
@@ -69,8 +72,39 @@ func init() {
 	}
 }
 
+func send(ctx context.Context, rpc *client.Client, text string) error {
+	msg := pb.Message{}
+	if err := mark.Unmarshal([]byte(text), &msg); err != nil {
+		return err
+	}
+	toUin := viper.GetUint64("targets.0.uin")
+	seq := rpc.GetNextSyncSeq(0)
+	resp, err := rpc.MessageSendMessage(
+		ctx, username, client.NewMessageSendMessageRequest(
+			&pb.RoutingHead{C2C: &pb.C2C{Uin: toUin}},
+			msg.GetContentHead(),
+			msg.GetMessageBody(),
+			seq,
+			nil,
+		),
+	)
+	if err != nil {
+		return err
+	}
+	chatName := ""
+	peerName := strconv.Itoa(int(toUin))
+	fromName := username
+	chatID := uint64(0)
+	peerID := toUin
+	fromID, _ := strconv.Atoi(username)
+	log.PrintMessage(
+		time.Unix(resp.GetSendTime(), 0),
+		chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+	)
+	return nil
+}
+
 func main() {
-	ctx := context.Background()
 	cfg := mobileqq.NewClientConfigFromViper()
 	mqq := mobileqq.NewClient(&mobileqq.Options{
 		BaseDir:  baseDir,
@@ -78,7 +112,7 @@ func main() {
 		Client:   cfg,
 	})
 
-	if err := mqq.Run(ctx, func(ctx context.Context) error {
+	if err := mqq.Run(context.Background(), func(ctx context.Context, restart chan struct{}) error {
 		if err := mqq.Auth(username, password); err != nil {
 			return err
 		}
@@ -91,38 +125,29 @@ func main() {
 		)); err != nil {
 			return err
 		}
-		for range time.NewTicker(300 * time.Second).C {
-			text := "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)" + time.Now().Local().String()
-			msg := pb.Message{}
-			if err := mark.Unmarshal([]byte(text), &msg); err != nil {
-				return err
+		errCh := make(chan error, 1)
+		go func() {
+			for {
+				text, _ := util.ReadLine(reader)
+				if err := send(ctx, rpc, text); err != nil {
+					errCh <- err
+				}
 			}
-			toUin := viper.GetUint64("targets.0.uin")
-			seq := rpc.GetNextSyncSeq(0)
-			resp, err := rpc.MessageSendMessage(
-				ctx, username, client.NewMessageSendMessageRequest(
-					&pb.RoutingHead{C2C: &pb.C2C{Uin: toUin}},
-					msg.GetContentHead(),
-					msg.GetMessageBody(),
-					seq,
-					nil,
-				),
-			)
-			if err != nil {
-				return err
+		}()
+		go func() {
+			for range time.NewTicker(300 * time.Second).C {
+				text := "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)" + time.Now().Local().String()
+				if err := send(ctx, rpc, text); err != nil {
+					errCh <- err
+				}
 			}
-			chatName := ""
-			peerName := strconv.Itoa(int(toUin))
-			fromName := username
-			chatID := uint64(0)
-			peerID := toUin
-			fromID, _ := strconv.Atoi(username)
-			log.PrintMessage(
-				time.Unix(resp.GetSendTime(), 0),
-				chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
-			)
+		}()
+		select {
+		case err := <-errCh:
+			return err
+		case <-restart:
+			return nil
 		}
-		return nil
 	}); err != nil {
 		log.Panic().Err(err).Msg("client unexpected exit")
 	}

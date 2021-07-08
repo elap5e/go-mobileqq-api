@@ -17,9 +17,10 @@ type HandleFunc func(
 func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 	log.Debug().
 		Uint32("@seq", s2c.Seq).
+		Str("@status", "notify").
 		Str("method", s2c.ServiceMethod).
 		Str("uin", s2c.Username).
-		Msg("--> [recv] notify ")
+		Msg("--> [recv]")
 	if handleFunc, ok := e.handlers[strings.ToLower(s2c.ServiceMethod)]; ok {
 		ctx := context.Background()
 		c2s, err := handleFunc(ctx, s2c)
@@ -31,33 +32,36 @@ func (e *engine) handle(s2c *codec.ServerToClientMessage) {
 				if err = e.codec.Write(c2s); err == nil {
 					log.Debug().
 						Uint32("@seq", c2s.Seq).
+						Str("@status", "handle").
 						Str("method", c2s.ServiceMethod).
 						Str("uin", c2s.Username).
-						Msg("<-- [send] handled")
+						Msg("<-- [send]")
 					return
 				}
 			} else {
 				log.Debug().
 					Uint32("@seq", s2c.Seq).
+					Str("@status", "handle").
 					Str("method", s2c.ServiceMethod).
 					Str("uin", s2c.Username).
-					Msg("··· [send] handled")
+					Msg("··· [send]")
 				return
 			}
 		}
-		log.Error().
-			Err(err).
+		log.Error().Err(err).
 			Uint32("@seq", s2c.Seq).
+			Str("@status", "handle").
 			Str("method", s2c.ServiceMethod).
 			Str("uin", s2c.Username).
-			Msg("··· [send] handled")
+			Msg("··· [send]")
 	} else {
-		log.Debug().Msg(">>> [dump] \n" + hex.Dump(s2c.Buffer))
+		log.Debug().Msg(">>> [dump]\n" + hex.Dump(s2c.Buffer))
 		log.Warn().
 			Uint32("@seq", s2c.Seq).
+			Str("@status", "ignore").
 			Str("method", s2c.ServiceMethod).
 			Str("uin", s2c.Username).
-			Msg("··· [send] ignored")
+			Msg("··· [send]")
 	}
 }
 

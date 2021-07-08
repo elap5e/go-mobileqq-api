@@ -5,7 +5,7 @@ import (
 	"errors"
 	_rand "math/rand"
 	"net"
-	"strings"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,6 +28,7 @@ type Engine interface {
 		serviceMethod string,
 		c2s *codec.ClientToServerMessage,
 		s2c *codec.ServerToClientMessage,
+		timeout ...time.Duration,
 	) error
 	Go(
 		serviceMethod string,
@@ -46,13 +47,13 @@ type Engine interface {
 }
 
 type engine struct {
-	cfg   *Config
-	ctx   context.Context
-	err   chan error
-	codec codec.ClientCodec
-	sigs  map[string]*UserSignature
-
+	cfg *Config
 	mux sync.Mutex
+
+	addrs []string
+	codec codec.ClientCodec
+
+	sigs map[string]*UserSignature
 
 	c2s    *codec.ClientToServerMessage
 	c2sMux sync.Mutex
@@ -65,8 +66,10 @@ type engine struct {
 
 	// heartbeat
 	interval time.Duration
-	lastRecv *time.Timer
+	watchDog *time.Timer
 
+	// signals
+	err   chan error
 	ready chan struct{}
 }
 
@@ -121,7 +124,15 @@ func (e *engine) init() {
 	e.handlers = make(map[string]HandleFunc)
 }
 
+func (e *engine) reset() {
+	e.closing = false
+	e.shutdown = false
+}
+
 func (e *engine) withContextC2S(c2s *codec.ClientToServerMessage) {
+	if c2s.Username == "" {
+		c2s.Username = "0"
+	}
 	sig := e.GetUserSignature(c2s.Username)
 	if d2, ok := sig.Tickets["D2"]; ok {
 		c2s.UserD2 = d2.Sig
@@ -149,42 +160,39 @@ func (e *engine) withContextS2C(s2c *codec.ServerToClientMessage) {
 }
 
 func (e *engine) Start(ctx context.Context) error {
-	e.ctx = ctx
-	switch strings.ToLower(e.cfg.Network) {
-	case "tcp":
-		conn, err := net.Dial(e.cfg.Network, e.cfg.Address)
-		if err != nil {
-			return err
-		}
-		log.Info().
-			Msgf("<-> [conn] connected to server %s", conn.RemoteAddr().String())
-		e.codec = tcp.NewClientCodec(conn)
-		e.closing = false
-		e.shutdown = false
+	e.tcpTesting(getServerList("wifi"))
+	conn, err := net.Dial("tcp", e.addrs[0])
+	if err != nil {
+		return err
 	}
+	conn.SetWriteDeadline(time.Time{})
+	log.Info().Msg("<-> [conn] connected to server " + e.addrs[0])
+	e.codec = tcp.NewClientCodec(conn)
+
+	e.reset()
 	go e.recv()
+
 	e.interval = 60 * time.Second
-	e.lastRecv = time.AfterFunc(0, func() {
-		if err := e.HeartbeatAlive(); err != nil {
-			log.Error().
-				Err(err).
-				Uint32("@seq", e.c2s.Seq).
-				Str("uin", e.c2s.Username).
-				Msg("<-> [conn] Heartbeat.Alive")
-			e.err <- err
+	e.watchDog = time.AfterFunc(0, func() {
+		s2c := codec.ServerToClientMessage{}
+		if err := e.HeartbeatAlive(&s2c); err != nil {
+			log.Error().Err(err).
+				Uint32("@seq", s2c.Seq).
+				Str("uin", s2c.Username).
+				Msg("x-x [conn] heartbeat alive")
 		} else {
 			log.Info().
-				Uint32("@seq", e.c2s.Seq).
-				Str("uin", e.c2s.Username).
-				Msg("<-> [conn] Heartbeat.Alive")
+				Uint32("@seq", s2c.Seq).
+				Str("uin", s2c.Username).
+				Msg("<-> [conn] heartbeat alive")
 		}
 	})
+
 	e.ready <- struct{}{}
 	select {
 	case err := <-e.err:
 		return err
 	case <-ctx.Done():
-		// TODO: context cancel
 		return nil
 	}
 }
@@ -195,7 +203,7 @@ func (e *engine) Ready(ch chan struct{}) {
 
 func (e *engine) Close() error {
 	e.mux.Lock()
-	e.lastRecv.Stop()
+	e.watchDog.Stop()
 	if e.closing {
 		e.mux.Unlock()
 		return ErrShutdown
@@ -235,8 +243,21 @@ func (e *engine) Call(
 	serviceMethod string,
 	c2s *codec.ClientToServerMessage,
 	s2c *codec.ServerToClientMessage,
+	timeout ...time.Duration,
 ) error {
+	var err error
+	err = e.codec.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if err != nil {
+		return err
+	}
 	call := <-e.Go(serviceMethod, c2s, s2c, make(chan *Call, 1)).Done
+	err = e.codec.SetReadDeadline(time.Time{})
+	if err != nil {
+		return err
+	}
+	if os.IsTimeout(call.Error) {
+		e.err <- call.Error
+	}
 	return call.Error
 }
 

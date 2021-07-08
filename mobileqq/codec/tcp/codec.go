@@ -1,7 +1,8 @@
 package tcp
 
 import (
-	"io"
+	"net"
+	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
@@ -10,12 +11,12 @@ import (
 var bufPool = bytes.NewPool(0)
 
 type clientCodec struct {
-	conn io.ReadWriteCloser
+	conn net.Conn
 
 	bufResp *bytes.Buffer
 }
 
-func NewClientCodec(conn io.ReadWriteCloser) codec.ClientCodec {
+func NewClientCodec(conn net.Conn) codec.ClientCodec {
 	return &clientCodec{conn: conn}
 }
 
@@ -39,4 +40,16 @@ func (c *clientCodec) read() ([]byte, error) {
 
 func (c *clientCodec) Close() error {
 	return c.conn.Close()
+}
+
+func (c *clientCodec) SetDeadline(t time.Time) error {
+	return c.conn.SetDeadline(t)
+}
+
+func (c *clientCodec) SetReadDeadline(t time.Time) error {
+	return c.conn.SetReadDeadline(t)
+}
+
+func (c *clientCodec) SetWriteDeadline(t time.Time) error {
+	return c.conn.SetWriteDeadline(t)
 }

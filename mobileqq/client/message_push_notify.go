@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/message"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -100,34 +100,8 @@ func (c *Client) handleMessagePushNotify(
 	dataList := []Data{}
 	infoList := []MessageDeleteInfo{}
 	for {
+		message.SyncUinPairMessages(ctx, s2c.Username, resp)
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
-			log.Info().
-				Uint32("peer", uinPairMessage.GetPeerUin()).
-				Uint32("readAt", uinPairMessage.GetLastReadTime()).
-				Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetMessages()))
-
-			for _, msg := range uinPairMessage.GetMessages() {
-				chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-				peerID := uint64(uinPairMessage.GetPeerUin())
-				fromID := msg.GetMessageHead().GetFromUin()
-				seq := msg.GetMessageHead().GetMessageSeq()
-
-				if msg.GetMessageHead().GetC2CCmd() == 0 {
-					chatID = peerID
-					peerID = 0
-					fromID = 0
-				}
-
-				log.Debug().
-					Str("chat", fmt.Sprintf("%d:%d", chatID, peerID)).
-					Uint64("from", fromID).
-					Uint32("seq", seq).
-					Uint32("time", msg.GetMessageHead().GetMessageTime()).
-					Uint32("type", msg.GetMessageHead().GetMessageType()).
-					Uint64("uid", msg.GetMessageHead().GetMessageUid()).
-					Msg("--> [recv]")
-			}
-
 			for _, msg := range uinPairMessage.GetMessages() {
 				data, err := mark.Marshal(msg)
 				if err != nil {

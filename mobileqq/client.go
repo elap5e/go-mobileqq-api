@@ -3,7 +3,6 @@ package mobileqq
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"sync"
 	"time"
 
@@ -17,83 +16,78 @@ type Client struct {
 	rpc    rpc.Engine
 	client *client.Client
 
-	addrs []net.Addr
-
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	ready chan struct{}
+	ready   chan struct{}
+	restart chan struct{}
 }
 
 func NewClient(opt *Options) *Client {
-	opt.init()
-	data, _ := json.Marshal(opt)
-	log.Debug().
-		Msgf("··· [dump] Go MobileQQ API client option:%s", string(data))
 	ctx, cancel := context.WithCancel(context.Background())
+	opt.init()
 	c := &Client{
-		opt:    opt,
-		ctx:    ctx,
-		cancel: cancel,
+		opt:     opt,
+		ctx:     ctx,
+		cancel:  cancel,
+		ready:   make(chan struct{}, 1),
+		restart: make(chan struct{}, 1),
 	}
 	c.init()
 	return c
 }
 
 func (c *Client) init() {
+	log.Info().Msg("··· [init] Go MobileQQ API (" + PackageVersion + ")")
+	p, _ := json.Marshal(c.opt)
+	log.Debug().Msg("··· [init] loaded client option:" + string(p))
 	c.rpc = rpc.NewEngine(c.opt.Engine)
+	c.rpc.Ready(c.ready)
 	c.client = client.NewClient(c.opt.Client.Engine, c.rpc)
 	c.ctx = c.client.WithClient(c.ctx)
-	c.ready = make(chan struct{}, 1)
+}
+
+func (c *Client) connect(ctx context.Context) {
+	if err := c.rpc.Start(ctx); err != nil {
+		log.Error().
+			Msg("x-x [conn] failed to start rpc engine, retry in 5 seconds...")
+		c.restart <- struct{}{}
+		time.Sleep(5 * time.Second)
+	} else {
+		return
+	}
 }
 
 func (c *Client) reconnectUntilClosed(ctx context.Context) {
 	go func() {
 		for {
-			cfg := c.rpc.GetConfig()
-			uris := append(
-				connSocketMobileWiFiIPv4Default,
-				connSocketMobileWiFiIPv6Default...,
-			)
-			cfg.Address, _ = c.benchmark(uris)
-			c.rpc.SetConfig(cfg)
-			c.rpc.Ready(c.ready)
-			if err := c.rpc.Start(ctx); err != nil {
-				log.Error().
-					Err(err).
-					Msg("x-x [conn] failed to start rpc engine, retry in 5 seconds...")
-				time.Sleep(5 * time.Second)
-			} else {
+			c.connect(ctx)
+		}
+	}()
+	<-c.ctx.Done()
+}
+
+func (c *Client) runUntilError(
+	ctx context.Context,
+	run func(ctx context.Context, restart chan struct{}) error,
+) {
+	go func() {
+		for {
+			<-c.ready
+			if err := run(ctx, c.restart); err != nil {
+				log.Error().Err(err).
+					Msg("x-x [conn] runtime error")
+				c.cancel()
 				return
 			}
 		}
 	}()
-	select {
-	case <-ctx.Done():
-		if err := ctx.Err(); err != nil {
-			log.Error().
-				Err(err).
-				Msg("x-x [conn] canceled by context")
-		} else {
-			log.Info().
-				Msg("··· [conn] canceled by context")
-		}
-		c.cancel()
-	case <-c.ctx.Done():
-		if err := ctx.Err(); err != nil {
-			log.Error().
-				Err(err).
-				Msg("x-x [conn] canceled by client context")
-		} else {
-			log.Info().
-				Msg("··· [conn] canceled by client context")
-		}
-	}
+	<-c.ctx.Done()
 }
 
 func (c *Client) Run(
 	ctx context.Context,
-	run func(ctx context.Context) error,
+	run func(ctx context.Context, restart chan struct{}) error,
 ) (err error) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -103,9 +97,7 @@ func (c *Client) Run(
 	}()
 	wg.Add(1)
 	go func() {
-		<-c.ready
-		err = run(ctx)
-		c.cancel()
+		c.runUntilError(ctx, run)
 		wg.Done()
 	}()
 	wg.Wait()

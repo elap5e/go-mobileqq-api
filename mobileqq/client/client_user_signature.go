@@ -151,7 +151,6 @@ func ParseUserSignature(
 			domains[key], _ = buf.DecodeString()
 			_, _ = buf.DecodeUint16()
 		}
-		// TODO: duplicate domain qun.qq.com
 	}
 
 	chgt := map[uint16]uint32{}

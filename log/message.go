@@ -16,3 +16,15 @@ func PrintMessage(time time.Time, chatName, peerName, fromName string, chatID, p
 			Colorize(Colorize(text, ColorBrightWhite, false), ColorBold, false),
 	)
 }
+
+func PrintMessageSimple(time time.Time, chatName, peerName, fromName string, chatID, peerID, fromID uint64, seq uint32, text string) {
+	if chatID == 0 {
+		chatName = peerName
+	}
+	fmt.Println(
+		Colorize(time.Format("[15:04:05]"), ColorBrightBlack, false) +
+			Colorize(fmt.Sprintf("[%s(%d:%d)]", chatName, chatID, peerID), ColorWhite, false) + " " +
+			Colorize(Colorize(fmt.Sprintf("%s:", fromName), ColorBrightCyan, false), ColorBold, false) + " " +
+			Colorize(Colorize(text, ColorBrightWhite, false), ColorBold, false),
+	)
+}

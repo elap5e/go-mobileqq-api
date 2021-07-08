@@ -1,7 +1,14 @@
 package codec
 
+import (
+	"time"
+)
+
 type ClientCodec interface {
 	Close() error
+	SetDeadline(t time.Time) error
+	SetReadDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
 
 	ReadBody(msg *ServerToClientMessage) error
 	ReadHead(msg *ServerToClientMessage) error

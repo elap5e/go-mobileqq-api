@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"crypto/md5"
+	"fmt"
 	"path"
 	"strconv"
 
@@ -64,6 +65,11 @@ func (c *Client) AuthGetSessionTickets(
 		return nil, err
 	}
 	switch resp.Code {
+	default:
+		log.Warn().
+			Str("uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("--> [auth] not implement")
 	case 0x00:
 		// success
 		c.loginExtraData = resp.LoginExtraData
@@ -109,35 +115,35 @@ func (c *Client) AuthGetSessionTickets(
 			c.cfg.BaseDir, PATH_TO_USER_SIGNATURE_JSON,
 		))
 
-		log.Info().Msgf(
-			"^_^ [auth] login success, uin:%s code:0x00",
-			resp.Username,
-		)
+		log.Info().
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("^.^ [auth] login success")
 	case 0x02:
 		// captcha
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
 		c.extraData[0x0547] = resp.T546 // TODO: check
 		if resp.CaptchaSign != "" {
-			log.Warn().Msgf(
-				">_x [auth] need captcha verify, uin %s, url %s, code 0x02",
-				resp.Username, resp.CaptchaSign,
-			)
+			log.Warn().
+				Str("@uin", resp.Username).
+				Uint8("code", resp.Code).
+				Msg("x<- [auth] need captcha verify, url " + resp.CaptchaSign)
 		} else {
-			log.Warn().Msgf(
-				">_x [auth] need picture verify, uin %s, code 0x02",
-				resp.Username,
-			)
+			log.Warn().
+				Str("@uin", resp.Username).
+				Uint8("code", resp.Code).
+				Msg("x<- [auth] need picture verify")
 		}
 	case 0xa0:
 		// device lock
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
 		c.t17b = resp.T17B
-		log.Warn().Msgf(
-			">_x [auth] need sms mobile verify response, uin %s, code 0xa0",
-			resp.Username,
-		)
+		log.Warn().
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x<- [auth] need sms mobile verify response")
 	case 0xef:
 		// device lock
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
@@ -151,40 +157,47 @@ func (c *Client) AuthGetSessionTickets(
 				c.randomPassword[:]...),
 				c.t402...),
 		)
-		log.Warn().Msgf(
-			">_x [auth] need sms mobile verify, uin %s, mobile %s, code 0x%02x, message %s, code 0xef",
-			resp.Username, resp.SMSMobile, resp.Code, resp.Message,
-		)
+		log.Warn().
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Str("info", resp.Message).
+			Msg("x<- [auth] need sms mobile verify, mobile " + resp.SMSMobile)
 	case 0x01:
-		log.Error().Msgf(
-			"x_x [auth] invalid login, uin %s, code 0x01, error %s: %s",
-			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
-		)
+		log.Error().
+			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x-x [auth] invalid login")
 	case 0x06:
-		log.Error().Msgf(
-			"x_x [auth] not implement, uin %s, code 0x06, error %s: %s",
-			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
-		)
+		log.Error().
+			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x-x [auth] not implement")
 	case 0x09:
-		log.Error().Msgf(
-			"x_x [auth] invalid service, uin %s, code 0x09, error %s: %s",
-			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
-		)
+		log.Error().
+			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x-x [auth] invalid service")
 	case 0x10:
-		log.Error().Msgf(
-			"x_x [auth] session expired, uin %s, code 0x10, error %s: %s",
-			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
-		)
+		log.Error().
+			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x-x [auth] session expired")
 	case 0x28:
-		log.Error().Msgf(
-			"x_x [auth] protection mode, uin %s, code 0x10, error %s: %s",
-			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
-		)
+		log.Error().
+			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x-x [auth] protection mode")
 	case 0xed:
-		log.Error().Msgf(
-			"x_x [auth] invalid device, uin %s, code 0xed, error %s: %s",
-			resp.Username, resp.ErrorTitle, resp.ErrorMessage,
-		)
+		log.Error().
+			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).
+			Str("@uin", resp.Username).
+			Uint8("code", resp.Code).
+			Msg("x-x [auth] invalid device")
 	case 0xcc:
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
 
