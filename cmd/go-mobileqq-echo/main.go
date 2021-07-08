@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -20,13 +23,43 @@ var (
 	password   string
 )
 
+var configYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
+
+accounts:
+  - username: 10000
+    password: 123456
+
+configs:
+  auth:
+    address: 127.0.0.1:0
+    captcha: true
+  deviceInfo:
+    randomSeed: %d
+  logLevel: info
+  protocol: android-tablet
+
+targets:
+  - uin: 0
+`, time.Now().UnixNano())
+
 func init() {
-	log.Info().Msgf("··· [init] Go MobileQQ API (%s)", mobileqq.PackageVersion)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(baseDir)
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal().Msg("x_x [init] failed to load config.yaml")
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+			configPath := path.Join(baseDir, "config.yaml")
+			_ = ioutil.WriteFile(
+				configPath,
+				[]byte(configYAML),
+				0600,
+			)
+			log.Fatal().Msgf("x_x [init] create config.yaml in %s", configPath)
+		} else {
+			// Config file was found but another error was produced
+			log.Fatal().Msgf("x_x [init] failed to load config.yaml")
+		}
 	} else {
 		username = viper.GetString("accounts.0.username")
 		password = viper.GetString("accounts.0.password")

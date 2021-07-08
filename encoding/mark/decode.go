@@ -50,9 +50,8 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 						},
 					})
 				case "/face":
-					id := uri.Query().Get("id")
-					if id != "" {
-						tmp, _ := strconv.ParseUint(id, 10, 32)
+					if id := uri.Query().Get("id"); id != "" {
+						tmp, _ := strconv.ParseInt(id, 10, 16)
 						if tmp < 260 {
 							elems = append(elems, &pb.Element{
 								Face: &pb.Face{
