@@ -4,7 +4,7 @@
 
 ## Try MobileQQ client API
 
-Waiting for `v0.1.0-pre`, or you can build it from source.
+Waiting for `v0.1.0-alpha`, or you can build it from source.
 
 ```bash
 # build from source
@@ -22,33 +22,64 @@ go-mobileqq-echo
 
 > **NOTE:** Unstable version, you may lose everything if you **_DO NOT KNOW_** what you did!
 
+### Account
+
+1. Update status
+
 ### Auth
 
-1. Captcha **[recommand]** (click twice! open the link and drag the slider)
-2. Picture verification
-3. SMS Code verification
-4. Auto-processing auth response
-5. Auth without password (signature auth)
+1. Check captcha (click twice! open the link and drag the slider) **[recommand]**
+2. Check picture (integrated with iTerm2)
+3. Check SMS (confirm to refresh SMS)
+4. Password/Non-Password sign in
+5. Auto-processing auth response
+6. Auto-unlocking device
 
 ### Message
 
-1. Receiving and sending messages
-2. Markdown message decoding
+1. Delete message
+2. Get message
+3. Send message
+4. Handle online push message
+5. Handle push notify
+6. Handle push readed (not fully implement)
+
+## Packages
+
+### Crypto
+
+1. ECDH key exchange
+2. TEA cipher encrypt/decrypt
+
+### Encoding
+
+1. JCE Marshal/Unmarshal
+2. Markdown (with emoticon, not fully implement)
+3. OICQ Marshal/Unmarshal
+4. UNI Marshal/Unmarshal
+
+### RPC
+
+1. Codec interface
+2. Heartbeat alive
+3. Server notify
+4. TCP dialing test
+
+### Others
+
+1. Bytes (not fully implement)
+2. Protobuf (not fully implement)
+3. TLVs (not fully implement)
 
 ## TODO
 
 > just a plan here
 
-### Release `v0.1.0-pre`
-
-1. `Markdown` messages full support
-2. Multi-users login
-
-### Future Plans
-
-1. Use local database (Release `v0.1.0`)
-2. Support more protocols (Release `v0.1.0`)
-3. `Telegram Bot API`
+1. Full support `Markdown` messages (Release `v0.1.0-alpha`)
+2. Multi-users login (Release `v0.1.0-alpha`)
+3. Use local database (Release `v0.1.0`)
+4. Support more protocols (Release `v0.1.0`)
+5. `Telegram Bot API`
 
 ## License
 
