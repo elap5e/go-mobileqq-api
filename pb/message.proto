@@ -11,6 +11,18 @@ message MessageElementInfoServiceType33 {
   bytes buffer = 4;
 }
 
+message MessageElementInfoServiceType37 {
+  bytes packId = 1;
+  bytes stickerId = 2;
+  uint32 qsId = 3;
+  uint32 sourceType = 4;
+  uint32 stickerType = 5;
+  bytes resultId = 6;
+  bytes text = 7;
+  bytes surpriseId = 8;
+  uint32 randomType = 9;
+}
+
 /* im message body */
 
 message AnonymousGroupMessage {

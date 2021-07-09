@@ -261,6 +261,7 @@ const (
 	U8001U8272U75DE_Face      FaceType = 321 // "/老色痞"
 	U62D2U7EDD_Face           FaceType = 322 // "/拒绝"
 	U5ACCU5F03_Face           FaceType = 323 // "/嫌弃"
+	U5403U7CD6_Face           FaceType = 324 // "/吃糖"
 )
 
 func (t FaceType) String() string {
@@ -771,6 +772,8 @@ func (t FaceType) String() string {
 		return "/拒绝"
 	case U5ACCU5F03_Face:
 		return "/嫌弃"
+	case U5403U7CD6_Face:
+		return "/吃糖"
 	}
 }
 
@@ -1282,5 +1285,7 @@ func ParseFaceType(s string) (FaceType, error) {
 		return U62D2U7EDD_Face, nil
 	case "/嫌弃":
 		return U5ACCU5F03_Face, nil
+	case "/吃糖":
+		return U5403U7CD6_Face, nil
 	}
 }

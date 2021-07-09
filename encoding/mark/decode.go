@@ -59,19 +59,44 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 								},
 							})
 						} else {
+							pid, _ := base64.URLEncoding.DecodeString(uri.Query().Get("pid"))
+							sid, _ := base64.URLEncoding.DecodeString(uri.Query().Get("sid"))
 							des := []byte(emoticon.FaceType(tmp).String())
-							buf, _ := proto.Marshal(&pb.MessageElementInfoServiceType33{
-								Index:  uint32(tmp),
-								Text:   des,
-								Compat: des,
-							})
-							elems = append(elems, &pb.Element{
-								CommonElement: &pb.CommonElement{
-									ServiceType:  33,
-									PbElement:    buf,
-									BusinessType: 1,
-								},
-							})
+							if len(pid)+len(sid) == 0 {
+								buf, _ := proto.Marshal(&pb.MessageElementInfoServiceType33{
+									Index:  uint32(tmp),
+									Text:   des,
+									Compat: des,
+								})
+								elems = append(elems, &pb.Element{
+									CommonElement: &pb.CommonElement{
+										ServiceType:  33,
+										PbElement:    buf,
+										BusinessType: 1,
+									},
+								})
+							} else {
+								buf, _ := proto.Marshal(&pb.MessageElementInfoServiceType37{
+									PackId:      pid,
+									StickerId:   sid,
+									QsId:        uint32(tmp),
+									SourceType:  1,
+									StickerType: 1,
+									Text:        des,
+								})
+								elems = append(elems, &pb.Element{
+									CommonElement: &pb.CommonElement{
+										ServiceType:  37,
+										PbElement:    buf,
+										BusinessType: 1,
+									},
+								})
+								elems = append(elems, &pb.Element{
+									Text: &pb.Text{
+										Data: body[idx[2]:idx[3]],
+									},
+								})
+							}
 						}
 					}
 				case "/marketFace":

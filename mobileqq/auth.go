@@ -19,8 +19,6 @@ import (
 	"github.com/elap5e/go-mobileqq-api/util"
 )
 
-const PATH_TO_AUTH_PICTURE_JPG = "picture.jpg"
-
 const tmplAuthCaptcha = `<!DOCTYPE html>
 <html>
 <head lang="zh-CN">
@@ -68,20 +66,17 @@ func (c *Client) handleAuthResponse(
 		if resp.CaptchaSign != "" {
 			l, err := net.Listen("tcp", c.opt.Client.AuthAddress)
 			if err != nil {
-				log.Fatal().Msgf("listen:%+s\n", err)
+				log.Fatal().Err(err).
+					Msg("x-x [auth] failed to start server")
 			}
 			addr := l.Addr().(*net.TCPAddr).String()
 			u, _ := url.Parse(string(resp.CaptchaSign))
-			info := ".......... ........ >_< [info] 1st, submit captcha manually: " + resp.CaptchaSign + "\n"
-			info += ".......... ........ >_< [info] 2nd, submit captcha by popup: http://" + addr + "/api/captcha?" + u.RawQuery
-			log.Info().Msgf(">_< [info] verify captcha:\n%s\n", info)
+			log.Info().Msg(
+				">_< [auth] verify captcha:\n" +
+					"1st, legacy (deprecated): " + resp.CaptchaSign + "\n" +
+					"2nd, local: http://" + addr + "/api/captcha?" + u.RawQuery,
+			)
 			done := make(chan string, 1)
-			// ctx, cancel := context.WithCancel(context.Background())
-			// go func() {
-			// 	fmt.Printf(".......... ........ >_< [info] captcha verify code: ")
-			// 	ticket, _ := util.ReadLineWithCtx(ctx, reader)
-			// 	done <- ticket
-			// }()
 			mux := http.NewServeMux()
 			mux.Handle("/api/captcha", http.HandlerFunc(
 				func(w http.ResponseWriter, r *http.Request) {
@@ -92,11 +87,8 @@ func (c *Client) handleAuthResponse(
 					case http.MethodPost:
 						w.WriteHeader(http.StatusOK)
 						ticket := r.FormValue("ticket")
-						// fmt.Println()
-						// cancel()
-						log.Info().Msgf(
-							">_< [info] got captcha verify code: %s",
-							ticket,
+						log.Info().Msg(
+							">_< [auth] got captcha verify code: " + ticket,
 						)
 						done <- ticket
 					}
@@ -108,7 +100,8 @@ func (c *Client) handleAuthResponse(
 			go func() {
 				err := srv.Serve(l)
 				if err != nil && err != http.ErrServerClosed {
-					log.Fatal().Msgf("listen:%+s\n", err)
+					log.Fatal().Err(err).
+						Msg("x-x [auth] failed to start server")
 				}
 			}()
 			ticket := <-done
@@ -120,7 +113,8 @@ func (c *Client) handleAuthResponse(
 				cancel()
 			}()
 			if err := srv.Shutdown(ctxShutDown); err != nil {
-				log.Fatal().Msgf("server Shutdown Failed:%+s", err)
+				log.Fatal().Err(err).
+					Msg("x-x [auth] failed to shutdown server")
 			}
 			return c.client.AuthCheckCaptchaAndGetSessionTickets(
 				c.ctx,
@@ -130,27 +124,26 @@ func (c *Client) handleAuthResponse(
 				),
 			)
 		} else {
-			info := ".......... ........ >_< [info] picture verify code: "
-			log.Info().Msgf(
-				">_< [info] picture verify:\n\033]1337;File=name=picture.jpg;inline=1;width=11;height=2:%s\a(please check out picture.jpg)\n%s",
-				base64.StdEncoding.EncodeToString(resp.PictureData), info,
+			file := fmt.Sprintf(
+				"picture-%s.jpg", time.Now().Local().Format("20060102150405"),
+			)
+			log.Info().Msg(
+				">_< [auth] picture verify, enter picture verify code:",
 			)
 			_ = ioutil.WriteFile(
-				path.Join(
-					c.opt.CacheDir,
-					resp.Username,
-					fmt.Sprintf(
-						"picture-%s.jpg",
-						time.Now().Local().Format("20060102150405"),
-					),
-				),
+				path.Join(c.opt.CacheDir, resp.Username, file),
 				resp.PictureData,
 				0600,
 			)
+			fmt.Println(
+				"\033]1337;File=name=" + file + ";inline=1;width=11;height=2:" +
+					base64.StdEncoding.EncodeToString(resp.PictureData) +
+					"\a(please check out picture.jpg)",
+			)
+			fmt.Print(">>> ")
 			code, _ := util.ReadLine(reader)
 			return c.client.AuthCheckPictureAndGetSessionTickets(
-				c.ctx,
-				client.NewAuthCheckPictureAndGetSessionTicketsRequest(
+				c.ctx, client.NewAuthCheckPictureAndGetSessionTicketsRequest(
 					resp.Username,
 					[]byte(code),
 					resp.PictureSign,
@@ -159,43 +152,41 @@ func (c *Client) handleAuthResponse(
 		}
 	case 0x01:
 		return nil, fmt.Errorf("invalid password(0x01)")
-	case 0x0a: // TODO: check
+	case 0x0a:
 		return nil, fmt.Errorf("service temporarily unavailable(0x0a)")
 	case 0x9a:
 		return nil, fmt.Errorf("service temporarily unavailable(0x9a)")
-	case 0xa0: // TODO: check
-		info := ".......... ........ >_< [info] sms verification code: "
-		log.Info().Msgf(
-			">_< [info] sms verification mobile %s\n%s",
-			resp.SMSMobile, info,
+	case 0xa0:
+		log.Info().Msg(
+			">_< [auth] sms verify mobile " + resp.SMSMobile +
+				", enter sms verify code:",
 		)
+		fmt.Print(">>> ")
 		code, _ := util.ReadLine(reader)
 		return c.client.AuthCheckSMSAndGetSessionTickets(
-			c.ctx,
-			client.NewAuthCheckSMSAndGetSessionTicketsRequest(
+			c.ctx, client.NewAuthCheckSMSAndGetSessionTicketsRequest(
 				resp.Username,
 				[]byte(code),
 			),
 		)
 	case 0xa1:
-		return nil, fmt.Errorf("too many sms verification requests(0xa1)")
+		return nil, fmt.Errorf("too many sms verify requests(0xa1)")
 	case 0xa2:
-		return nil, fmt.Errorf("frequent sms verification requests(0xa2)")
+		return nil, fmt.Errorf("frequent sms verify requests(0xa2)")
 	case 0xa4:
 		return nil, fmt.Errorf("bad requests(0xa4)")
 	case 0xed:
 		return nil, fmt.Errorf("too many failures(0xed)")
 	case 0xef:
 		if resp.SMSMobile != "" {
-			info := ".......... ........ >_< [info] press ENTER to send sms verification request: "
-			log.Info().Msgf(
-				">_< [info] sms verification mobile %s\n%s",
-				resp.SMSMobile, info,
+			log.Info().Msg(
+				">_< [auth] sms verify mobile " + resp.SMSMobile +
+					", press ENTER to send sms verify request:",
 			)
+			fmt.Print(">>> ")
 			_, _ = util.ReadLine(reader)
 			return c.client.AuthRefreshSMSData(
-				c.ctx,
-				client.NewAuthRefreshSMSDataRequest(resp.Username),
+				c.ctx, client.NewAuthRefreshSMSDataRequest(resp.Username),
 			)
 		}
 	}

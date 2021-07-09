@@ -81,12 +81,16 @@ func (c *Client) AuthGetSessionTickets(
 		default:
 			log.Error().Msgf("x_x [oicq] type:0x%04x", msg.Type)
 			copy(key[:], sig.Tickets["A1"].Key)
-		case 0x0009, 0x000f, 0x0014: // ???
+		case 0x0007: // AuthCheckSMSAndGetSessionTickets
 			copy(key[:], sig.Tickets["A1"].Key)
-		case 0x000a:
+		case 0x0009: // AuthGetSessionTicketsWithPassword
+			copy(key[:], sig.Tickets["A1"].Key)
+		case 0x000a: // AuthGetSessionTicketsWithoutPassword.A2
 			copy(key[:], sig.Tickets["A2"].Key)
-		case 0x000b:
+		case 0x000b: // AuthGetSessionTicketsWithoutPassword.D2
 			key = md5.Sum(sig.Tickets["D2"].Key)
+		case 0x0014: // AuthUnlockDevice
+			copy(key[:], sig.Tickets["A1"].Key)
 		}
 		t119, err := crypto.NewCipher(key).Decrypt(resp.T119)
 		if err != nil {
@@ -143,7 +147,7 @@ func (c *Client) AuthGetSessionTickets(
 		log.Warn().
 			Str("@uin", resp.Username).
 			Uint8("code", resp.Code).
-			Msg("x<- [auth] need sms mobile verify response")
+			Msg("x<- [auth] need sms verify response")
 	case 0xef:
 		// device lock
 		c.SetUserAuthSession(resp.Username, resp.AuthSession)
@@ -161,7 +165,7 @@ func (c *Client) AuthGetSessionTickets(
 			Str("@uin", resp.Username).
 			Uint8("code", resp.Code).
 			Str("info", resp.Message).
-			Msg("x<- [auth] need sms mobile verify, mobile " + resp.SMSMobile)
+			Msg("x<- [auth] need sms verify, mobile " + resp.SMSMobile)
 	case 0x01:
 		log.Error().
 			Err(fmt.Errorf("%s: %s", resp.ErrorTitle, resp.ErrorMessage)).

@@ -70,7 +70,7 @@ func NewClientConfigFromViper() *Config {
 		Engine: &client.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
-			Client:   client.NewClientConfigForAndroidTablet(),
+			Client:   client.NewClientConfig(),
 			Device:   client.NewDeviceConfig(),
 		},
 	}

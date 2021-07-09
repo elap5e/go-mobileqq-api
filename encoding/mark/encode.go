@@ -10,6 +10,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark/emoticon"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 func Marshal(msg *pb.Message) ([]byte, error) {
@@ -42,18 +43,34 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				richMessage = buf.Bytes()
 			}
 			text += string(richMessage)
+		} else if v := elem.GetCommonElement(); v != nil {
+			switch v.GetServiceType() {
+			case 33: // extra face
+				info := pb.MessageElementInfoServiceType33{}
+				_ = proto.Unmarshal(v.GetPbElement(), &info)
+				id := emoticon.FaceType(info.GetIndex())
+				text += fmt.Sprintf(
+					"![%s](goqq://res/face?id=%d)",
+					id.String(),
+					id,
+				)
+			case 37: // extra big face
+				info := pb.MessageElementInfoServiceType37{}
+				_ = proto.Unmarshal(v.GetPbElement(), &info)
+				id := emoticon.FaceType(info.GetQsId())
+				text += fmt.Sprintf(
+					"![%s](goqq://res/face?id=%d&pid=%s&sid=%s)",
+					id.String(),
+					id,
+					base64.URLEncoding.EncodeToString(info.GetPackId()),
+					base64.URLEncoding.EncodeToString(info.GetStickerId()),
+				)
+				skip++
+			}
 		} else if v := elem.GetText(); v != nil {
 			attr6Buf := v.GetAttr6Buffer()
 			if len(attr6Buf) < 13 {
-				if id, err := emoticon.ParseFaceType(v.GetData()); err != nil {
-					text += EscapeString(v.GetData())
-				} else {
-					text += fmt.Sprintf(
-						"![%s](goqq://res/face?id=%d)",
-						id.String(),
-						id,
-					)
-				}
+				text += EscapeString(v.GetData())
 			} else {
 				uin := uint64(attr6Buf[7])<<24 + uint64(attr6Buf[8])<<16 + uint64(attr6Buf[9])<<8 + uint64(attr6Buf[10])
 				text += fmt.Sprintf(

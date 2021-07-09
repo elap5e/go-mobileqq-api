@@ -28,12 +28,9 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 		return err
 	}
 	buf = bytes.NewBuffer(tmp)
-	// log.Printf("--> [recv] encryptMethod 0x%02x, dump oicq:\n%s", msg.EncryptMethod, hex.Dump(buf.Bytes()))
 	if err := unmarshalData(ctx, buf, msg); err != nil {
 		return err
 	}
-	// log.Printf("type 0x%04x, code 0x%02x", msg.Type, msg.Code)
-	// tlv.DumpTLVs(ctx, msg.TLVs)
 	return nil
 }
 

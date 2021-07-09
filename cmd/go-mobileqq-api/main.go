@@ -43,7 +43,7 @@ configs:
   deviceInfo:
     randomSeed: %d
   logLevel: info
-  protocol: android-tablet
+  protocol: android
 
 targets:
   - id: 0:10000
