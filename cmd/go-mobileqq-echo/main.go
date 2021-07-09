@@ -39,7 +39,7 @@ configs:
   protocol: android-tablet
 
 targets:
-  - uin: 0
+  - id: 0:10000
 `, time.Now().UnixNano())
 
 func init() {

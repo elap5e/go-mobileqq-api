@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -25,6 +26,8 @@ var (
 	baseDir    = path.Join(homeDir, "."+mobileqq.PackageName)
 	username   string
 	password   string
+	chatID     uint64
+	peerID     uint64
 )
 
 var configYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
@@ -43,7 +46,7 @@ configs:
   protocol: android-tablet
 
 targets:
-  - uin: 0
+  - id: 0:10000
 `, time.Now().UnixNano())
 
 var reader = bufio.NewReader(os.Stdin)
@@ -69,19 +72,37 @@ func init() {
 	} else {
 		username = viper.GetString("accounts.0.username")
 		password = viper.GetString("accounts.0.password")
+		id := strings.Split(viper.GetString("targets.0.id"), ":")
+		_ = id[1]
+		chatID, _ = strconv.ParseUint(id[0], 10, 64)
+		peerID, _ = strconv.ParseUint(id[1], 10, 64)
 	}
 }
 
 func send(ctx context.Context, rpc *client.Client, text string) error {
+	fromID, _ := strconv.ParseUint(username, 10, 64)
+	chatName := strconv.Itoa(int(chatID))
+	peerName := strconv.Itoa(int(peerID))
+	fromName := strconv.Itoa(int(fromID))
+	seq := rpc.GetNextMessageSeq(fmt.Sprintf("%d:%d", chatID, peerID))
+	routingHead := &pb.RoutingHead{}
+	if peerID == 0 {
+		routingHead = &pb.RoutingHead{Group: &pb.Group{Code: chatID}}
+	} else if chatID == 0 {
+		routingHead = &pb.RoutingHead{C2C: &pb.C2C{Uin: peerID}}
+	} else {
+		routingHead = &pb.RoutingHead{
+			GroupTemp: &pb.GroupTemp{Code: chatID, ToUin: peerID},
+		}
+	}
+
 	msg := pb.Message{}
 	if err := mark.Unmarshal([]byte(text), &msg); err != nil {
 		return err
 	}
-	toUin := viper.GetUint64("targets.0.uin")
-	seq := rpc.GetNextSyncSeq(0)
 	resp, err := rpc.MessageSendMessage(
 		ctx, username, client.NewMessageSendMessageRequest(
-			&pb.RoutingHead{C2C: &pb.C2C{Uin: toUin}},
+			routingHead,
 			msg.GetContentHead(),
 			msg.GetMessageBody(),
 			seq,
@@ -91,15 +112,10 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 	if err != nil {
 		return err
 	}
-	chatName := ""
-	peerName := strconv.Itoa(int(toUin))
-	fromName := username
-	chatID := uint64(0)
-	peerID := toUin
-	fromID, _ := strconv.Atoi(username)
+
 	log.PrintMessage(
 		time.Unix(resp.GetSendTime(), 0),
-		chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+		chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
 	)
 	return nil
 }
