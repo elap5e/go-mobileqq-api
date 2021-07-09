@@ -64,6 +64,7 @@ func (e *engine) recv() {
 	e.mux.Unlock()
 	e.c2sMux.Unlock()
 	if err != io.EOF && !os.IsTimeout(err) && !closing {
-		log.Error().Err(err).Msg("rpc: client protocol error")
+		log.Error().Err(err).
+			Msg("--> [recv] client protocol")
 	}
 }

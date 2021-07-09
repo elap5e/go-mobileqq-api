@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 
 	"google.golang.org/protobuf/proto"
 
@@ -21,7 +23,7 @@ func NewMessageSendMessageRequest(
 		ContentHead: contentHead,
 		MessageBody: messageBody,
 		MessageSeq:  seq,
-		MessageRand: 0x00000000,
+		MessageRand: 0,
 		SyncCookie:  cookie,
 	}
 }
@@ -32,28 +34,36 @@ func (c *Client) MessageSendMessage(
 	req *pb.MessageSendMessageRequest,
 ) (*pb.MessageSendMessageResponse, error) {
 	if req.GetMessageSeq() == 0 {
-		peerUin := req.GetRoutingHead().GetGroup().GetCode()
-		req.MessageSeq = c.getNextSyncSeq(peerUin)
+		chatID := req.GetRoutingHead().GetGroup().GetCode()
+		peerID := req.GetRoutingHead().GetC2C().GetUin()
+		id := fmt.Sprintf("%d:%d", chatID, peerID)
+		req.MessageSeq = c.getNextMessageSeq(id)
+	}
+	if req.GetMessageRand() == 0 {
+		req.MessageRand = rand.Uint32()
 	}
 	if len(req.GetSyncCookie()) == 0 {
 		req.SyncCookie = c.syncCookie
 	}
+
 	buf, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	s2c := codec.ServerToClientMessage{}
-	if err := c.rpc.Call(ServiceMethodMessageSendMessage, &codec.ClientToServerMessage{
+	c2s, s2c := codec.ClientToServerMessage{
 		Username: username,
 		Buffer:   buf,
 		Simple:   true,
-	}, &s2c); err != nil {
+	}, codec.ServerToClientMessage{}
+	err = c.rpc.Call(ServiceMethodMessageSendMessage, &c2s, &s2c)
+	if err != nil {
 		return nil, err
 	}
 	resp := pb.MessageSendMessageResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}
+
 	c.dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

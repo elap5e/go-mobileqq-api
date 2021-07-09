@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	_rand "math/rand"
 	"net"
 	"os"
@@ -102,9 +103,12 @@ func (call *Call) done() {
 	default:
 		// We don't want to block here. It is the caller's responsibility to make
 		// sure the channel has enough buffer space. See comment in Go().
-		log.Warn().Msg(
-			"rpc: discarding Call reply due to insufficient Done chan capacity",
-		)
+		log.Warn().
+			Err(fmt.Errorf("insufficient Done chan capacity")).
+			Uint32("@seq", call.ClientToServerMessage.Seq).
+			Str("method", call.ServiceMethod).
+			Str("uin", call.ClientToServerMessage.Username).
+			Msg("--> [recv]")
 	}
 }
 

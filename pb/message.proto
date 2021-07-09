@@ -490,20 +490,20 @@ message GroupInfo {
 }
 
 message Message {
-  optional MessageHead messageHead = 1;
-  optional ContentHead contentHead = 2;
-  optional MessageBody messageBody = 3;
+  MessageHead messageHead = 1;
+  ContentHead contentHead = 2;
+  MessageBody messageBody = 3;
   optional AppShareInfo appShareInfo = 4;
 }
 
 message MessageHead {
-  optional uint64 fromUin = 1;
-  optional uint64 toUin = 2;
-  optional uint32 messageType = 3;
-  optional uint32 c2cCmd = 4;
-  optional uint32 messageSeq = 5;
-  optional uint32 messageTime = 6;
-  optional uint64 messageUid = 7;
+  uint64 fromUin = 1;
+  uint64 toUin = 2;
+  uint32 messageType = 3;
+  uint32 c2cCmd = 4;
+  uint32 messageSeq = 5;
+  int64 messageTime = 6;
+  uint64 messageUid = 7;
   optional C2CTempMessageHead c2cTempMessageHead = 8;
   optional GroupInfo groupInfo = 9;
   optional uint32 fromAppId = 10;
@@ -568,9 +568,9 @@ message PluginInfo {
 }
 
 message UinPairMessage {
-  optional uint32 lastReadTime = 1;
-  optional uint32 peerUin = 2;
-  optional uint32 messageCompleted = 3;
+  int64 lastReadTime = 1;
+  uint64 peerUin = 2;
+  uint32 messageCompleted = 3;
   repeated Message messages = 4;
   optional uint32 unreadMessageNum = 5;
 }

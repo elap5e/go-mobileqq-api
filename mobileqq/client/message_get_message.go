@@ -37,23 +37,27 @@ func (c *Client) MessageGetMessage(
 	if len(req.SyncCookie) == 0 {
 		req.SyncCookie = c.syncCookie
 	}
+
 	buf, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	s2c := codec.ServerToClientMessage{}
-	if err := c.rpc.Call(ServiceMethodMessageGetMessage, &codec.ClientToServerMessage{
+	c2s, s2c := codec.ClientToServerMessage{
 		Username: username,
 		Buffer:   buf,
 		Simple:   true,
-	}, &s2c); err != nil {
+	}, codec.ServerToClientMessage{}
+	err = c.rpc.Call(ServiceMethodMessageGetMessage, &c2s, &s2c)
+	if err != nil {
 		return nil, err
 	}
 	resp := pb.MessageGetMessageResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}
+
 	c.syncCookie = resp.GetSyncCookie()
+
 	c.dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

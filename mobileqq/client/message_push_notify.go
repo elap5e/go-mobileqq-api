@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
-	"github.com/elap5e/go-mobileqq-api/mobileqq/message"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -50,7 +50,7 @@ type MessageInfo struct {
 	RemarkOfSender  []byte           `jce:",15" json:",omitempty"`
 	FromMobile      string           `jce:",16" json:",omitempty"`
 	FromName        string           `jce:",17" json:",omitempty"`
-	NickName        []string         `jce:",18" json:",omitempty"`
+	Nickname        []string         `jce:",18" json:",omitempty"`
 	TempMessageHead *TempMessageHead `jce:",19" json:",omitempty"`
 }
 
@@ -83,6 +83,7 @@ func (c *Client) handleMessagePushNotify(
 		return nil, err
 	}
 	c.dumpServerToClientMessage(s2c, &req)
+
 	resp, err := c.MessageGetMessage(
 		ctx, s2c.Username, NewMessageGetMessageRequest(
 			0x00000000, c.syncCookie,
@@ -91,65 +92,83 @@ func (c *Client) handleMessagePushNotify(
 	if err != nil {
 		return nil, err
 	}
-	// TODO: logic
+
 	type Data struct {
-		PeerUin uint64
-		FromUin uint64
-		Data    []byte
+		ChatID uint64
+		PeerID uint64
+		FromID uint64
+		Text   []byte
 	}
 	dataList := []Data{}
-	infoList := []MessageDeleteInfo{}
+	infos := []MessageDeleteInfo{}
 	for {
-		message.SyncUinPairMessages(ctx, s2c.Username, resp)
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
+			syncUinPairMessage(uinPairMessage)
+
 			for _, msg := range uinPairMessage.GetMessages() {
 				data, err := mark.Marshal(msg)
 				if err != nil {
 					return nil, err
 				}
 
-				show := true
 				chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-				peerID := uint64(uinPairMessage.GetPeerUin())
+				peerID := uint64(0)
 				fromID := msg.GetMessageHead().GetFromUin()
+				if msg.GetMessageHead().GetC2CCmd() != 0 {
+					chatID = msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+					peerID = uinPairMessage.GetPeerUin()
+				}
 				chatName := strconv.Itoa(int(chatID))
 				peerName := strconv.Itoa(int(peerID))
 				fromName := strconv.Itoa(int(fromID))
 				seq := msg.GetMessageHead().GetMessageSeq()
 				text := string(data)
 
-				if msg.GetMessageHead().GetC2CCmd() == 0 {
-					chatID = peerID
-					peerID = 0
-					fromID = 0
-					chatName = peerName
-					peerName = ""
-					fromName = ""
-				}
-
-				if s2c.Username == strconv.FormatInt(int64(fromID), 10) {
-					show = c.setSyncSeq(chatID, msg.GetMessageHead().GetMessageSeq())
-				} else if msg.GetMessageHead().GetMessageType() == 166 {
-					// add to data list
-					dataList = append(dataList, Data{
-						PeerUin: chatID,
-						FromUin: fromID,
-						Data:    data,
-					})
-				}
+				log.PrintMessage(
+					time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
+					chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
+				)
 
 				// message processed
 				switch msg.GetMessageHead().GetMessageType() {
 				case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167:
 					switch msg.GetMessageHead().GetC2CCmd() {
 					case 11, 175:
-						infoList = append(infoList, MessageDeleteInfo{
+						if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
+							// add to data list
+							toID, _ := strconv.ParseUint(s2c.Username, 10, 64)
+							dataList = append(dataList, Data{
+								ChatID: chatID,
+								PeerID: peerID,
+								FromID: toID,
+								Text:   data,
+							})
+						}
+						infos = append(infos, MessageDeleteInfo{
 							FromUin:     fromID,
-							MessageTime: uint64(msg.GetMessageHead().GetMessageTime()),
+							MessageTime: msg.GetMessageHead().GetMessageTime(),
 							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
 						})
 					case 129, 131, 133:
 					case 169, 241, 242, 243:
+					}
+				case 141:
+					if msg.GetMessageHead().GetC2CCmd() == 11 {
+						if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
+							// add to data list
+							toID, _ := strconv.ParseUint(s2c.Username, 10, 64)
+							dataList = append(dataList, Data{
+								ChatID: chatID,
+								PeerID: peerID,
+								FromID: toID,
+								Text:   data,
+							})
+						}
+						infos = append(infos, MessageDeleteInfo{
+							FromUin:     fromID,
+							MessageTime: msg.GetMessageHead().GetMessageTime(),
+							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
+						})
 					}
 				case 208:
 				case 193:
@@ -182,13 +201,6 @@ func (c *Client) handleMessagePushNotify(
 						},
 					))
 				}
-
-				if show {
-					log.PrintMessage(
-						time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
-						chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
-					)
-				}
 			}
 		}
 		if resp.GetSyncFlag() == 0x00000001 {
@@ -206,42 +218,55 @@ func (c *Client) handleMessagePushNotify(
 			break
 		}
 	}
+
 	// echo message
-	for i, data := range dataList {
+	if l := len(dataList); l > 0 {
+		item := dataList[l-1]
+		seq := c.getNextMessageSeq(
+			fmt.Sprintf("%d:%d", item.ChatID, item.PeerID),
+		)
+		routingHead := &pb.RoutingHead{}
+		if item.ChatID == 0 {
+			routingHead = &pb.RoutingHead{C2C: &pb.C2C{Uin: item.PeerID}}
+		} else {
+			routingHead = &pb.RoutingHead{
+				GroupTemp: &pb.GroupTemp{Code: item.ChatID, ToUin: item.PeerID},
+			}
+		}
+
 		msg := pb.Message{}
-		if err := mark.Unmarshal(data.Data, &msg); err != nil {
+		if err := mark.Unmarshal(item.Text, &msg); err != nil {
 			return nil, err
 		}
-		seq := c.getNextSyncSeq(data.PeerUin)
-		if i == len(dataList)-1 {
-			resp, err := c.MessageSendMessage(
-				ctx, s2c.Username, NewMessageSendMessageRequest(
-					&pb.RoutingHead{C2C: &pb.C2C{Uin: data.FromUin}},
-					msg.GetContentHead(),
-					msg.GetMessageBody(),
-					seq,
-					c.syncCookie,
-				),
-			)
-			if err != nil {
-				return nil, err
-			}
-			chatName := strconv.Itoa(int(data.PeerUin))
-			peerName := strconv.Itoa(int(data.FromUin))
-			fromName := s2c.Username
-			chatID := data.PeerUin
-			peerID := data.FromUin
-			fromID, _ := strconv.Atoi(s2c.Username)
-			data, err := mark.Marshal(&msg)
-			if err != nil {
-				return nil, err
-			}
-			text := string(data)
-			log.PrintMessage(
-				time.Unix(resp.GetSendTime(), 0),
-				chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
-			)
+		resp, err := c.MessageSendMessage(
+			ctx, s2c.Username, NewMessageSendMessageRequest(
+				routingHead,
+				msg.GetContentHead(),
+				msg.GetMessageBody(),
+				seq,
+				c.syncCookie,
+			),
+		)
+		if err != nil {
+			return nil, err
 		}
+
+		data, err := mark.Marshal(&msg)
+		if err != nil {
+			return nil, err
+		}
+		chatID := item.ChatID
+		peerID := item.PeerID
+		fromID := item.FromID
+		chatName := strconv.Itoa(int(chatID))
+		peerName := strconv.Itoa(int(peerID))
+		fromName := strconv.Itoa(int(fromID))
+		text := string(data)
+		log.PrintMessage(
+			time.Unix(resp.GetSendTime(), 0),
+			chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+		)
 	}
-	return NewOnlinePushMessageResponse(ctx, s2c.Username, infoList, req.ServerIP, s2c.Seq)
+
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, infos, req.ServerIP, s2c.Seq)
 }

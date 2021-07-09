@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/account"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 )
 
@@ -22,6 +23,8 @@ type Client struct {
 	serverPublicKey        *ecdh.PublicKey
 	serverPublicKeyVersion uint16
 
+	accounts map[string]*account.Account
+
 	userSignatures    map[string]*rpc.UserSignature
 	userSignaturesMux sync.RWMutex
 
@@ -29,6 +32,7 @@ type Client struct {
 	channels map[uint64]string
 	contacts map[uint64]string
 
+	messageSeq map[string]*uint32
 	syncCookie []byte
 	syncSeq    map[uint64]*uint32
 
@@ -81,7 +85,30 @@ func (c *Client) initHandlers() {
 }
 
 func (c *Client) initSync() {
+	c.messageSeq = make(map[string]*uint32)
 	c.syncSeq = make(map[uint64]*uint32)
+}
+
+func (c *Client) setMessageSeq(id string, seq uint32) bool {
+	if _, ok := c.messageSeq[id]; !ok {
+		c.messageSeq[id] = &[]uint32{seq}[0]
+	}
+	if *c.messageSeq[id] < seq {
+		atomic.StoreUint32(c.messageSeq[id], seq)
+		return true
+	}
+	return false
+}
+
+func (c *Client) getNextMessageSeq(id string) uint32 {
+	if _, ok := c.messageSeq[id]; !ok {
+		c.messageSeq[id] = &[]uint32{uint32(rand.Int31n(1000)) + 600}[0]
+	}
+	seq := atomic.AddUint32(c.messageSeq[id], 1)
+	if seq > 60000 {
+		c.messageSeq[id] = &[]uint32{uint32(rand.Int31n(1000)) + 600}[0]
+	}
+	return seq
 }
 
 func (c *Client) setSyncSeq(uin uint64, seq uint32) bool {

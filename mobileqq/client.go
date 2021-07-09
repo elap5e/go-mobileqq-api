@@ -3,6 +3,7 @@ package mobileqq
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"sync"
 	"time"
 
@@ -77,8 +78,10 @@ func (c *Client) runUntilError(
 			if err := run(ctx, c.restart); err != nil {
 				log.Error().Err(err).
 					Msg("x-x [conn] runtime error")
-				c.cancel()
-				return
+				if !os.IsTimeout(err) {
+					c.cancel()
+					return
+				}
 			}
 		}
 	}()
