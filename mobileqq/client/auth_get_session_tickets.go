@@ -13,6 +13,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/tlv"
+	"github.com/rs/zerolog"
 )
 
 func (c *Client) AuthGetSessionTickets(
@@ -59,7 +60,7 @@ func (c *Client) AuthGetSessionTickets(
 		return nil, err
 	}
 	resp.Code = msg.Code
-	resp.Username = strconv.Itoa(int(msg.Uin))
+	resp.Username = strconv.FormatUint(msg.Uin, 10)
 	resp.Uin = msg.Uin
 	if err := resp.SetTLVs(ctx, msg.TLVs); err != nil {
 		return nil, err
@@ -67,7 +68,7 @@ func (c *Client) AuthGetSessionTickets(
 	switch resp.Code {
 	default:
 		log.Warn().
-			Str("uin", resp.Username).
+			Str("@uin", resp.Username).
 			Uint8("code", resp.Code).
 			Msg("--> [auth] not implement")
 	case 0x00:
@@ -105,7 +106,9 @@ func (c *Client) AuthGetSessionTickets(
 			v.Decode(buf)
 			tlvs[v.GetType()] = &v
 		}
-		// tlv.DumpTLVs(ctx, tlvs)
+		if log.GetLevel() == zerolog.TraceLevel {
+			tlv.DumpTLVs(ctx, tlvs)
+		}
 
 		c.SetUserSignature(ctx, resp.Username, tlvs)
 		c.SetUserAuthSession(resp.Username, nil)

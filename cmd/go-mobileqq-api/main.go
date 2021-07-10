@@ -81,9 +81,9 @@ func init() {
 
 func send(ctx context.Context, rpc *client.Client, text string) error {
 	fromID, _ := strconv.ParseUint(username, 10, 64)
-	chatName := strconv.Itoa(int(chatID))
-	peerName := strconv.Itoa(int(peerID))
-	fromName := strconv.Itoa(int(fromID))
+	chatName := strconv.FormatUint(chatID, 10)
+	peerName := strconv.FormatUint(peerID, 10)
+	fromName := strconv.FormatUint(fromID, 10)
 	seq := rpc.GetNextMessageSeq(fmt.Sprintf("%d:%d", chatID, peerID))
 	routingHead := &pb.RoutingHead{}
 	if peerID == 0 {

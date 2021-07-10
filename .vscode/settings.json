@@ -1,0 +1,6 @@
+{
+  "go.inferGopath": false,
+  "protoc": {
+    "options": ["--proto_path=pb", "--go_out=pb"]
+  }
+}

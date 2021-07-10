@@ -11,10 +11,10 @@ import (
 )
 
 func NewMessageDeleteMessageRequest(
-	items ...*pb.MessageDeleteMessageRequest_MessageItem,
+	items ...*pb.MessageDeleteMessageRequest_Item,
 ) *pb.MessageDeleteMessageRequest {
 	return &pb.MessageDeleteMessageRequest{
-		MessageItems: items,
+		Items: items,
 	}
 }
 
@@ -23,7 +23,7 @@ func (c *Client) MessageDeleteMessage(
 	username string,
 	req *pb.MessageDeleteMessageRequest,
 ) (*pb.MessageDeleteMessageResponse, error) {
-	if len(req.GetMessageItems()) == 0 {
+	if len(req.GetItems()) == 0 {
 		return nil, fmt.Errorf("zero length")
 	}
 

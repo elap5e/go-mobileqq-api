@@ -492,6 +492,13 @@ message DiscussInfo {
   optional bytes discussRemark = 4;
 }
 
+message ExtraGroupKeyInfo {
+  uint32 current_max_seq = 1;
+  uint64 current_time = 2;
+  uint32 operate_by_parents = 3;
+  bytes extra_group_info = 4;
+}
+
 message GroupInfo {
   optional uint64 groupCode = 1;
   optional uint32 groupType = 2;
@@ -585,119 +592,4 @@ message UinPairMessage {
   uint32 messageCompleted = 3;
   repeated Message messages = 4;
   optional uint32 unreadMessageNum = 5;
-}
-
-/* message service */
-
-message C2C {
-  uint64 uin = 1;
-}
-
-message MessageDeleteMessageRequest {
-  repeated MessageItem messageItems = 1;
-  message MessageItem {
-    uint64 fromUin = 1;
-    uint64 toUin = 2;
-    uint32 messageType = 3;
-    uint32 messageSeq = 4;
-    uint64 messageUid = 5;
-  }
-}
-
-message MessageDeleteMessageResponse {
-  optional uint32 result = 1;
-  optional string errorMessage = 2;
-}
-
-message Discussion {
-  uint64 code = 1;
-}
-
-message DiscussionTemp {
-  uint64 code = 1;
-  uint64 toUin = 2;
-}
-
-message MessageGetMessageRequest {
-  uint32 syncFlag = 1;
-  bytes syncCookie = 2;
-  uint32 rambleFlag = 3;
-  uint32 latestRambleNumber = 4;
-  uint32 otherRambleNumber = 5;
-  uint32 onlineSyncFlag = 6;
-  uint32 contextFlag = 7;
-  uint32 whisperSessionId = 8;
-  uint32 requestType = 9;
-  bytes publicAccountCookie = 10;
-  bytes controlBuffer = 11;
-  bytes serverBuffer = 12;
-}
-
-message MessageGetMessageResponse {
-  optional uint32 result = 1;
-  optional string errorMessage = 2;
-  optional bytes syncCookie = 3;
-  optional uint32 syncFlag = 4;
-  repeated UinPairMessage uinPairMessages = 5;
-  optional uint64 bindUin = 6;
-}
-
-message Group {
-  uint64 code = 1;
-}
-
-message GroupTemp {
-  uint64 code = 1;
-  uint64 toUin = 2;
-}
-
-message RoutingHead {
-  C2C c2c = 1;
-  Group group = 2;
-  GroupTemp groupTemp = 3;
-  Discussion discussion = 4;
-  DiscussionTemp discussionTemp = 5;
-  // string wpaTemp = 6;
-  // string secretFile = 7;
-  // string publicPlat = 8;
-  // string transMessage = 9;
-  // string addressList = 10;
-  // string richStatusTemp = 11;
-  // string accostTemp = 12;
-  // string publicGroupTemp = 13;
-  // string trans0x211 = 14;
-  // string businessWpaTemp = 15;
-  // string authTemp = 16;
-  // string bsnsTemp = 17;
-  // string qqQueryBusinessTemp = 18;
-  // string nearbyDatingTemp = 19;
-  // string nearbyAssistantTemp = 20;
-}
-
-message MessageSendMessageRequest {
-  RoutingHead routingHead = 1;
-  ContentHead contentHead = 2;
-  MessageBody messageBody = 3;
-  uint32 messageSeq = 4;
-  uint32 messageRand = 5;
-  bytes syncCookie = 6;
-  AppShareInfo appShare = 7;
-  uint32 messageVia = 8;
-}
-
-message MessageSendMessageResponse {
-  optional int32 result = 1;
-  optional string errorMessage = 2;
-  optional int64 sendTime = 3;
-}
-
-/* message online push */
-
-message OnlinePushMessage {
-  optional Message message = 1;
-  optional int32 serverIp = 2;
-  optional bytes pushToken = 3;
-  optional uint32 pingFlag = 4;
-  optional uint32 generalFlag = 5;
-  optional uint64 bindUin = 6;
 }

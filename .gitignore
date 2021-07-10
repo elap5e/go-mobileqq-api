@@ -1,4 +1,3 @@
-.vscode/
 bin/
 tmp/
 *_dev_test.go

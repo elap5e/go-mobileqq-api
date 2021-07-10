@@ -32,7 +32,7 @@ func NewOnlinePushMessageResponse(
 	ctx context.Context,
 	username string,
 	infos []MessageDeleteInfo,
-	ip int32,
+	serverIP int32,
 	seq uint32,
 ) (*codec.ClientToServerMessage, error) {
 	if len(infos) == 0 {
@@ -46,7 +46,7 @@ func NewOnlinePushMessageResponse(
 	resp := OnlinePushMessageResponse{
 		Uin:      uint64(uin),
 		Infos:    infos,
-		ServerIP: ip,
+		ServerIP: serverIP,
 	}
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
@@ -78,13 +78,13 @@ func (c *Client) handleOnlinePushMessage(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
-	req := pb.OnlinePushMessage{}
-	if err := proto.Unmarshal(s2c.Buffer, &req); err != nil {
+	push := pb.OnlinePush{}
+	if err := proto.Unmarshal(s2c.Buffer, &push); err != nil {
 		return nil, err
 	}
-	c.dumpServerToClientMessage(s2c, &req)
+	c.dumpServerToClientMessage(s2c, &push)
 
-	msg := req.GetMessage()
+	msg := push.GetMessage()
 	data, err := mark.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -97,9 +97,9 @@ func (c *Client) handleOnlinePushMessage(
 		chatID = msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
 		peerID = msg.GetMessageHead().GetToUin()
 	}
-	chatName := strconv.Itoa(int(chatID))
-	peerName := strconv.Itoa(int(peerID))
-	fromName := strconv.Itoa(int(fromID))
+	chatName := strconv.FormatUint(chatID, 10)
+	peerName := strconv.FormatUint(peerID, 10)
+	fromName := strconv.FormatUint(fromID, 10)
 	seq := msg.GetMessageHead().GetMessageSeq()
 	text := string(data)
 
@@ -158,5 +158,5 @@ func (c *Client) handleOnlinePushMessage(
 		FromUin:     fromID,
 		MessageTime: msg.GetMessageHead().GetMessageTime(),
 		MessageSeq:  uint16(seq),
-	}}, req.GetServerIp(), s2c.Seq)
+	}}, push.GetServerIp(), s2c.Seq)
 }

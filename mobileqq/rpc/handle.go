@@ -15,6 +15,11 @@ type HandleFunc func(
 ) (*codec.ClientToServerMessage, error)
 
 func (e *engine) handle(s2c *codec.ServerToClientMessage) {
+	log.Trace().
+		Uint32("@seq", s2c.Seq).
+		Str("method", s2c.ServiceMethod).
+		Str("uin", s2c.Username).
+		Msg(">>> [dump] s2c.Buffer:\n" + hex.Dump(s2c.Buffer))
 	log.Debug().
 		Uint32("@seq", s2c.Seq).
 		Str("@status", "notify").

@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+import "message.proto";
+
+message C2C {
+  uint64 uin = 1;
+}
+
+message Discussion {
+  uint64 code = 1;
+}
+
+message DiscussionTemp {
+  uint64 code = 1;
+  uint64 to_uin = 2;
+}
+
+message MessageDeleteMessageRequest {
+  repeated Item items = 1;
+  message Item {
+    uint64 from_uin = 1;
+    uint64 to_uin = 2;
+    uint32 message_type = 3;
+    uint32 message_seq = 4;
+    uint64 message_uid = 5;
+  }
+}
+
+message MessageDeleteMessageResponse {
+  optional uint32 result = 1;
+  optional string error = 2;
+}
+
+message MessageGetMessageRequest {
+  uint32 sync_flag = 1;
+  bytes sync_cookie = 2;
+  uint32 ramble_flag = 3;
+  uint32 latest_ramble_number = 4;
+  uint32 other_ramble_number = 5;
+  uint32 online_sync_flag = 6;
+  uint32 context_flag = 7;
+  uint32 whisper_session_id = 8;
+  uint32 request_type = 9;
+  bytes public_account_cookie = 10;
+  bytes control_buffer = 11;
+  bytes server_buffer = 12;
+}
+
+message MessageGetMessageResponse {
+  optional uint32 result = 1;
+  optional string error = 2;
+  optional bytes sync_cookie = 3;
+  optional uint32 sync_flag = 4;
+  repeated UinPairMessage uin_pair_messages = 5;
+  optional uint64 bind_uin = 6;
+}
+
+message MessageSendMessageRequest {
+  RoutingHead routing_head = 1;
+  ContentHead content_head = 2;
+  MessageBody message_body = 3;
+  uint32 message_seq = 4;
+  uint32 message_rand = 5;
+  bytes sync_cookie = 6;
+  AppShareInfo app_share_info = 7;
+  uint32 message_via = 8;
+}
+
+message MessageSendMessageResponse {
+  optional int32 result = 1;
+  optional string error = 2;
+  optional int64 send_time = 3;
+}
+
+message Group {
+  uint64 code = 1;
+}
+
+message GroupTemp {
+  uint64 code = 1;
+  uint64 to_uin = 2;
+}
+
+message RoutingHead {
+  C2C c2c = 1;
+  Group group = 2;
+  GroupTemp group_temp = 3;
+  Discussion discussion = 4;
+  DiscussionTemp discussion_temp = 5;
+  // string wpaTemp = 6;
+  // string secretFile = 7;
+  // string publicPlat = 8;
+  // string transMessage = 9;
+  // string addressList = 10;
+  // string richStatusTemp = 11;
+  // string accostTemp = 12;
+  // string publicGroupTemp = 13;
+  // string trans0x211 = 14;
+  // string businessWpaTemp = 15;
+  // string authTemp = 16;
+  // string bsnsTemp = 17;
+  // string qqQueryBusinessTemp = 18;
+  // string nearbyDatingTemp = 19;
+  // string nearbyAssistantTemp = 20;
+}

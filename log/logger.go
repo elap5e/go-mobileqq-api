@@ -132,3 +132,7 @@ func Printf(format string, v ...interface{}) {
 func Ctx(ctx context.Context) *zerolog.Logger {
 	return zerolog.Ctx(ctx)
 }
+
+func GetLevel() zerolog.Level {
+	return Logger.GetLevel()
+}

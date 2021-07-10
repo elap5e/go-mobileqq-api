@@ -24,11 +24,11 @@ type MessagePushNotifyRequest struct {
 	GeneralFlag uint32 `jce:",7" json:",omitempty"`
 	BindedUin   uint64 `jce:",8" json:",omitempty"`
 
-	MessageInfo    *MessageInfo `jce:",9" json:",omitempty"`
-	MessageCtrlBuf string       `jce:",10" json:",omitempty"`
-	ServerBuf      []byte       `jce:",11" json:",omitempty"`
-	PingFlag       uint64       `jce:",12" json:",omitempty"`
-	ServerIP       int32        `jce:",13" json:",omitempty"`
+	MessageInfo       *MessageInfo `jce:",9" json:",omitempty"`
+	MessageCtrlBuffer string       `jce:",10" json:",omitempty"`
+	ServerBuffer      []byte       `jce:",11" json:",omitempty"`
+	PingFlag          uint64       `jce:",12" json:",omitempty"`
+	ServerIP          int32        `jce:",13" json:",omitempty"`
 }
 
 type MessageInfo struct {
@@ -118,9 +118,9 @@ func (c *Client) handleMessagePushNotify(
 					chatID = msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
 					peerID = uinPairMessage.GetPeerUin()
 				}
-				chatName := strconv.Itoa(int(chatID))
-				peerName := strconv.Itoa(int(peerID))
-				fromName := strconv.Itoa(int(fromID))
+				chatName := strconv.FormatUint(chatID, 10)
+				peerName := strconv.FormatUint(peerID, 10)
+				fromName := strconv.FormatUint(fromID, 10)
 				seq := msg.GetMessageHead().GetMessageSeq()
 				text := string(data)
 
@@ -192,7 +192,7 @@ func (c *Client) handleMessagePushNotify(
 				case 0, 26, 64, 38, 48, 53, 61, 63:
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = c.MessageDeleteMessage(ctx, s2c.Username, NewMessageDeleteMessageRequest(
-						&pb.MessageDeleteMessageRequest_MessageItem{
+						&pb.MessageDeleteMessageRequest_Item{
 							FromUin:     msg.GetMessageHead().GetFromUin(),
 							ToUin:       msg.GetMessageHead().GetToUin(),
 							MessageType: msg.GetMessageHead().GetMessageType(),
@@ -258,9 +258,9 @@ func (c *Client) handleMessagePushNotify(
 		chatID := item.ChatID
 		peerID := item.PeerID
 		fromID := item.FromID
-		chatName := strconv.Itoa(int(chatID))
-		peerName := strconv.Itoa(int(peerID))
-		fromName := strconv.Itoa(int(fromID))
+		chatName := strconv.FormatUint(chatID, 10)
+		peerName := strconv.FormatUint(peerID, 10)
+		fromName := strconv.FormatUint(fromID, 10)
 		text := string(data)
 		log.PrintMessage(
 			time.Unix(resp.GetSendTime(), 0),

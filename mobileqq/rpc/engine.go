@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	_rand "math/rand"
@@ -83,6 +84,16 @@ type Call struct {
 }
 
 func (call *Call) done() {
+	if call.ServerToClientMessage != nil {
+		s2c := call.ServerToClientMessage
+		if len(s2c.Buffer) > 0 {
+			log.Trace().
+				Uint32("@seq", s2c.Seq).
+				Str("method", s2c.ServiceMethod).
+				Str("uin", s2c.Username).
+				Msg(">>> [dump] s2c.Buffer:\n" + hex.Dump(s2c.Buffer))
+		}
+	}
 	if call.Error != nil {
 		log.Error().
 			Err(call.Error).

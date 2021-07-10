@@ -6,7 +6,9 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/tlv"
+	"github.com/rs/zerolog"
 )
 
 func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
@@ -30,6 +32,13 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 	buf = bytes.NewBuffer(tmp)
 	if err := unmarshalData(ctx, buf, msg); err != nil {
 		return err
+	}
+	log.Debug().
+		Uint8("code", msg.Code).
+		Uint16("type", msg.Type).
+		Msg("--> [oicq]")
+	if log.GetLevel() == zerolog.TraceLevel {
+		tlv.DumpTLVs(ctx, msg.TLVs)
 	}
 	return nil
 }

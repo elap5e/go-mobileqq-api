@@ -28,7 +28,7 @@ go-mobileqq-echo
 
 ### Auth
 
-1. Check captcha (click twice! open the link and drag the slider) **[recommand]**
+1. Check captcha (click twice, open the link and drag the slider)
 2. Check picture (integrated with iTerm2)
 3. Check SMS (confirm to refresh SMS)
 4. Password/Non-Password sign in
