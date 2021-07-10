@@ -266,8 +266,6 @@ const (
 
 func (t FaceType) String() string {
 	switch t {
-	default:
-		return "/unknown"
 	case UNKNOWN_Face:
 		return "/unknown"
 	case U60CAU8BB6_Face:
@@ -775,12 +773,11 @@ func (t FaceType) String() string {
 	case U5403U7CD6_Face:
 		return "/吃糖"
 	}
+	return "/unknown"
 }
 
 func ParseFaceType(s string) (FaceType, error) {
 	switch s {
-	default:
-		return UNKNOWN_Face, fmt.Errorf("Unknown Face String: '%s', defaulting to UNKNOWN_Face", s)
 	case "/unknown":
 		return UNKNOWN_Face, nil
 	case "/惊讶":
@@ -1288,4 +1285,5 @@ func ParseFaceType(s string) (FaceType, error) {
 	case "/吃糖":
 		return U5403U7CD6_Face, nil
 	}
+	return UNKNOWN_Face, fmt.Errorf("Unknown Face String: '%s', defaulting to UNKNOWN_Face", s)
 }
