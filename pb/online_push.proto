@@ -13,7 +13,7 @@ message OnlinePush {
   uint32 ping_flag = 4;
   uint32 general_flag = 5;
   uint64 bind_uin = 6;
-}
+} // PbPushMsg
 
 /* online push transfer message */
 
@@ -31,4 +31,4 @@ message OnlinePushTrans {
   uint32 server_ip = 11;
   ExtraGroupKeyInfo extra_group_key_info = 12;
   uint32 general_flag = 13;
-}
+} // PbMsgInfo

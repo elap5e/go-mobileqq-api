@@ -227,10 +227,10 @@ func (c *Client) handleMessagePushNotify(
 		)
 		routingHead := &pb.RoutingHead{}
 		if item.ChatID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{Uin: item.PeerID}}
+			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: item.PeerID}}
 		} else {
 			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Code: item.ChatID, ToUin: item.PeerID},
+				GroupTemp: &pb.GroupTemp{Uin: item.ChatID, ToUin: item.PeerID},
 			}
 		}
 

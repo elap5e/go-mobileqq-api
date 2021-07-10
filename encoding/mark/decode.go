@@ -69,9 +69,9 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 									Compat: des,
 								})
 								elems = append(elems, &pb.Element{
-									CommonElement: &pb.CommonElement{
+									Common: &pb.CommonElement{
 										ServiceType:  33,
-										PbElement:    buf,
+										Buffer:       buf,
 										BusinessType: 1,
 									},
 								})
@@ -85,9 +85,9 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 									Text:        des,
 								})
 								elems = append(elems, &pb.Element{
-									CommonElement: &pb.CommonElement{
+									Common: &pb.CommonElement{
 										ServiceType:  37,
-										PbElement:    buf,
+										Buffer:       buf,
 										BusinessType: 1,
 									},
 								})
@@ -144,7 +144,7 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 							PicHeight:    uint32(h),
 							PicWidth:     uint32(w),
 							FilePath:     []byte(body[idx[2]:idx[3]]),
-							ResId:        []byte(path),
+							ResourceId:   []byte(path),
 							DownloadPath: []byte(path),
 							OrigUrl:      "/offpic_new" + path + "/0?term=2",
 						},

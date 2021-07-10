@@ -34,8 +34,8 @@ func (c *Client) MessageSendMessage(
 	req *pb.MessageSendMessageRequest,
 ) (*pb.MessageSendMessageResponse, error) {
 	if req.GetMessageSeq() == 0 {
-		chatID := req.GetRoutingHead().GetGroup().GetCode()
-		peerID := req.GetRoutingHead().GetC2C().GetUin()
+		chatID := req.GetRoutingHead().GetGroup().GetUin()
+		peerID := req.GetRoutingHead().GetC2C().GetToUin()
 		id := fmt.Sprintf("%d:%d", chatID, peerID)
 		req.MessageSeq = c.getNextMessageSeq(id)
 	}

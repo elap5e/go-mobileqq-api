@@ -33,7 +33,18 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 			skip--
 			continue
 		}
-		if v := elem.GetRichMessage(); v != nil {
+		if v := elem.GetLightApp(); v != nil {
+			data := v.GetData()[1:]
+			if v.GetData()[0] == 1 {
+				reader, _ := zlib.NewReader(bytes.NewReader(data))
+				defer reader.Close()
+				var buf bytes.Buffer
+				io.Copy(&buf, reader)
+				data = buf.Bytes()
+			}
+			text += string(data)
+			skip++
+		} else if v := elem.GetRichMessage(); v != nil {
 			richMessage := v.GetTemplate1()[1:]
 			if v.GetTemplate1()[0] == 1 {
 				reader, _ := zlib.NewReader(bytes.NewReader(richMessage))
@@ -43,11 +54,11 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				richMessage = buf.Bytes()
 			}
 			text += string(richMessage)
-		} else if v := elem.GetCommonElement(); v != nil {
+		} else if v := elem.GetCommon(); v != nil {
 			switch v.GetServiceType() {
 			case 33: // extra face
 				info := pb.MessageElementInfoServiceType33{}
-				_ = proto.Unmarshal(v.GetPbElement(), &info)
+				_ = proto.Unmarshal(v.GetBuffer(), &info)
 				id := emoticon.FaceType(info.GetIndex())
 				text += fmt.Sprintf(
 					"![%s](goqq://res/face?id=%d)",
@@ -56,7 +67,7 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				)
 			case 37: // extra big face
 				info := pb.MessageElementInfoServiceType37{}
-				_ = proto.Unmarshal(v.GetPbElement(), &info)
+				_ = proto.Unmarshal(v.GetBuffer(), &info)
 				id := emoticon.FaceType(info.GetQsId())
 				text += fmt.Sprintf(
 					"![%s](goqq://res/face?id=%d&pid=%s&sid=%s)",

@@ -87,12 +87,12 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 	seq := rpc.GetNextMessageSeq(fmt.Sprintf("%d:%d", chatID, peerID))
 	routingHead := &pb.RoutingHead{}
 	if peerID == 0 {
-		routingHead = &pb.RoutingHead{Group: &pb.Group{Code: chatID}}
+		routingHead = &pb.RoutingHead{Group: &pb.Group{Uin: chatID}}
 	} else if chatID == 0 {
-		routingHead = &pb.RoutingHead{C2C: &pb.C2C{Uin: peerID}}
+		routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: peerID}}
 	} else {
 		routingHead = &pb.RoutingHead{
-			GroupTemp: &pb.GroupTemp{Code: chatID, ToUin: peerID},
+			GroupTemp: &pb.GroupTemp{Uin: chatID, ToUin: peerID},
 		}
 	}
 

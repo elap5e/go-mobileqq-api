@@ -1,0 +1,552 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+/* im message body */
+
+message AnonymousGroupMessage {
+  uint32 flags = 1;
+  bytes anonymous_id = 2;
+  bytes anonymous_nick = 3;
+  uint32 head_portrait = 4;
+  uint32 expire_time = 5;
+  uint32 bubble_id = 6;
+  bytes rank_color = 7;
+} // AnonymousGroupMsg
+
+message Attribute {
+  sint32 code_page = 1;
+  uint32 time = 2;
+  uint32 random = 3;
+  uint32 color = 4;
+  uint32 size = 5;
+  uint32 effect = 6;
+  uint32 char_set = 7;
+  uint32 pitch_and_family = 8;
+  string font_name = 9;
+  bytes reserve_data = 10;
+} // Attr
+
+message CommonElement {
+  uint32 service_type = 1;
+  bytes buffer = 2; // pb_element
+  uint32 business_type = 3;
+} // CommonElem
+
+message CustomElement {
+  bytes desc = 1;
+  bytes data = 2;
+  uint32 type = 3; // Enum
+  bytes ext = 4;
+  bytes sound = 5;
+} // CustomElem
+
+message CustomFace {
+  bytes guid = 1;
+  string file_path = 2;
+  string shortcut = 3;
+  bytes buffer = 4;
+  bytes flag = 5;
+  bytes old_data = 6;
+  uint32 file_id = 7;
+  uint32 server_ip = 8;
+  uint32 server_port = 9;
+  uint32 file_type = 10;
+  bytes signature = 11;
+  uint32 useful = 12;
+  bytes md5 = 13;
+  string thumb_url = 14;
+  string big_url = 15;
+  string orig_url = 16;
+  uint32 biz_type = 17;
+  uint32 repeat_index = 18;
+  uint32 repeat_image = 19;
+  uint32 image_type = 20;
+  uint32 index = 21;
+  uint32 width = 22;
+  uint32 height = 23;
+  uint32 source = 24;
+  uint32 size = 25;
+  uint32 origin = 26;
+  uint32 thumb_width = 27;
+  uint32 thumb_height = 28;
+  uint32 show_len = 29;
+  uint32 download_len = 30;
+  string url400 = 31;
+  uint32 width400 = 32;
+  uint32 height400 = 33;
+  bytes reserve_data = 34;
+}
+
+message Element {
+  optional Text text = 1;
+  optional Face face = 2;
+  optional OnlineImage online_image = 3;
+  optional NotOnlineImage not_online_image = 4;
+  optional TransferElement transfer = 5;
+  optional MarketFace market_face = 6;
+  optional ElementFlags element_flags = 7;
+  optional CustomFace custom_face = 8;
+  optional ElementFlags2 element_flags2 = 9;
+  optional FunFace fun_face = 10;
+  optional SecretFileMessage secret_file_message = 11;
+  optional RichMessage rich_message = 12;
+  optional GroupFile group_file = 13;
+  optional PublicGroup public_group = 14;
+  optional MarketTransfer market_transfer = 15;
+  optional ExtraInfo extra_info = 16;
+  optional ShakeWindow shake_window = 17;
+  optional PublicAccount public_account = 18;
+  optional VideoFile video_file = 19;
+  optional TipsInfo tips_info = 20;
+  optional AnonymousGroupMessage anonymous_group_message = 21;
+  optional QQLiveOld qq_live_old = 22;
+  optional LifeOnlineAccount life_online = 23;
+  optional QQWalletMessage qq_wallet_message = 24;
+  // optional string crm_elem = 25;
+  // optional string conference_tips_info = 26;
+  optional RedBagInfo red_bag_info = 27;
+  optional LowVersionTips low_version_tips = 28;
+  optional bytes bankcode_control_info = 29;
+  // optional string near_by_msg = 30;
+  optional CustomElement custom = 31;
+  // optional string location_info = 32;
+  // optional string pub_acc_info = 33;
+  // optional string small_emoji = 34;
+  // optional string fsj_msg_elem = 35;
+  // optional string ark_app = 36;
+  optional GeneralFlags general_flags = 37;
+  // optional string hc_flash_pic = 38;
+  // optional string deliver_gift_msg = 39;
+  // optional string bitapp_msg = 40;
+  // optional string open_qq_data = 41;
+  // optional string apollo_msg = 42;
+  // optional string group_pub_acc_info = 43;
+  // optional string bless_msg = 44;
+  optional SourceMessage source_message = 45;
+  // optional string lola_msg = 46;
+  optional GroupBusinessMessage group_business_msg = 47;
+  // optional string msg_workflow_notify = 48;
+  // optional string pat_elem = 49;
+  optional GroupPostElement group_post = 50;
+  optional LightAppElement light_app = 51;
+  // optional string eim_info = 52;
+  optional CommonElement common = 53;
+}
+
+message ElementFlags {
+  bytes flags = 1;
+  bytes business_data = 2;
+}
+
+message ElementFlags2 {
+  uint32 color_text_id = 1;
+  uint64 message_id = 2;
+  uint32 whisper_session_id = 3;
+  uint32 ptt_change_bit = 4;
+  uint32 vip_status = 5;
+  uint32 compatible_id = 6;
+  repeated Instant instants = 7;
+  uint32 message_count = 8;
+  Instant src_instant = 9;
+  uint32 longtitude = 10;
+  uint32 latitude = 11;
+  uint32 custom_aont = 12;
+  PCSupportDef pc_support_define = 13;
+  message Instant {
+    uint32 app_id = 1;
+    uint32 instant_id = 2;
+  }
+}
+
+message ExtraInfo {
+  bytes nick = 1;
+  bytes group_card = 2;
+  uint32 level = 3;
+  uint32 flags = 4;
+  uint32 group_mask = 5;
+  uint32 message_tail_id = 6;
+  bytes sender_title = 7;
+  bytes apns_tips = 8;
+  uint64 uin = 9;
+  uint32 message_state_flag = 10;
+  uint32 apns_sound_type = 11;
+  uint32 new_group_flag = 12;
+}
+
+message Face {
+  uint32 index = 1;
+  bytes old = 2;
+  bytes buffer = 3;
+}
+
+message FunFace {
+  Turntable turntable = 1;
+  Bomb bomb = 2;
+  message Bomb {
+    bool burst = 1;
+  }
+  message Turntable {
+    repeated uint64 uin_list = 1;
+    uint64 hit_uin = 2;
+    string hit_uinNick = 3;
+  }
+}
+
+message GeneralFlags {
+  uint32 bubble_diy_text_id = 1;
+  uint32 group_flag_new = 2;
+  uint64 uin = 3;
+  bytes rp_id = 4;
+  uint32 prp_fold = 5;
+  bytes long_text_flag = 6;
+  uint32 long_text_resid = 7;
+  uint32 group_type = 8;
+  uint32 to_uin_flag = 9;
+  uint32 glamour_level = 10;
+  uint32 member_level = 11;
+  uint64 group_rank_seq = 12;
+  uint32 olympic_torch = 13;
+  bytes babyq_guide_msg_cookie = 14;
+  uint32 expert_flag = 15;
+  uint32 bubble_sub_id = 16;
+  uint64 pendant_id = 17;
+  bytes rp_index = 18;
+  bytes pb_reserve = 19;
+}
+
+message GroupBusinessMessage {
+  uint32 flags = 1;
+  bytes head_url = 2;
+  bytes head_clk_url = 3;
+  bytes nick = 4;
+  bytes nick_color = 5;
+  bytes rank = 6;
+  bytes rank_color = 7;
+  bytes rank_bgcolor = 8;
+}
+
+message GroupFile {
+  bytes file_name = 1;
+  uint64 file_size = 2;
+  bytes file_id = 3;
+  bytes batch_id = 4;
+  bytes file_key = 5;
+  bytes mark = 6;
+  uint64 sequence = 7;
+  bytes batch_item_id = 8;
+  uint32 feed_message_time = 9;
+}
+
+message GroupPostElement {
+  uint32 transfer_type = 1;
+  bytes transfer_message = 2;
+}
+
+message LifeOnlineAccount {
+  uint64 unique_id = 1;
+  uint32 op = 2;
+  uint32 show_time = 3;
+  uint32 report = 4;
+  uint32 ack = 5;
+  uint64 bitmap = 6;
+}
+
+message LightAppElement {
+    bytes data = 1;
+    bytes resource_id = 2;
+}
+
+message LowVersionTips {
+  uint32 business_id = 1;
+  uint32 session_type = 2;
+  uint64 session_uin = 3;
+  uint64 sender_uin = 4;
+  string text = 5;
+}
+
+message MarketFace {
+  bytes faceName = 1;
+  uint32 item_type = 2;
+  uint32 face_info = 3;
+  bytes face_id = 4;
+  uint32 tab_id = 5;
+  uint32 sub_type = 6;
+  bytes key = 7;
+  bytes param = 8;
+  uint32 media_type = 9;
+  uint32 image_width = 10;
+  uint32 image_height = 11;
+  bytes mobile_param = 12;
+}
+
+message MarketTransfer {
+  int32 flag = 1;
+  bytes xml = 2;
+  bytes resource_id = 3;
+  uint32 ability = 4;
+  uint32 min_ability = 5;
+}
+
+message MessageBody {
+  RichText rich_text = 1;
+  bytes message_content = 2;
+}
+
+message NotOnlineFile {
+  uint32 file_type = 1;
+  bytes sig = 2;
+  bytes file_uuid = 3;
+  bytes file_md5 = 4;
+  bytes file_name = 5;
+  uint64 file_size = 6;
+  bytes note = 7;
+  uint32 reserved = 8;
+  uint32 sub_cmd = 9;
+  uint32 micro_cloud = 10;
+  uint32 danger_evel = 11;
+  uint32 life_time = 12;
+  uint32 upload_time = 13;
+  uint32 absAile_type = 14;
+  uint32 client_type = 15;
+  uint32 expire_time = 16;
+}
+
+message NotOnlineImage {
+  bytes file_path = 1;
+  uint32 file_len = 2;
+  bytes download_path = 3;
+  bytes send_file = 4;
+  uint32 img_type = 5;
+  bytes previews_image = 6;
+  bytes pic_md5 = 7;
+  uint32 pic_height = 8;
+  uint32 pic_width = 9;
+  bytes resource_id = 10;
+  bytes flag = 11;
+  string thumb_url = 12;
+  uint32 original = 13;
+  string big_url = 14;
+  string orig_url = 15;
+  uint32 biz_type = 16;
+  uint32 result = 17;
+  uint32 index = 18;
+  bytes op_ace_buffer = 19;
+  bool old_pic_md5 = 20;
+  uint32 thumb_width = 21;
+  uint32 thumb_height = 22;
+  uint32 file_id = 23;
+  uint32 show_len = 24;
+  uint32 download_len = 25;
+}
+
+message OnlineImage {
+  bytes guid = 1;
+  bytes file_path = 2;
+  bytes send_file = 3;
+}
+
+message PCSupportDef {
+  uint32 pc_ptl_begin = 1;
+  uint32 pc_ptl_end = 2;
+  uint32 mac_ptl_begin = 3;
+  uint32 mac_ptl_end = 4;
+  repeated uint32 ptls_support = 5;
+  repeated uint32 ptls_not_support = 6;
+}
+
+message PTT {
+  uint32 fileType = 1;
+  uint64 src_uin = 2;
+  bytes file_uuid = 3;
+  bytes fileMd5 = 4;
+  bytes fileName = 5;
+  uint32 fileSize = 6;
+  bytes reserveData = 7;
+  uint32 fileId = 8;
+  uint32 serverIp = 9;
+  uint32 serverPort = 10;
+  bool valid = 11;
+  bytes signature = 12;
+  bytes shortcut = 13;
+  bytes fileKey = 14;
+  uint32 magicPttIndex = 15;
+  uint32 voiceSwitch = 16;
+  bytes ptt_url = 17;
+  bytes groupAileKey = 18;
+}
+
+message PublicAccount {
+  bytes buf = 1;
+}
+
+message PublicGroup {
+  bytes nickname = 1;
+  uint32 gender = 2;
+  uint32 age = 3;
+  uint32 distance = 4;
+}
+
+message QQLiveOld {
+  uint32 subCmd = 1;
+  string showText = 2;
+  string param = 3;
+  string introduce = 4;
+}
+
+message QQWalletAIOBody {
+  uint64 senduin = 1;
+  QQWalletAIOElement sender = 2;
+  QQWalletAIOElement receiver = 3;
+  sint32 channelid = 4;
+  sint32 templateid = 5;
+  uint32 resend = 6;
+  uint32 msg_priority = 7;
+  sint32 redtype = 8;
+  bytes billno = 9;
+  bytes authkey = 10;
+  sint32 sessiontype = 11;
+  sint32 msgtype = 12;
+  sint32 envelopeid = 13;
+  bytes name = 14;
+  sint32 conftype = 15;
+  sint32 msg_from = 16;
+  bytes pc_body = 17;
+  string index = 18;
+  uint32 redchannel = 19;
+  uint64 grap_uin = 20;
+  bytes pb_reserve = 21;
+}
+
+message QQWalletAIOElement {
+  uint32 background = 1;
+  uint32 icon = 2;
+  bytes title = 3;
+  bytes subtitle = 4;
+  bytes content = 5;
+  bytes linkurl = 6;
+  bytes blackstripe = 7;
+  bytes notice = 8;
+  uint32 title_color = 9;
+  uint32 subtitle_color = 10;
+  bytes actions_priority = 11;
+  bytes jump_url = 12;
+  bytes native_ios = 13;
+  bytes native_android = 14;
+  bytes iconurl = 15;
+  uint32 content_color = 16;
+  uint32 content_bgcolor = 17;
+  bytes aio_image_left = 18;
+  bytes aio_image_right = 19;
+  bytes cft_image = 20;
+  bytes pb_reserve = 21;
+}
+
+message QQWalletMessage {
+  QQWalletAIOBody body = 1;
+}
+
+message RedBagInfo {
+  uint32 red_bag_type = 1;
+}
+
+message RichMessage {
+  bytes template1 = 1;
+  uint32 serviceId = 2;
+  bytes messageResId = 3;
+  uint32 rand = 4;
+  uint32 seq = 5;
+}
+
+message RichText {
+  Attribute attribute = 1;
+  repeated Element elements = 2;
+  NotOnlineFile notOnlineAile = 3;
+  PTT ptt = 4;
+  TempPTT tmpPtt = 5;
+  Trans211TempMessage trans_211TmpMessage = 6;
+}
+
+message SecretFileMessage {
+  bytes fileKey = 1;
+  uint64 from_uin = 2;
+  uint64 to_uin = 3;
+  uint32 status = 4;
+  uint32 ttl = 5;
+  uint32 type = 6;
+  uint32 encryptPreheadLength = 7;
+  uint32 encryptType = 8;
+  bytes encryptKey = 9;
+  uint32 readTimes = 10;
+  uint32 leftTime = 11;
+  NotOnlineImage notOnlineImage = 12;
+  ElementFlags2 flags2 = 13;
+  uint32 opertype = 14;
+  string fromPhonenum = 15;
+}
+
+message ShakeWindow {
+  uint32 type = 1;
+  uint32 reserve = 2;
+  uint64 uin = 3;
+}
+
+message SourceMessage {
+  repeated uint32 origSeqs = 1;
+  uint64 from_uin = 2;
+  uint32 time = 3;
+  uint32 flag = 4;
+  repeated Element elements = 5;
+  uint32 type = 6;
+  bytes richMessage = 7;
+  bytes reserve = 8;
+  bytes sourceMessage = 9;
+  uint64 to_uin = 10;
+  bytes groupName = 11;
+}
+
+message Text {
+  string data = 1;
+  string link = 2;
+  bytes attr6Buffer = 3;
+  bytes attr7Buffer = 4;
+  bytes buffer = 5;
+}
+
+message TipsInfo {
+    string text = 1;
+}
+
+message TempPTT {
+  uint32 fileType = 1;
+  bytes file_uuid = 2;
+  bytes fileMd5 = 3;
+  bytes fileName = 4;
+  uint32 fileSize = 5;
+  uint64 pttTimes = 6;
+  uint32 userType = 7;
+  uint32 ptttransFlag = 8;
+}
+
+message Trans211TempMessage {
+  bytes messageBody = 1;
+  uint32 c2cCommand = 2;
+}
+
+message TransferElement {
+  uint32 type = 1;
+  bytes value = 2;
+}
+
+message VideoFile {
+  bytes file_uuid = 1;
+  bytes fileMd5 = 2;
+  bytes fileName = 3;
+  uint32 fileFormat = 4;
+  uint32 fileTime = 5;
+  uint32 fileSize = 6;
+  uint32 thumbWidth = 7;
+  uint32 thumbHeight = 8;
+  bytes thumbFileMd5 = 9;
+  bytes source = 10;
+}

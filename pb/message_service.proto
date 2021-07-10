@@ -3,19 +3,47 @@ syntax = "proto3";
 option go_package = "./;pb";
 
 import "message.proto";
+import "message_body.proto";
+
+/* message service */
 
 message C2C {
-  uint64 uin = 1;
-}
+  uint64 to_uin = 1;
+} // C2C
 
-message Discussion {
-  uint64 code = 1;
-}
+message CommonTemp {
+  uint64 to_uin = 1;
+  uint32 c2c_type = 2;
+  uint32 server_type = 3;
+  bytes sig = 4;
+  bytes reserved = 5;
+} // CommTmp
 
-message DiscussionTemp {
-  uint64 code = 1;
+message Discuss {
+  uint64 uin = 1; // dis_uin
+} // Dis
+
+message DiscussTemp {
+  uint64 uin = 1; // dis_uin
   uint64 to_uin = 2;
-}
+} // DisTmp
+
+message Group {
+  uint64 uin = 1; // group_code
+} // Grp
+
+message GroupTemp {
+  uint64 uin = 1; // group_uin
+  uint64 to_uin = 2;
+} // GrpTmp
+
+message InputNotifyInfo {
+  uint64 to_uin = 1;
+  uint32 ime = 2;
+  uint32 notify_flag = 3;
+  bytes reserve = 4; // pb_reserve
+  bytes ios_push_wording = 5;
+} // PbInputNotifyInfo
 
 message MessageDeleteMessageRequest {
   repeated Item items = 1;
@@ -25,16 +53,85 @@ message MessageDeleteMessageRequest {
     uint32 message_type = 3;
     uint32 message_seq = 4;
     uint64 message_uid = 5;
+    bytes sig = 6;
   }
-}
+} // PbDeleteMsgReq
 
 message MessageDeleteMessageResponse {
-  optional uint32 result = 1;
-  optional string error = 2;
-}
+  uint32 result = 1;
+  string error = 2; // errmsg
+} // PbDeleteMsgResp
+
+message MessageDeleteRoamingRequest {
+  C2C c2c = 1;
+  Group group = 2;
+  Discuss discuss = 3;
+  message C2C {
+    uint64 from_uin = 1;
+    uint64 peer_uin = 2;
+    uint32 message_time = 3;
+    uint32 message_seq = 4;
+    uint32 message_random = 5;
+  } // C2CMsg
+  message Discuss {
+    uint64 uin = 1; // discuss_uin
+    uint64 message_seq = 2;
+  } // DisMsg
+  message Group {
+    uint64 uin = 1; // group_code
+    uint64 message_seq = 2;
+    uint32 resv_flag = 3;
+  } // GrpMsg
+} // PbDelRoamMsgReq
+
+message MessageDeleteRoamingResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+} // PbDelRoamMsgResp
+
+message MessageGetDiscussRequest {
+  uint64 uin = 1; // discuss_uin
+  uint64 end_seq = 2;
+  uint64 begin_seq = 3;
+  uint64 last_get_time = 4;
+  uint64 info_seq = 5; // discuss_info_seq
+  uint32 filter = 6; // Enum
+  uint64 member_seq = 7;
+} // PbGetDiscussMsgReq
+
+message MessageGetDiscussResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 uin = 3; // discuss_uin
+  uint64 end_seq = 4; // return_end_seq
+  uint64 begin_seq = 5; // return_begin_seq
+  repeated Message messages = 6;
+  uint64 last_get_time = 7;
+  uint64 info_seq = 8; // discuss_info_seq
+} // PbGetDiscussMsgResp
+
+message MessageGetGroupRequest {
+  uint64 uin = 1; // group_code
+  uint64 begin_seq = 2;
+  uint64 end_seq = 3;
+  uint32 filter = 4; // Enum
+  uint64 member_seq = 5;
+  bool public = 6; // public_group
+  uint64 shield_flag = 7;
+  uint64 save_traffic_flag = 8;
+} // PbGetGroupMsgReq
+
+message MessageGetGroupResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 uin = 3; // group_code
+  uint64 begin_seq = 4; // return_begin_seq
+  uint64 end_seq = 5; // return_end_seq
+  repeated Message messages = 6;
+} // PbGetGroupMsgResp
 
 message MessageGetMessageRequest {
-  uint32 sync_flag = 1;
+  uint32 sync_flag = 1; // Enum
   bytes sync_cookie = 2;
   uint32 ramble_flag = 3;
   uint32 latest_ramble_number = 4;
@@ -42,20 +139,246 @@ message MessageGetMessageRequest {
   uint32 online_sync_flag = 6;
   uint32 context_flag = 7;
   uint32 whisper_session_id = 8;
-  uint32 request_type = 9;
+  uint32 request_type = 9; // msg_req_type
   bytes public_account_cookie = 10;
-  bytes control_buffer = 11;
+  bytes control_buffer = 11; // msg_ctrl_buf
   bytes server_buffer = 12;
-}
+} // PbGetMsgReq
 
 message MessageGetMessageResponse {
-  optional uint32 result = 1;
-  optional string error = 2;
-  optional bytes sync_cookie = 3;
-  optional uint32 sync_flag = 4;
+  uint32 result = 1;
+  string error = 2; // errmsg
+  bytes sync_cookie = 3;
+  uint32 sync_flag = 4; // Enum
   repeated UinPairMessage uin_pair_messages = 5;
-  optional uint64 bind_uin = 6;
-}
+  uint64 bind_uin = 6;
+  uint64 response_type = 7; // msg_rsp_type
+  bytes public_account_cookie = 8;
+  bool is_partial_sync = 9;
+  bytes control_buffer = 10; // msg_ctrl_buf
+} // PbGetMsgResp
+
+message MessageGetRoamingRequest {
+  uint64 peer_uin = 1;
+  uint64 last_message_time = 2;
+  uint64 random = 3;
+  uint32 read_count = 4;
+  uint32 check_pwd = 5;
+  bytes sig = 6;
+  bytes pwd = 7;
+  uint32 sub_cmd = 8;
+  uint64 begin_message_time = 9;
+  uint32 req_type = 10;
+} // PbGetRoamMsgReq
+
+message MessageGetRoamingResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 peer_uin = 3;
+  uint64 last_message_time = 4;
+  uint64 random = 5;
+  repeated Message messages = 6;
+  bytes sig = 7;
+} // PbGetRoamMsgResp
+
+message MessageGetRoamingOneDayRequest {
+  uint64 peer_uin = 1;
+  uint64 last_message_time = 2;
+  uint64 random = 3;
+  uint32 read_count = 4;
+} // PbGetOneDayRoamMsgReq
+
+message MessageGetRoamingOneDayResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 peer_uin = 3;
+  uint64 last_message_time = 4;
+  uint64 random = 5;
+  repeated Message messages = 6;
+  uint32 iscomplete = 7;
+} // PbGetOneDayRoamMsgResp
+
+message MessageGetUnreadBindUinRequest {
+  uint64 bind_uin = 1;
+  bytes sync_cookie = 2;
+} // PbBindUinUnReadMsgNumReq
+
+message MessageGetUnreadBindUinResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 bind_uin = 3;
+  uint32 message_number = 4;
+} // PbBindUinUnReadMsgNumResp
+
+message MessageGetUnreadC2CRequest {} // PbC2CUnReadMsgNumReq
+
+message MessageGetUnreadC2CResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint32 message_number = 3;
+} // PbC2CUnReadMsgNumResp
+
+message MessageGetUnreadDiscussRequest {
+  repeated Item items = 1; // discuss_info_req
+  message Item {
+    uint64 uin = 1; // conf_uin
+    uint64 last_seq = 2;
+  }
+} // PbPullDiscussMsgSeqReq
+
+message MessageGetUnreadDiscussResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  repeated Item items = 3; // discuss_info_resp
+  message Item {
+    uint64 uin = 1; // conf_uin
+    uint64 member_seq = 2;
+    uint64 seq = 3; // conf_seq
+  }
+} // PbPullDiscussMsgSeqResp
+
+message MessageGetUnreadGroupRequest {
+  repeated Item items = 1; // group_info_req
+  message Item {
+    uint64 uin = 1; // group_code
+    uint64 last_seq = 2;
+  }
+} // PbPullGroupMsgSeqReq
+
+message MessageGetUnreadGroupResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  repeated Item items = 3; // group_info_resp
+  message Item {
+    uint64 uin = 1; // group_code
+    uint64 member_seq = 2;
+    uint64 seq = 3; // group_seq
+  }
+} // PbPullGroupMsgSeqResp
+
+message MessageGetUnreadRequest {
+  MessageGetUnreadC2CRequest c2c = 1;
+  repeated MessageGetUnreadBindUinRequest bind_uin = 2;
+  MessageGetUnreadGroupRequest group = 3;
+  MessageGetUnreadDiscussRequest discuss = 4;
+  MessageGetUnreadThirdQQRequest third_qq = 5;
+} // PbUnReadMsgSeqReq
+
+message MessageGetUnreadResponse {
+  MessageGetUnreadC2CResponse c2c = 1;
+  repeated MessageGetUnreadBindUinResponse bind_uin = 2;
+  MessageGetUnreadGroupResponse group = 3;
+  MessageGetUnreadDiscussResponse discuss = 4;
+  MessageGetUnreadThirdQQResponse third_qq = 5;
+} // PbUnReadMsgSeqResp
+
+message MessageGetUnreadThirdQQRequest {
+  repeated Item items = 1; // thirdqq_req_info
+  uint32 source = 2;
+  message Item {
+    uint64 uin = 1; // third_uin
+    bytes sig = 2; // third_uin_sig
+    bytes cookie = 3; // third_uin_cookie
+  } // ThirdQQReqInfo
+} // PbThirdQQUnReadMsgNumReq
+
+message MessageGetUnreadThirdQQResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  repeated Item items = 3; // thirdqq_resp_info
+  uint32 interval = 4;
+  message Item {
+    uint64 uin = 1; // third_uin
+    bytes cookie = 2; // third_uin_cookie
+    uint32 message_number = 3;
+    uint32 message_flag = 4;
+    uint32 redbag_time = 5;
+    uint32 status = 6;
+    uint32 last_message_time = 7;
+  } // ThirdQQRespInfo
+} // PbThirdQQUnReadMsgNumResp
+
+message MessageReportReadedBindUinRequest {
+  bytes sync_cookie = 1;
+  uint64 bind_uin = 2;
+} // PbBindUinMsgReadedConfirmReq
+
+message MessageReportReadedBindUinResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  bytes sync_cookie = 3;
+  uint64 bind_uin = 4;
+} // PbBindUinMsgReadedConfirmResp
+
+message MessageReportReadedC2CRequest {
+  bytes sync_cookie = 1;
+  string pair_info = 2;
+  message Item {
+    uint64 peer_uin = 1;
+    uint32 last_read_time = 2;
+    bytes crm_sig = 3;
+    uint32 peer_type = 4; // Enum
+    uint32 chat_type = 5;
+    uint64 cpid = 6;
+    uint32 aio_type = 7;
+    uint64 to_tiny_id = 8;
+  }
+} // PbC2CReadedReportReq
+
+message MessageReportReadedC2CResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  bytes sync_cookie = 3;
+} // PbC2CReadedReportResp
+
+message MessageReportReadedDiscussRequest {
+  uint64 uin = 1; // conf_uin
+  uint64 last_read_seq = 2;
+} // PbDiscussReadedReportReq
+
+message MessageReportReadedDiscussResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 uin = 3; // conf_uin
+  uint64 member_seq = 4;
+  uint64 seq = 5; // conf_seq
+} // PbDiscussReadedReportResp
+
+message MessageReportReadedGroupRequest {
+  uint64 uin = 1; // group_code
+  uint64 last_read_seq = 2;
+} // PbGroupReadedReportReq
+
+message MessageReportReadedGroupResponse {
+  uint32 result = 1;
+  string error = 2; // errmsg
+  uint64 uin = 3; // group_code
+  uint64 member_seq = 4;
+  uint64 seq = 5; // group_msg_seq
+} // PbGroupReadedReportResp
+
+message MessageReportReadedMessageRequest {
+  repeated MessageReportReadedGroupRequest group = 1;
+  repeated MessageReportReadedDiscussRequest discuss = 2;
+  MessageReportReadedC2CRequest c2c = 3;
+  MessageReportReadedBindUinRequest bind_uin = 4;
+} // PbMsgReadedReportReq
+
+message MessageReportReadedMessageResponse {
+  repeated MessageReportReadedGroupResponse group = 1;
+  repeated MessageReportReadedDiscussResponse discuss = 2;
+  MessageReportReadedC2CResponse c2c = 3;
+  MessageReportReadedBindUinResponse bind_uin = 4;
+} // PbMsgReadedReportResp
+
+message MessageSearchRoamingRequest {
+  bytes body = 1; // serialize_reqbody
+} // PbSearchRoamMsgInCloudReq
+
+message MessageSearchRoamingResponse {
+  repeated Message message = 1;
+  bytes body = 2; // serialize_rspbody
+} // PbSearchRoamMsgInCloudResp
 
 message MessageSendMessageRequest {
   RoutingHead routing_head = 1;
@@ -66,42 +389,129 @@ message MessageSendMessageRequest {
   bytes sync_cookie = 6;
   AppShareInfo app_share_info = 7;
   uint32 message_via = 8;
-}
+  uint32 data_statist = 9;
+  // MultiMessageAssist multi_message_assist = 10;
+  InputNotifyInfo input_notify_info = 11;
+  // MessageControl message_control = 12;
+  // ReceiptReq receipt_req = 13;
+  uint32 multi_send_seq = 14;
+} // PbSendMsgReq
 
 message MessageSendMessageResponse {
-  optional int32 result = 1;
-  optional string error = 2;
-  optional int64 send_time = 3;
-}
+  int32 result = 1;
+  string error = 2; // errmsg
+  int64 send_time = 3;
+  uint32 svrbusy_wait_time = 4;
+  // MsgSendInfo message_send_info = 5;
+  uint32 error_type = 6;
+  // TransSvrInfo trans_svr_info = 7;
+  // ReceiptResp receipt_resp = 8;
+  uint32 text_analysis_result = 9;
+  uint32 message_info_flag = 10;
+  bytes message_element_info_service_type37 = 11;
+} // PbSendMsgResp
 
-message Group {
-  uint64 code = 1;
-}
+message MessageWithdrawC2CRequest {
+  repeated Item items = 1; // msg_info
+  uint32 long_message_flag = 2;
+  bytes reserved = 3;
+  uint32 sub_cmd = 4;
+  message Item {
+    uint64 from_uin = 1;
+    uint64 to_uin = 2;
+    uint32 message_seq = 3;
+    uint64 message_uid = 4;
+    uint64 message_time = 5;
+    uint32 message_random = 6;
+    uint32 package_number = 7;
+    uint32 package_index = 8;
+    uint32 div_seq = 9;
+    uint32 message_type = 10;
+    RoutingHead routing_head = 11;
+  }
+} // PbC2CMsgWithDrawReq
 
-message GroupTemp {
-  uint64 code = 1;
-  uint64 to_uin = 2;
-}
+message MessageWithdrawC2CResponse {
+  int32 result = 1;
+  string error = 2; // errmsg
+  uint64 message_status = 3;
+  uint32 sub_cmd = 4;
+  repeated Item items = 5; // msg_wording_info
+  message Item {
+    MessageWithdrawC2CRequest.Item message_info = 1;
+    uint32 status = 2;
+  }
+} // PbC2CMsgWithDrawResp
+
+message MessageWithdrawGroupRequest {
+  uint32 sub_cmd = 1;
+  uint32 group_type = 2;
+  uint64 group_code = 3;
+  repeated Item items = 4; // msg_list
+  bytes userdef = 5;
+  message Item {
+    uint32 message_seq = 1;
+    uint32 message_random = 2;
+    uint32 message_type = 3;
+    uint32 resv_flag = 4;
+  } // MessageInfo
+} // PbGroupMsgWithDrawReq
+
+message MessageWithdrawGroupResponse {
+  int32 result = 1;
+  string error = 2; // errmsg
+  uint32 sub_cmd = 3;
+  uint32 group_type = 4;
+  uint64 group_code = 5;
+  repeated Item items = 6; // failed_msg_list
+  bytes user_define = 7;
+  WithdrawWordingInfo msg_wording_info = 8;
+  message Item {
+    uint32 result = 1;
+    uint32 message_seq = 2;
+    uint32 message_time = 3;
+    uint32 message_random = 4;
+    bytes error_message = 5;
+    uint32 message_type = 6;
+  } // MessageResult
+} // PbGroupMsgWithDrawResp
+
+message MessageWithdrawMessageRequest {
+  repeated MessageWithdrawC2CRequest c2c = 1;
+  repeated MessageWithdrawGroupRequest group = 2;
+} // PbMsgWithDrawReq
+
+message MessageWithdrawMessageResponse {
+  repeated MessageWithdrawC2CResponse c2c = 1;
+  repeated MessageWithdrawGroupResponse group = 2;
+} // PbMsgWithDrawResp
 
 message RoutingHead {
   C2C c2c = 1;
   Group group = 2;
   GroupTemp group_temp = 3;
-  Discussion discussion = 4;
-  DiscussionTemp discussion_temp = 5;
-  // string wpaTemp = 6;
-  // string secretFile = 7;
-  // string publicPlat = 8;
-  // string transMessage = 9;
-  // string addressList = 10;
-  // string richStatusTemp = 11;
-  // string accostTemp = 12;
-  // string publicGroupTemp = 13;
-  // string trans0x211 = 14;
-  // string businessWpaTemp = 15;
-  // string authTemp = 16;
-  // string bsnsTemp = 17;
-  // string qqQueryBusinessTemp = 18;
-  // string nearbyDatingTemp = 19;
-  // string nearbyAssistantTemp = 20;
+  Discuss discuss = 4;
+  DiscussTemp discuss_temp = 5;
+  // string wpa_temp = 6;
+  // string secret_file = 7;
+  // string public_plat = 8;
+  // string transfer_message = 9;
+  // string address_list = 10;
+  // string rich_status_temp = 11;
+  // string transfer_cmd = 12;
+  // string accost_temp = 13;
+  // string public_group_temp = 14;
+  // string transfer_0x211 = 15;
+  // string business_wpa_temp = 16;
+  // string auth_temp = 17;
+  // string business_temp = 18;
+  // string qq_query_business_temp = 19;
+  // string nearby_dating_temp = 20;
+  // string nearby_assistant_temp = 21;
+  CommonTemp common_temp = 22;
 }
+
+message WithdrawWordingInfo {
+  int32 id = 1;
+  string name = 2;
+} // WithDrawWordingInfo
