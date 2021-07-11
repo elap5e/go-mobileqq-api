@@ -2,7 +2,7 @@
 
 > An open-source RPC-based fast MobileQQ client API in go
 
-Refer to the [🔗 wiki](https://github.com/elap5e/go-mobileqq-api/wiki) for advanced usage.
+Refer to the [wiki](https://github.com/elap5e/go-mobileqq-api/wiki) ([简体中文](https://github.com/elap5e/go-mobileqq-api/wiki/Home.zh_Hans)) for advanced usage.
 
 ## Try MobileQQ client API
 
