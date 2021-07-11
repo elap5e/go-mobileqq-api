@@ -1,9 +1,11 @@
 package mobileqq
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -17,10 +19,31 @@ var (
 	logDir     = path.Join(baseDir, "log")
 )
 
+var ConfigYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
+
+accounts:
+  - username: 10000
+    password: 123456
+    botToken: 10000:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+
+configs:
+  auth:
+    address: 127.0.0.1:0
+    captcha: true
+  deviceInfo:
+    randomSeed: %d
+  logLevel: info
+  protocol: android
+
+targets:
+  - chatId: 0:10000
+`, time.Now().UnixNano())
+
 type Config struct {
 	Accounts []struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		BotToken string `json:"botToken"`
 	} `json:"accounts"`
 	Configs struct {
 		Auth struct {

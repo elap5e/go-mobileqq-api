@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/spf13/viper"
 
@@ -24,25 +22,6 @@ var (
 	config     mobileqq.Config
 )
 
-var configYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
-
-accounts:
-  - username: 10000
-    password: 123456
-
-configs:
-  auth:
-    address: 127.0.0.1:0
-    captcha: true
-  deviceInfo:
-    randomSeed: %d
-  logLevel: info
-  protocol: android
-
-targets:
-  - chatId: 0:10000
-`, time.Now().UnixNano())
-
 func init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -53,7 +32,7 @@ func init() {
 			configPath := path.Join(baseDir, "config.yaml")
 			_ = ioutil.WriteFile(
 				configPath,
-				[]byte(configYAML),
+				[]byte(mobileqq.ConfigYAML),
 				0600,
 			)
 			log.Fatal().Msgf("x_x [init] create config.yaml in %s", configPath)
