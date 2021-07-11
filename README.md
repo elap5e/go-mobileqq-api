@@ -2,6 +2,8 @@
 
 > An open-source RPC-based fast MobileQQ client API in go
 
+Refer to the 🔗[wiki](https://github.com/elap5e/go-mobileqq-api/wiki) for advanced usage.
+
 ## Try MobileQQ client API
 
 Waiting for `v0.1.0-alpha`, or you can build it from source.
@@ -79,7 +81,7 @@ go-mobileqq-echo
 2. Multi-users login (Release `v0.1.0-alpha`)
 3. Use local database (Release `v0.1.0`)
 4. Support more protocols (Release `v0.1.0`)
-5. `Telegram Bot API`
+5. `Telegram Bot API` (working on it)
 
 ## License
 
