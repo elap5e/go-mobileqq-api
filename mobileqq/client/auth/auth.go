@@ -1,71 +1,55 @@
-package client
+package auth
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthGetSessionTicketsRequest interface {
-	GetTLVs(ctx context.Context) (map[uint16]tlv.TLVCodec, error)
-	GetType() uint16
-	SetType(typ uint16)
+type Request interface {
 	GetSeq() uint32
 	SetSeq(seq uint32)
+	GetServiceMethod() string
+	SetServiceMethod(service string)
+	GetType() uint16
+	SetType(typ uint16)
 	GetUin() uint64
+	SetUin(uin uint64)
 	GetUsername() string
 	SetUsername(username string)
-	GetServiceMethod() string
+
+	MustGetTLVs(ctx context.Context) map[uint16]tlv.TLVCodec
 }
 
-type authGetSessionTicketsRequest struct {
-	typ      uint16
+type request struct {
 	seq      uint32
+	service  string
+	typ      uint16
 	uin      uint64
 	username string
-	method   string
 }
 
-func (req *authGetSessionTicketsRequest) GetType() uint16 {
-	return req.typ
-}
+func (req *request) GetSeq() uint32 { return req.seq }
 
-func (req *authGetSessionTicketsRequest) SetType(typ uint16) {
-	req.typ = typ
-}
+func (req *request) SetSeq(seq uint32) { req.seq = seq }
 
-func (req *authGetSessionTicketsRequest) GetSeq() uint32 {
-	return req.seq
-}
+func (req *request) GetServiceMethod() string { return req.service }
 
-func (req *authGetSessionTicketsRequest) SetSeq(seq uint32) {
-	req.seq = seq
-}
+func (req *request) SetServiceMethod(service string) { req.service = service }
 
-func (req *authGetSessionTicketsRequest) GetUin() uint64 {
-	return req.uin
-}
+func (req *request) GetType() uint16 { return req.typ }
 
-func (req *authGetSessionTicketsRequest) GetUsername() string {
-	return req.username
-}
+func (req *request) SetType(typ uint16) { req.typ = typ }
 
-func (req *authGetSessionTicketsRequest) SetUsername(username string) {
-	req.username = username
-	uin, _ := strconv.ParseInt(username, 10, 64)
-	req.uin = uint64(uin)
-}
+func (req *request) GetUin() uint64 { return req.uin }
 
-func (req *authGetSessionTicketsRequest) GetServiceMethod() string {
-	return req.method
-}
+func (req *request) SetUin(uin uint64) { req.uin = uin }
 
-func (req *authGetSessionTicketsRequest) SetServiceMethod(method string) {
-	req.method = method
-}
+func (req *request) GetUsername() string { return req.username }
 
-type AuthGetSessionTicketsResponse struct {
+func (req *request) SetUsername(username string) { req.username = username }
+
+type Response struct {
 	Code     uint8
 	Uin      uint64
 	Username string
@@ -93,7 +77,7 @@ type AuthGetSessionTicketsResponse struct {
 	LoginExtraData []byte
 }
 
-func (resp *AuthGetSessionTicketsResponse) SetTLVs(
+func (resp *Response) SetTLVs(
 	ctx context.Context,
 	tlvs map[uint16]tlv.TLVCodec,
 ) error {
@@ -151,17 +135,4 @@ func (resp *AuthGetSessionTicketsResponse) SetTLVs(
 		resp.T546 = v.MustGetValue().Bytes()
 	}
 	return nil
-}
-
-type AuthContext struct {
-}
-
-var authCtxKey struct{}
-
-func (c *Client) WithAuthContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, authCtxKey, c)
-}
-
-func ForAuthContext(ctx context.Context) *AuthContext {
-	return ctx.Value(authCtxKey).(*AuthContext)
 }

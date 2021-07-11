@@ -1,19 +1,19 @@
-package client
+package auth
 
 import (
 	"context"
 )
 
-type AuthGetSessionTicketsWithQRSignatureRequest struct {
-	AuthGetSessionTicketsWithPasswordRequest
+type getSessionTicketsWithQRSignatureRequest struct {
+	getSessionTicketsWithPasswordRequest
 }
 
-func NewAuthGetSessionTicketsWithQRSignatureRequest(
+func newGetSessionTicketsWithQRSignatureRequest(
 	username string,
 	password string,
-) *AuthGetSessionTicketsWithQRSignatureRequest {
-	req := &AuthGetSessionTicketsWithQRSignatureRequest{
-		AuthGetSessionTicketsWithPasswordRequest{
+) *getSessionTicketsWithQRSignatureRequest {
+	req := &getSessionTicketsWithQRSignatureRequest{
+		getSessionTicketsWithPasswordRequest{
 			DstAppID:         defaultClientDstAppID,
 			SubDstAppID:      defaultClientOpenAppID,
 			AppClientVersion: 0x00000000,
@@ -45,9 +45,9 @@ func NewAuthGetSessionTicketsWithQRSignatureRequest(
 	return req
 }
 
-func (c *Client) AuthGetSessionTicketsWithQRSignature(
+func (h *Handler) AuthGetSessionTicketsWithQRSignature(
 	ctx context.Context,
-	req *AuthGetSessionTicketsWithQRSignatureRequest,
-) (*AuthGetSessionTicketsResponse, error) {
-	return c.AuthGetSessionTickets(ctx, req)
+	req *getSessionTicketsWithQRSignatureRequest,
+) (*Response, error) {
+	return h.getSessionTickets(ctx, req)
 }

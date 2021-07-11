@@ -1,4 +1,4 @@
-package client
+package auth
 
 import (
 	"crypto"
@@ -22,62 +22,55 @@ var (
 	serverRSAPublicKey, _  = base64.StdEncoding.DecodeString("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuJTW4abQJXeVdAODw1CamZH4QJZChyT08ribet1Gp0wpSabIgyKFZAOxeArcCbknKyBrRY3FFI9HgY1AyItH8DOUe6ajDEb6c+vrgjgeCiOiCVyum4lI5Fmp38iHKH14xap6xGaXcBccdOZNzGT82sPDM2Oc6QYSZpfs8EO7TYT7KSB2gaHz99RQ4A/Lel1Vw0krk+DescN6TgRCaXjSGn268jD7lOO23x5JS1mavsUJtOZpXkK9GqCGSTCTbCwZhI33CpwdQ2EHLhiP5RaXZCio6lksu+d8sKTWU1eEiEb3cQ7nuZXLYH7leeYFoPtbFV4RicIWp0/YG+RP7rLPCwIDAQAB")
 )
 
-func (c *Client) initCrypto() {
-	c.initRandomKey()
-	c.initRandomPassword()
-	c.initPrivateKey()
-	c.initServerPublicKey()
+func (h *Handler) initRandomKey() {
+	h.randomKey = [16]byte{}
+	rand.Read(h.randomKey[:])
 }
 
-func (c *Client) initRandomKey() {
-	c.randomKey = [16]byte{}
-	rand.Read(c.randomKey[:])
-}
-
-func (c *Client) initRandomPassword() {
-	c.randomPassword = [16]byte{}
-	rand.Read(c.randomPassword[:])
+func (h *Handler) initRandomPassword() {
+	h.randomPassword = [16]byte{}
+	rand.Read(h.randomPassword[:])
 	strs := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	for i := range c.randomPassword {
-		c.randomPassword[i] = strs[c.randomPassword[i]%52]
+	for i := range h.randomPassword {
+		h.randomPassword[i] = strs[h.randomPassword[i]%52]
 	}
 }
 
-func (c *Client) initPrivateKey() {
+func (h *Handler) initPrivateKey() {
 	var err error
-	if c.privateKey, err = ecdh.GenerateKey(); err != nil {
+	if h.privateKey, err = ecdh.GenerateKey(); err != nil {
 		log.Fatal().Err(err).
 			Msg("··· [init] failed to generate client ECDH private key")
 	}
 }
 
-func (c *Client) initServerPublicKey() {
+func (h *Handler) initServerPublicKey() {
 	log.Info().Msg("··· [init] updating server ECDH public key...")
-	if err := c.setServerPublicKey(serverECDHPublicKey, 0x0001); err != nil {
+	if err := h.setServerPublicKey(serverECDHPublicKey, 0x0001); err != nil {
 		log.Fatal().Err(err).
 			Msg("··· [init] failed to set default server ECDH public key")
 	}
-	if err := c.updateServerPublicKey(); err != nil {
+	if err := h.updateServerPublicKey(); err != nil {
 		log.Error().Err(err).
 			Msg("··· [init] failed to update server ECDH public key")
 	}
 }
 
-func (c *Client) setServerPublicKey(key []byte, ver uint16) error {
+func (h *Handler) setServerPublicKey(key []byte, ver uint16) error {
 	pub, err := x509.ParsePKIXPublicKey(append(ecdh.X509Prefix, key...))
 	if err != nil {
 		return err
 	}
-	c.serverPublicKey = &ecdh.PublicKey{
+	h.serverPublicKey = &ecdh.PublicKey{
 		Curve: pub.(*ecdsa.PublicKey).Curve,
 		X:     pub.(*ecdsa.PublicKey).X,
 		Y:     pub.(*ecdsa.PublicKey).Y,
 	}
-	c.serverPublicKeyVersion = ver
+	h.serverPublicKeyVersion = ver
 	return nil
 }
 
-func (c *Client) updateServerPublicKey() error {
+func (h *Handler) updateServerPublicKey() error {
 	type serverPublicKey struct {
 		QuerySpan         uint32 `json:"QuerySpan"`
 		PublicKeyMetadata struct {
@@ -119,7 +112,7 @@ func (c *Client) updateServerPublicKey() error {
 		return err
 	}
 	key, _ := hex.DecodeString(data.PublicKeyMetadata.PublicKey)
-	if err := c.setServerPublicKey(
+	if err := h.setServerPublicKey(
 		key,
 		data.PublicKeyMetadata.KeyVersion,
 	); err != nil {

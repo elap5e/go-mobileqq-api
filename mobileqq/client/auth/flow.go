@@ -1,9 +1,8 @@
-package mobileqq
+package auth
 
 import (
 	"bufio"
 	"context"
-	"crypto/md5"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -15,7 +14,7 @@ import (
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/log"
-	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 	"github.com/elap5e/go-mobileqq-api/util"
 )
 
@@ -56,15 +55,38 @@ const tmplAuthCaptcha = `<!DOCTYPE html>
 
 var reader = bufio.NewReader(os.Stdin)
 
-func (c *Client) handleAuthResponse(
-	resp *client.AuthGetSessionTicketsResponse,
-) (*client.AuthGetSessionTicketsResponse, error) {
+type FlowHandler interface {
+	CheckCaptcha(ctx context.Context, username string, code []byte) (*Response, error)
+	CheckPassword(ctx context.Context, username, password string) (*Response, error)
+	CheckPicture(ctx context.Context, username string, code, sign []byte) (*Response, error)
+	CheckSMSCode(ctx context.Context, username string, code []byte) (*Response, error)
+	SendSMSCode(ctx context.Context, username string) (*Response, error)
+	SignIn(ctx context.Context, username, password string) (*Response, error)
+
+	GetUserSignature(username string) *rpc.UserSignature
+	WithHandler(ctx context.Context) context.Context
+}
+
+type FlowOptions struct {
+	Username string
+	Password string
+
+	AuthAddr string
+	CacheDir string
+}
+
+type Flow struct {
+	opt *FlowOptions
+	h   FlowHandler
+}
+
+func (f *Flow) handleAuthResponse(ctx context.Context, resp *Response) (*Response, error) {
 	switch resp.Code {
 	case 0x00:
 		return resp, nil
 	case 0x02:
 		if resp.CaptchaSign != "" {
-			l, err := net.Listen("tcp", c.opt.Client.AuthAddress)
+			l, err := net.Listen("tcp", f.opt.AuthAddr)
 			if err != nil {
 				log.Fatal().Err(err).
 					Msg("x-x [auth] failed to start server")
@@ -116,13 +138,7 @@ func (c *Client) handleAuthResponse(
 				log.Fatal().Err(err).
 					Msg("x-x [auth] failed to shutdown server")
 			}
-			return c.client.AuthCheckCaptchaAndGetSessionTickets(
-				c.ctx,
-				client.NewAuthCheckCaptchaAndGetSessionTicketsRequest(
-					resp.Username,
-					[]byte(ticket),
-				),
-			)
+			return f.h.CheckCaptcha(ctx, resp.Username, []byte(ticket))
 		} else {
 			file := fmt.Sprintf(
 				"picture-%s.jpg", time.Now().Local().Format("20060102150405"),
@@ -131,7 +147,7 @@ func (c *Client) handleAuthResponse(
 				">_< [auth] picture verify, enter picture verify code:",
 			)
 			_ = ioutil.WriteFile(
-				path.Join(c.opt.CacheDir, resp.Username, file),
+				path.Join(f.opt.CacheDir, resp.Username, file),
 				resp.PictureData,
 				0600,
 			)
@@ -142,13 +158,7 @@ func (c *Client) handleAuthResponse(
 			)
 			fmt.Print(">>> ")
 			code, _ := util.ReadLine(reader)
-			return c.client.AuthCheckPictureAndGetSessionTickets(
-				c.ctx, client.NewAuthCheckPictureAndGetSessionTicketsRequest(
-					resp.Username,
-					[]byte(code),
-					resp.PictureSign,
-				),
-			)
+			return f.h.CheckPicture(ctx, resp.Username, []byte(code), resp.PictureSign)
 		}
 	case 0x01:
 		return nil, fmt.Errorf("invalid password(0x01)")
@@ -163,12 +173,7 @@ func (c *Client) handleAuthResponse(
 		)
 		fmt.Print(">>> ")
 		code, _ := util.ReadLine(reader)
-		return c.client.AuthCheckSMSAndGetSessionTickets(
-			c.ctx, client.NewAuthCheckSMSAndGetSessionTicketsRequest(
-				resp.Username,
-				[]byte(code),
-			),
-		)
+		return f.h.CheckSMSCode(ctx, resp.Username, []byte(code))
 	case 0xa1:
 		return nil, fmt.Errorf("too many sms verify requests(0xa1)")
 	case 0xa2:
@@ -185,46 +190,28 @@ func (c *Client) handleAuthResponse(
 			)
 			fmt.Print(">>> ")
 			_, _ = util.ReadLine(reader)
-			return c.client.AuthRefreshSMSData(
-				c.ctx, client.NewAuthRefreshSMSDataRequest(resp.Username),
-			)
+			return f.h.SendSMSCode(ctx, resp.Username)
 		}
 	}
 	return nil, fmt.Errorf("not implement(0x%02x)", resp.Code)
 }
 
-func (c *Client) Auth(username, password string) error {
-	var err error
-	var resp *client.AuthGetSessionTicketsResponse
-	sig := c.client.GetUserSignature(username)
-	if len(password) != 0 {
-		sig.PasswordMD5 = util.STBytesTobytes(md5.Sum([]byte(password)))
+func NewFlow(opt *FlowOptions, h FlowHandler) *Flow {
+	return &Flow{
+		opt: opt,
+		h:   h,
 	}
-	d2, ok := sig.Tickets["D2"]
-	if (ok && time.Now().After(time.Unix(d2.Iss+d2.Exp, 0))) || !ok {
-		if resp, err = c.client.AuthGetSessionTicketsWithPassword(
-			c.ctx,
-			client.NewAuthGetSessionTicketsWithPasswordRequest(
-				username,
-				password,
-			),
-		); err != nil {
-			return err
-		}
-	} else {
-		if resp, err = c.client.AuthGetSessionTicketsWithoutPassword(
-			c.ctx,
-			client.NewAuthGetSessionTicketsWithoutPasswordRequest(username),
-		); err != nil {
+}
+
+func (f *Flow) Run(ctx context.Context) error {
+	resp, err := f.h.SignIn(ctx, f.opt.Username, f.opt.Password)
+	if err != nil {
+		return err
+	}
+	for resp.Code != 0x00 {
+		if resp, err = f.handleAuthResponse(ctx, resp); err != nil {
 			return err
 		}
 	}
-	for {
-		if resp.Code == 0x00 {
-			return nil
-		}
-		if resp, err = c.handleAuthResponse(resp); err != nil {
-			return err
-		}
-	}
+	return nil
 }

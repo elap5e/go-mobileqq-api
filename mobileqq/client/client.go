@@ -7,56 +7,27 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
-	"github.com/elap5e/go-mobileqq-api/mobileqq/account"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/config"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 )
 
 type Client struct {
-	cfg *Config
+	cfg *config.Config
 	rpc rpc.Engine
-
-	// crypto
-	randomKey      [16]byte
-	randomPassword [16]byte
-
-	privateKey             *ecdh.PrivateKey
-	serverPublicKey        *ecdh.PublicKey
-	serverPublicKeyVersion uint16
-
-	accounts map[string]*account.Account
 
 	userSignatures    map[string]*rpc.UserSignature
 	userSignaturesMux sync.RWMutex
 
-	// message
 	channels map[uint64]string
 	contacts map[uint64]string
 
+	// message
 	messageSeq map[string]*uint32
 	syncCookie []byte
-
-	// tlvs
-	t119 []byte
-	t172 []byte // from t161
-	t173 []byte // from t161
-	t17f []byte // from t161
-	t106 []byte // from t169
-	t10c []byte // from t169
-	t16a []byte // from t169
-	t145 []byte // from t169
-	t174 []byte
-	t17b []byte
-	t402 []byte
-	t403 []byte
-
-	hashedGUID     [16]byte // t401
-	loginExtraData []byte   // from t537
-
-	extraData map[uint16][]byte
 }
 
-func NewClient(cfg *Config, rpc rpc.Engine) *Client {
+func NewClient(cfg *config.Config, rpc rpc.Engine) *Client {
 	c := &Client{
 		cfg: cfg,
 		rpc: rpc,
@@ -66,8 +37,6 @@ func NewClient(cfg *Config, rpc rpc.Engine) *Client {
 }
 
 func (c *Client) init() {
-	c.initCrypto()
-
 	c.initUserSignatures()
 
 	c.initHandlers()
@@ -99,10 +68,6 @@ func (c *Client) setMessageSeq(id string, seq uint32) bool {
 	return false
 }
 
-func (c *Client) GetNextMessageSeq(id string) uint32 {
-	return c.getNextMessageSeq(id)
-}
-
 func (c *Client) getNextMessageSeq(id string) uint32 {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	if _, ok := c.messageSeq[id]; !ok {
@@ -113,6 +78,27 @@ func (c *Client) getNextMessageSeq(id string) uint32 {
 		c.messageSeq[id] = &[]uint32{uint32(r.Int31n(1000)) + 600}[0]
 	}
 	return seq
+}
+
+func (c *Client) Call(
+	serviceMethod string,
+	c2s *codec.ClientToServerMessage,
+	s2c *codec.ServerToClientMessage,
+	timeout ...time.Duration,
+) error {
+	return c.rpc.Call(serviceMethod, c2s, s2c, timeout...)
+}
+
+func (c *Client) GetEngine() rpc.Engine {
+	return c.rpc
+}
+
+func (c *Client) GetNextSeq() uint32 {
+	return c.rpc.GetNextSeq()
+}
+
+func (c *Client) GetNextMessageSeq(id string) uint32 {
+	return c.getNextMessageSeq(id)
 }
 
 var clientCtxKey struct{}

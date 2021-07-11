@@ -51,6 +51,8 @@ func (c *Client) LoadUserSignatures(file string) error {
 }
 
 func (c *Client) SaveUserSignatures(file string) error {
+	c.userSignaturesMux.Lock()
+	defer c.userSignaturesMux.Unlock()
 	data, err := json.MarshalIndent(c.userSignatures, "", "  ")
 	if err != nil {
 		return err

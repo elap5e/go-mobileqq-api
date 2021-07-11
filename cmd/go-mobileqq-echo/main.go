@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -14,13 +15,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/auth"
 )
 
 var (
 	homeDir, _ = os.UserHomeDir()
 	baseDir    = path.Join(homeDir, "."+mobileqq.PackageName)
-	username   string
-	password   string
+	config     mobileqq.Config
 )
 
 var configYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
@@ -39,7 +40,7 @@ configs:
   protocol: android
 
 targets:
-  - id: 0:10000
+  - chatId: 0:10000
 `, time.Now().UnixNano())
 
 func init() {
@@ -61,8 +62,9 @@ func init() {
 			log.Fatal().Msgf("x_x [init] failed to load config.yaml")
 		}
 	} else {
-		username = viper.GetString("accounts.0.username")
-		password = viper.GetString("accounts.0.password")
+		if err := viper.Unmarshal(&config); err != nil {
+			log.Fatal().Err(err).Msg("x_x [init] failed to unmarshal config")
+		}
 	}
 }
 
@@ -76,20 +78,44 @@ func main() {
 	})
 
 	if err := mqq.Run(ctx, func(ctx context.Context, restart chan struct{}) error {
-		if err := mqq.Auth(username, password); err != nil {
-			return err
+		errCh := make(chan error, 1)
+		wg := sync.WaitGroup{}
+		for _, account := range config.Accounts {
+			wg.Add(1)
+			go func(username, password string) {
+				defer wg.Done()
+				rpc := mqq.GetClient()
+				if err := auth.NewFlow(&auth.FlowOptions{
+					Username: username,
+					Password: password,
+					AuthAddr: cfg.AuthAddress,
+					CacheDir: cfg.CacheDir,
+				}, auth.NewHandler(&auth.HandlerOptions{
+					BaseDir: cfg.BaseDir,
+					Client:  cfg.Engine.Client,
+					Device:  cfg.Engine.Device,
+				}, rpc)).Run(ctx); err != nil {
+					errCh <- err
+					return
+				}
+				uin, _ := strconv.ParseInt(username, 10, 64)
+				if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
+					uint64(uin),
+					client.AccountStatusOnline,
+					false,
+				)); err != nil {
+					errCh <- err
+					return
+				}
+			}(account.Username, account.Password)
 		}
-		rpc := mqq.GetClient()
-		uin, _ := strconv.ParseInt(username, 10, 64)
-		if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
-			uint64(uin),
-			client.AccountStatusOnline,
-			false,
-		)); err != nil {
+		wg.Wait()
+		select {
+		case err := <-errCh:
 			return err
+		case <-restart:
+			return nil
 		}
-		<-restart
-		return nil
 	}); err != nil {
 		log.Panic().Err(err).Msg("client unexpected exit")
 	}

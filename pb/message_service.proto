@@ -29,7 +29,7 @@ message DiscussTemp {
 } // DisTmp
 
 message Group {
-  uint64 uin = 1; // group_code
+  uint64 code = 1; // group_code
 } // Grp
 
 message GroupTemp {
@@ -78,7 +78,7 @@ message MessageDeleteRoamingRequest {
     uint64 message_seq = 2;
   } // DisMsg
   message Group {
-    uint64 uin = 1; // group_code
+    uint64 code = 1; // group_code
     uint64 message_seq = 2;
     uint32 resv_flag = 3;
   } // GrpMsg
@@ -111,7 +111,7 @@ message MessageGetDiscussResponse {
 } // PbGetDiscussMsgResp
 
 message MessageGetGroupRequest {
-  uint64 uin = 1; // group_code
+  uint64 code = 1; // group_code
   uint64 begin_seq = 2;
   uint64 end_seq = 3;
   uint32 filter = 4; // Enum
@@ -124,7 +124,7 @@ message MessageGetGroupRequest {
 message MessageGetGroupResponse {
   uint32 result = 1;
   string error = 2; // errmsg
-  uint64 uin = 3; // group_code
+  uint64 code = 3; // group_code
   uint64 begin_seq = 4; // return_begin_seq
   uint64 end_seq = 5; // return_end_seq
   repeated Message messages = 6;
@@ -240,7 +240,7 @@ message MessageGetUnreadDiscussResponse {
 message MessageGetUnreadGroupRequest {
   repeated Item items = 1; // group_info_req
   message Item {
-    uint64 uin = 1; // group_code
+    uint64 code = 1; // group_code
     uint64 last_seq = 2;
   }
 } // PbPullGroupMsgSeqReq
@@ -250,7 +250,7 @@ message MessageGetUnreadGroupResponse {
   string error = 2; // errmsg
   repeated Item items = 3; // group_info_resp
   message Item {
-    uint64 uin = 1; // group_code
+    uint64 code = 1; // group_code
     uint64 member_seq = 2;
     uint64 seq = 3; // group_seq
   }
@@ -345,14 +345,14 @@ message MessageReportReadedDiscussResponse {
 } // PbDiscussReadedReportResp
 
 message MessageReportReadedGroupRequest {
-  uint64 uin = 1; // group_code
+  uint64 code = 1; // group_code
   uint64 last_read_seq = 2;
 } // PbGroupReadedReportReq
 
 message MessageReportReadedGroupResponse {
   uint32 result = 1;
   string error = 2; // errmsg
-  uint64 uin = 3; // group_code
+  uint64 code = 3; // group_code
   uint64 member_seq = 4;
   uint64 seq = 5; // group_msg_seq
 } // PbGroupReadedReportResp
@@ -445,8 +445,8 @@ message MessageWithdrawC2CResponse {
 
 message MessageWithdrawGroupRequest {
   uint32 sub_cmd = 1;
-  uint32 group_type = 2;
-  uint64 group_code = 3;
+  uint32 type = 2; // group_type
+  uint64 code = 3; // group_code
   repeated Item items = 4; // msg_list
   bytes userdef = 5;
   message Item {
@@ -461,8 +461,8 @@ message MessageWithdrawGroupResponse {
   int32 result = 1;
   string error = 2; // errmsg
   uint32 sub_cmd = 3;
-  uint32 group_type = 4;
-  uint64 group_code = 5;
+  uint32 type = 4; // group_type
+  uint64 code = 5; // group_code
   repeated Item items = 6; // failed_msg_list
   bytes user_define = 7;
   WithdrawWordingInfo msg_wording_info = 8;
@@ -510,8 +510,3 @@ message RoutingHead {
   // string nearby_assistant_temp = 21;
   CommonTemp common_temp = 22;
 }
-
-message WithdrawWordingInfo {
-  int32 id = 1;
-  string name = 2;
-} // WithDrawWordingInfo

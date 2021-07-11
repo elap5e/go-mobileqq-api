@@ -9,6 +9,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -17,6 +18,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/auth"
 	"github.com/elap5e/go-mobileqq-api/pb"
 	"github.com/elap5e/go-mobileqq-api/util"
 )
@@ -24,10 +26,7 @@ import (
 var (
 	homeDir, _ = os.UserHomeDir()
 	baseDir    = path.Join(homeDir, "."+mobileqq.PackageName)
-	username   string
-	password   string
-	chatID     uint64
-	peerID     uint64
+	config     mobileqq.Config
 )
 
 var configYAML = fmt.Sprintf(`# Go MobileQQ API Configuration Template
@@ -46,7 +45,7 @@ configs:
   protocol: android
 
 targets:
-  - id: 0:10000
+  - chatId: 0:10000
 `, time.Now().UnixNano())
 
 var reader = bufio.NewReader(os.Stdin)
@@ -70,53 +69,62 @@ func init() {
 			log.Fatal().Msgf("x_x [init] failed to load config.yaml")
 		}
 	} else {
-		username = viper.GetString("accounts.0.username")
-		password = viper.GetString("accounts.0.password")
-		id := strings.Split(viper.GetString("targets.0.id"), ":")
-		_ = id[1]
-		chatID, _ = strconv.ParseUint(id[0], 10, 64)
-		peerID, _ = strconv.ParseUint(id[1], 10, 64)
+		if err := viper.Unmarshal(&config); err != nil {
+			log.Fatal().Err(err).Msg("x_x [init] failed to unmarshal config")
+		}
 	}
 }
 
 func send(ctx context.Context, rpc *client.Client, text string) error {
-	fromID, _ := strconv.ParseUint(username, 10, 64)
-	chatName := strconv.FormatUint(chatID, 10)
-	peerName := strconv.FormatUint(peerID, 10)
-	fromName := strconv.FormatUint(fromID, 10)
-	seq := rpc.GetNextMessageSeq(fmt.Sprintf("%d:%d", chatID, peerID))
-	routingHead := &pb.RoutingHead{}
-	if peerID == 0 {
-		routingHead = &pb.RoutingHead{Group: &pb.Group{Uin: chatID}}
-	} else if chatID == 0 {
-		routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: peerID}}
-	} else {
-		routingHead = &pb.RoutingHead{
-			GroupTemp: &pb.GroupTemp{Uin: chatID, ToUin: peerID},
+	if len(config.Targets) > 0 {
+		account := config.Accounts[0]
+		peerID := config.Targets[0].PeerID
+		userID := config.Targets[0].UserID
+		if peerID != 0 && userID != 0 {
+			chatId := strings.TrimPrefix(config.Targets[0].ChatID, "@")
+			ids := strings.Split(chatId, ":")
+			_ = ids[1]
+			peerID, _ = strconv.ParseUint(ids[0], 10, 64)
+			userID, _ = strconv.ParseUint(ids[1], 10, 64)
 		}
-	}
+		fromID, _ := strconv.ParseUint(account.Username, 10, 64)
+		peerName := strconv.FormatUint(peerID, 10)
+		userName := strconv.FormatUint(userID, 10)
+		fromName := strconv.FormatUint(fromID, 10)
+		seq := rpc.GetNextMessageSeq(fmt.Sprintf("%d:%d", peerID, userID))
+		routingHead := &pb.RoutingHead{}
+		if userID == 0 {
+			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
+		} else if peerID == 0 {
+			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: userID}}
+		} else {
+			routingHead = &pb.RoutingHead{
+				GroupTemp: &pb.GroupTemp{Uin: peerID, ToUin: userID},
+			}
+		}
 
-	msg := pb.Message{}
-	if err := mark.Unmarshal([]byte(text), &msg); err != nil {
-		return err
-	}
-	resp, err := rpc.MessageSendMessage(
-		ctx, username, client.NewMessageSendMessageRequest(
-			routingHead,
-			msg.GetContentHead(),
-			msg.GetMessageBody(),
-			seq,
-			nil,
-		),
-	)
-	if err != nil {
-		return err
-	}
+		msg := pb.Message{}
+		if err := mark.Unmarshal([]byte(text), &msg); err != nil {
+			return err
+		}
+		resp, err := rpc.MessageSendMessage(
+			ctx, account.Username, client.NewMessageSendMessageRequest(
+				routingHead,
+				msg.GetContentHead(),
+				msg.GetMessageBody(),
+				seq,
+				nil,
+			),
+		)
+		if err != nil {
+			return err
+		}
 
-	log.PrintMessage(
-		time.Unix(resp.GetSendTime(), 0),
-		chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
-	)
+		log.PrintMessage(
+			time.Unix(resp.GetSendTime(), 0),
+			peerName, userName, fromName, peerID, userID, fromID, seq, text,
+		)
+	}
 	return nil
 }
 
@@ -129,32 +137,62 @@ func main() {
 	})
 
 	if err := mqq.Run(context.Background(), func(ctx context.Context, restart chan struct{}) error {
-		if err := mqq.Auth(username, password); err != nil {
-			return err
-		}
-		rpc := mqq.GetClient()
-		uin, _ := strconv.ParseInt(username, 10, 64)
-		if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
-			uint64(uin),
-			client.AccountStatusOnline,
-			false,
-		)); err != nil {
-			return err
-		}
 		errCh := make(chan error, 1)
+		wg := sync.WaitGroup{}
+		for _, account := range config.Accounts {
+			wg.Add(1)
+			go func(username, password string) {
+				defer wg.Done()
+				rpc := mqq.GetClient()
+				if err := auth.NewFlow(&auth.FlowOptions{
+					Username: username,
+					Password: password,
+					AuthAddr: cfg.AuthAddress,
+					CacheDir: cfg.CacheDir,
+				}, auth.NewHandler(&auth.HandlerOptions{
+					BaseDir: cfg.BaseDir,
+					Client:  cfg.Engine.Client,
+					Device:  cfg.Engine.Device,
+				}, rpc)).Run(ctx); err != nil {
+					errCh <- err
+					return
+				}
+				uin, _ := strconv.ParseInt(username, 10, 64)
+				if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
+					uint64(uin),
+					client.AccountStatusOnline,
+					false,
+				)); err != nil {
+					errCh <- err
+					return
+				}
+			}(account.Username, account.Password)
+		}
+		wg.Wait()
+		select {
+		case err := <-errCh:
+			return err
+		default:
+		}
+
 		go func() {
 			for {
 				text, _ := util.ReadLine(reader)
-				if err := send(ctx, rpc, text); err != nil {
+				if err := send(ctx, mqq.GetClient(), text); err != nil {
 					errCh <- err
+					return
 				}
 			}
 		}()
 		go func() {
 			for range time.NewTicker(300 * time.Second).C {
-				text := "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)" + time.Now().Local().String()
-				if err := send(ctx, rpc, text); err != nil {
+				if err := send(ctx, mqq.GetClient(), "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)"); err != nil {
 					errCh <- err
+					return
+				}
+				if err := send(ctx, mqq.GetClient(), time.Now().Local().String()); err != nil {
+					errCh <- err
+					return
 				}
 			}
 		}()

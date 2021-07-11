@@ -1,4 +1,4 @@
-package client
+package auth
 
 import (
 	"context"
@@ -7,24 +7,24 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthRefreshSMSDataRequest struct {
-	authGetSessionTicketsRequest
+type SendSMSCodeRequest struct {
+	request
 
-	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
+	_AuthSession []byte // h.GetUserSignature(req.Username).Session.Auth
 	SMSAppID     uint64
-	_T174        []byte // c.t174
-	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
+	_T174        []byte // h.t174
+	_MiscBitmap  uint32 // h.opt.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	_ExtraData   []byte // c.extraData[0x0542]
+	_ExtraData   []byte // h.extraData[0x0542]
 
 	lockType uint8
 }
 
-func NewAuthRefreshSMSDataRequest(
+func newSendSMSCodeRequest(
 	username string,
-) *AuthRefreshSMSDataRequest {
-	req := &AuthRefreshSMSDataRequest{
+) *SendSMSCodeRequest {
+	req := &SendSMSCodeRequest{
 		_AuthSession: nil,
 		SMSAppID:     defaultClientSMSAppID,
 		_T174:        nil,
@@ -39,36 +39,36 @@ func NewAuthRefreshSMSDataRequest(
 	return req
 }
 
-func (req *AuthRefreshSMSDataRequest) GetTLVs(
+func (req *SendSMSCodeRequest) MustGetTLVs(
 	ctx context.Context,
-) (map[uint16]tlv.TLVCodec, error) {
-	c := ForClient(ctx)
+) map[uint16]tlv.TLVCodec {
+	h := ForHandler(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(
-		c.GetUserSignature(req.GetUsername()).Session.Auth,
+		h.GetUserSignature(req.GetUsername()).Session.Auth,
 	)
 	tlvs[0x0116] = tlv.NewT116(
-		c.cfg.Client.MiscBitmap,
+		h.opt.Client.MiscBitmap,
 		req.SubSigMap,
 		req.SubAppIDList,
 	)
-	tlvs[0x0174] = tlv.NewT174(c.t174)
+	tlvs[0x0174] = tlv.NewT174(h.t174)
 	tlvs[0x017a] = tlv.NewT17A(req.SMSAppID)
 	tlvs[0x0197] = tlv.NewTLV(
 		0x0197,
 		0x0000,
 		bytes.NewBuffer([]byte{req.lockType}),
 	)
-	tlvs[0x0542] = tlv.NewT542(c.extraData[0x0542])
+	tlvs[0x0542] = tlv.NewT542(h.extraData[0x0542])
 	req.SetType(0x0008)
 	req.SetServiceMethod(ServiceMethodAuthLogin)
-	return tlvs, nil
+	return tlvs
 }
 
-func (c *Client) AuthRefreshSMSData(
+func (h *Handler) sendSMSCode(
 	ctx context.Context,
-	req *AuthRefreshSMSDataRequest,
-) (*AuthGetSessionTicketsResponse, error) {
-	return c.AuthGetSessionTickets(ctx, req)
+	req *SendSMSCodeRequest,
+) (*Response, error) {
+	return h.getSessionTickets(ctx, req)
 }

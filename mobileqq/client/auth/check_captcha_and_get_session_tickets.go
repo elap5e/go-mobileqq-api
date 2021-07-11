@@ -1,4 +1,4 @@
-package client
+package auth
 
 import (
 	"context"
@@ -6,25 +6,25 @@ import (
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
 
-type AuthCheckCaptchaAndGetSessionTicketsRequest struct {
-	authGetSessionTicketsRequest
+type checkCaptchaAndGetSessionTicketsRequest struct {
+	request
 
-	_AuthSession []byte // c.GetUserSignature(req.Username).Session.Auth
+	_AuthSession []byte // h.GetUserSignature(req.Username).Session.Auth
 	Code         []byte
 	Sign         []byte
-	_MiscBitmap  uint32 // c.cfg.Client.MiscBitmap
+	_MiscBitmap  uint32 // h.opt.Client.MiscBitmap
 	SubSigMap    uint32
 	SubAppIDList []uint64
-	_ExtraData   []byte // c.t547
+	_ExtraData   []byte // h.t547
 
 	isCaptcha bool
 }
 
-func NewAuthCheckCaptchaAndGetSessionTicketsRequest(
+func newCheckCaptchaAndGetSessionTicketsRequest(
 	username string,
 	code []byte,
-) *AuthCheckCaptchaAndGetSessionTicketsRequest {
-	req := &AuthCheckCaptchaAndGetSessionTicketsRequest{
+) *checkCaptchaAndGetSessionTicketsRequest {
+	req := &checkCaptchaAndGetSessionTicketsRequest{
 		_AuthSession: nil,
 		Code:         code,
 		Sign:         nil, // nil
@@ -39,10 +39,10 @@ func NewAuthCheckCaptchaAndGetSessionTicketsRequest(
 	return req
 }
 
-func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(
+func (req *checkCaptchaAndGetSessionTicketsRequest) MustGetTLVs(
 	ctx context.Context,
-) (map[uint16]tlv.TLVCodec, error) {
-	c := ForClient(ctx)
+) map[uint16]tlv.TLVCodec {
+	h := ForHandler(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	if req.isCaptcha {
 		tlvs[0x0193] = tlv.NewT193(req.Code)
@@ -51,22 +51,22 @@ func (req *AuthCheckCaptchaAndGetSessionTicketsRequest) GetTLVs(
 	}
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(
-		c.rpc.GetUserSignature(req.GetUsername()).Session.Auth,
+		h.client.GetUserSignature(req.GetUsername()).Session.Auth,
 	)
 	tlvs[0x0116] = tlv.NewT116(
-		c.cfg.Client.MiscBitmap,
+		h.opt.Client.MiscBitmap,
 		req.SubSigMap,
 		req.SubAppIDList,
 	)
-	tlvs[0x0547] = tlv.NewT547(c.extraData[0x0547])
+	tlvs[0x0547] = tlv.NewT547(h.extraData[0x0547])
 	req.SetType(0x0002)
 	req.SetServiceMethod(ServiceMethodAuthLogin)
-	return tlvs, nil
+	return tlvs
 }
 
-func (c *Client) AuthCheckCaptchaAndGetSessionTickets(
+func (h *Handler) checkCaptchaAndGetSessionTickets(
 	ctx context.Context,
-	req *AuthCheckCaptchaAndGetSessionTicketsRequest,
-) (*AuthGetSessionTicketsResponse, error) {
-	return c.AuthGetSessionTickets(ctx, req)
+	req *checkCaptchaAndGetSessionTicketsRequest,
+) (*Response, error) {
+	return h.getSessionTickets(ctx, req)
 }

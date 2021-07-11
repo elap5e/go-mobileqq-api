@@ -17,7 +17,7 @@ type Options struct {
 	CacheDir string
 	LogDir   string
 	LogLevel string
-	Client   *Config
+	Client   *ClientConfig
 	Engine   *rpc.Config
 }
 

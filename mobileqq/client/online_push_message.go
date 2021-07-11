@@ -114,7 +114,7 @@ func (c *Client) handleOnlinePushMessage(
 		routingHead := &pb.RoutingHead{}
 		if msg.GetMessageHead().GetC2CCmd() == 0 {
 			c.setMessageSeq(id, msg.GetMessageHead().GetMessageSeq())
-			routingHead = &pb.RoutingHead{Group: &pb.Group{Uin: chatID}}
+			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: chatID}}
 		} else if chatID == 0 {
 			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: peerID}}
 		} else {

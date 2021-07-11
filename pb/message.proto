@@ -7,36 +7,36 @@ import "message_body.proto";
 /* message common */
 
 message AppShareInfo {
-  optional uint32 id = 1;
-  optional bytes cookie = 2;
-  optional PluginInfo resource = 3;
+  uint32 id = 1;
+  bytes cookie = 2;
+  PluginInfo resource = 3;
 }
 
 message C2CTempMessageHead {
-  optional uint32 c2cType = 1;
-  optional uint32 serviceType = 2;
-  optional uint64 groupUin = 3;
-  optional uint64 groupCode = 4;
-  optional bytes sig = 5;
-  optional uint32 sigType = 6;
-  optional string fromPhone = 7;
-  optional string toPhone = 8;
-  optional uint32 lockDisplay = 9;
-  optional uint32 directionFlag = 10;
+  uint32 c2c_type = 1;
+  uint32 service_type = 2;
+  uint64 group_uin = 3;
+  uint64 group_code = 4;
+  bytes sig = 5;
+  uint32 sig_type = 6;
+  string from_phone = 7;
+  string to_phone = 8;
+  uint32 lock_display = 9;
+  uint32 direction_flag = 10;
 }
 
 message ContentHead {
-  optional uint32 pkgNum = 1;
-  optional uint32 pkgIndex = 2;
-  optional uint32 divSeq = 3;
-  optional uint32 autoReply = 4;
+  uint32 package_number = 1;
+  uint32 package_index = 2;
+  uint32 div_seq = 3;
+  uint32 auto_reply = 4;
 }
 
 message DiscussInfo {
-  optional uint64 discussUin = 1;
-  optional uint32 discussType = 2;
-  optional uint64 discussInfoSeq = 3;
-  optional bytes discussRemark = 4;
+  uint64 discuss_uin = 1;
+  uint32 discuss_type = 2;
+  uint64 discuss_info_seq = 3;
+  bytes discuss_remark = 4;
 }
 
 message ExtraGroupKeyInfo {
@@ -47,42 +47,42 @@ message ExtraGroupKeyInfo {
 }
 
 message GroupInfo {
-  optional uint64 groupCode = 1;
-  optional uint32 groupType = 2;
-  optional uint64 groupInfoSeq = 3;
-  optional bytes groupCard = 4;
-  optional bytes groupRank = 5;
-  optional uint32 groupLevel = 6;
+  uint64 group_code = 1;
+  uint32 group_type = 2;
+  uint64 group_info_seq = 3;
+  bytes group_card = 4;
+  bytes group_rank = 5;
+  uint32 group_level = 6;
 }
 
 message Message {
-  MessageHead messageHead = 1;
-  ContentHead contentHead = 2;
-  MessageBody messageBody = 3;
-  optional AppShareInfo appShareInfo = 4;
+  MessageHead message_head = 1;
+  ContentHead content_head = 2;
+  MessageBody message_body = 3;
+  AppShareInfo app_share_info = 4;
 }
 
 message MessageHead {
-  uint64 fromUin = 1;
-  uint64 toUin = 2;
-  uint32 messageType = 3;
-  uint32 c2cCmd = 4;
-  uint32 messageSeq = 5;
-  int64 messageTime = 6;
-  uint64 messageUid = 7;
-  optional C2CTempMessageHead c2cTempMessageHead = 8;
-  optional GroupInfo groupInfo = 9;
-  optional uint32 fromAppId = 10;
-  optional uint32 fromInstId = 11;
-  optional uint32 userActive = 12;
-  optional DiscussInfo discussInfo = 13;
-  optional string fromNick = 14;
-  optional uint64 authUin = 15;
-  optional string authNick = 16;
-  optional uint32 messageFlag = 17;
-  optional string authRemark = 18;
-  optional string groupName = 19;
-  optional MutilTransHead mutilTransHead = 20;
+  uint64 from_uin = 1;
+  uint64 to_uin = 2;
+  uint32 message_type = 3;
+  uint32 c2c_cmd = 4;
+  uint32 message_seq = 5;
+  int64 message_time = 6;
+  uint64 message_uid = 7;
+  C2CTempMessageHead c2c_temp_message_head = 8;
+  GroupInfo group_info = 9;
+  uint32 from_app_id = 10;
+  uint32 from_instant_id = 11;
+  uint32 user_active = 12;
+  DiscussInfo discuss_info = 13;
+  string from_nick = 14;
+  uint64 auth_uin = 15;
+  string auth_nick = 16;
+  uint32 message_flag = 17;
+  string auth_remark = 18;
+  string group_name = 19;
+  MutilTransferHead mutil_transfer_head = 20;
 }
 
 message MessageType0x210 {
@@ -91,46 +91,42 @@ message MessageType0x210 {
 }
 
 message MessageSubType0x8aRequest {
-  repeated Info infos = 1;
-  optional uint32 appId = 2;
-  optional uint32 instId = 3;
-  optional uint32 flag = 4;
-  optional bytes reserved = 5;
-  message Info {
-    optional uint64 fromUin = 1;
-    optional uint64 toUin = 2;
-    optional uint32 messageSeq = 3;
-    optional uint64 messageUid = 4;
-    optional uint64 messageTime = 5;
-    optional uint32 messageRandom = 6;
-    optional uint32 pkgNum = 7;
-    optional uint32 pkgIndex = 8;
-    optional uint32 divSeq = 9;
-    optional uint32 flag = 10;
-    optional WithdrawWordingInfo withdrawWordingInfo = 11;
-    message WithdrawWordingInfo {
-      optional int32 itemId = 1;
-      optional string itemName = 2;
-    }
+  repeated Item items = 1;
+  uint32 app_id = 2;
+  uint32 instant_id = 3;
+  uint32 flag = 4;
+  bytes reserved = 5;
+  message Item {
+    uint64 from_uin = 1;
+    uint64 to_uin = 2;
+    uint32 message_seq = 3;
+    uint64 message_uid = 4;
+    uint64 message_time = 5;
+    uint32 message_random = 6;
+    uint32 package_number = 7;
+    uint32 package_index = 8;
+    uint32 div_seq = 9;
+    uint32 flag = 10;
+    WithdrawWordingInfo withdrawWordingInfo = 11;
   }
 }
 
-message MutilTransHead {
-  optional uint32 status = 1;
+message MutilTransferHead {
+  uint32 status = 1;
 }
 
 message PluginInfo {
-  optional uint32 id = 1;
-  optional string pkgName = 2;
-  optional uint32 newVer = 3;
-  optional uint32 type = 4;
-  optional uint32 lanType = 5;
-  optional uint32 priority = 6;
-  optional string name = 7;
-  optional string desc = 8;
-  optional string urlBig = 9;
-  optional string urlSmall = 10;
-  optional string config = 11;
+  uint32 id = 1;
+  string package_name = 2;
+  uint32 new_version = 3;
+  uint32 type = 4;
+  uint32 lan_type = 5;
+  uint32 priority = 6;
+  string name = 7;
+  string desc = 8;
+  string url_big = 9;
+  string url_small = 10;
+  string config = 11;
 }
 
 message UinPairMessage {
@@ -140,3 +136,8 @@ message UinPairMessage {
   repeated Message messages = 4;
   uint32 unread_message_number = 5;
 }
+
+message WithdrawWordingInfo {
+  int32 id = 1;
+  string name = 2;
+} // WithDrawWordingInfo

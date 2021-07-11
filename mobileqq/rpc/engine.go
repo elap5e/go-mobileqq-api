@@ -48,6 +48,16 @@ type Engine interface {
 	SetUserSignature(username string, sig *UserSignature)
 }
 
+var engineCtxKey struct{}
+
+func WithEngine(ctx context.Context, e Engine) context.Context {
+	return context.WithValue(ctx, engineCtxKey, e)
+}
+
+func ForEngine(ctx context.Context) Engine {
+	return ctx.Value(engineCtxKey).(Engine)
+}
+
 type engine struct {
 	cfg *Config
 	mux sync.Mutex
