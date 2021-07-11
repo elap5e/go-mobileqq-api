@@ -94,8 +94,8 @@ func (c *Client) handleMessagePushNotify(
 	}
 
 	type Data struct {
-		ChatID uint64
 		PeerID uint64
+		UserID uint64
 		FromID uint64
 		Text   []byte
 	}
@@ -111,22 +111,22 @@ func (c *Client) handleMessagePushNotify(
 					return nil, err
 				}
 
-				chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-				peerID := uint64(0)
+				peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+				userID := uinPairMessage.GetPeerUin()
 				fromID := msg.GetMessageHead().GetFromUin()
-				if msg.GetMessageHead().GetC2CCmd() != 0 {
-					chatID = msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+				if msg.GetMessageHead().GetC2CCmd() == 0 {
 					peerID = uinPairMessage.GetPeerUin()
+					userID = uint64(0)
 				}
-				chatName := strconv.FormatUint(chatID, 10)
-				peerName := strconv.FormatUint(peerID, 10)
+				chatName := strconv.FormatUint(peerID, 10)
+				peerName := strconv.FormatUint(userID, 10)
 				fromName := strconv.FormatUint(fromID, 10)
 				seq := msg.GetMessageHead().GetMessageSeq()
 				text := string(data)
 
 				log.PrintMessage(
 					time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
-					chatName, peerName, fromName, chatID, peerID, fromID, seq, text,
+					chatName, peerName, fromName, peerID, userID, fromID, seq, text,
 				)
 
 				// message processed
@@ -138,8 +138,8 @@ func (c *Client) handleMessagePushNotify(
 							// add to data list
 							toID, _ := strconv.ParseUint(s2c.Username, 10, 64)
 							dataList = append(dataList, Data{
-								ChatID: chatID,
 								PeerID: peerID,
+								UserID: userID,
 								FromID: toID,
 								Text:   data,
 							})
@@ -158,8 +158,8 @@ func (c *Client) handleMessagePushNotify(
 							// add to data list
 							toID, _ := strconv.ParseUint(s2c.Username, 10, 64)
 							dataList = append(dataList, Data{
-								ChatID: chatID,
 								PeerID: peerID,
+								UserID: userID,
 								FromID: toID,
 								Text:   data,
 							})
@@ -223,14 +223,14 @@ func (c *Client) handleMessagePushNotify(
 	if l := len(dataList); l > 0 {
 		item := dataList[l-1]
 		seq := c.getNextMessageSeq(
-			fmt.Sprintf("%d:%d", item.ChatID, item.PeerID),
+			fmt.Sprintf("@%d_%d", item.PeerID, item.UserID),
 		)
 		routingHead := &pb.RoutingHead{}
-		if item.ChatID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: item.PeerID}}
+		if item.PeerID == 0 {
+			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: item.UserID}}
 		} else {
 			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Uin: item.ChatID, ToUin: item.PeerID},
+				GroupTemp: &pb.GroupTemp{Uin: item.PeerID, ToUin: item.UserID},
 			}
 		}
 
@@ -255,16 +255,16 @@ func (c *Client) handleMessagePushNotify(
 		if err != nil {
 			return nil, err
 		}
-		chatID := item.ChatID
 		peerID := item.PeerID
+		userID := item.UserID
 		fromID := item.FromID
-		chatName := strconv.FormatUint(chatID, 10)
-		peerName := strconv.FormatUint(peerID, 10)
+		chatName := strconv.FormatUint(peerID, 10)
+		peerName := strconv.FormatUint(userID, 10)
 		fromName := strconv.FormatUint(fromID, 10)
 		text := string(data)
 		log.PrintMessage(
 			time.Unix(resp.GetSendTime(), 0),
-			chatName, peerName, fromName, chatID, peerID, uint64(fromID), seq, text,
+			chatName, peerName, fromName, peerID, userID, uint64(fromID), seq, text,
 		)
 	}
 

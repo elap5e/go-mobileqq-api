@@ -36,7 +36,8 @@ configs:
   protocol: android
 
 targets:
-  - chatId: 0:10000
+  - peerId: 0
+    userId: 10000
 `, time.Now().UnixNano())
 
 type Config struct {

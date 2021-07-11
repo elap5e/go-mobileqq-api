@@ -14,15 +14,15 @@ func syncUinPairMessage(uinPairMessage *pb.UinPairMessage) {
 		Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetMessages()))
 
 	for _, msg := range uinPairMessage.GetMessages() {
-		chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-		peerID := uint64(0)
-		if msg.GetMessageHead().GetC2CCmd() != 0 {
-			chatID = msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+		peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+		userID := uinPairMessage.GetPeerUin()
+		if msg.GetMessageHead().GetC2CCmd() == 0 {
 			peerID = uinPairMessage.GetPeerUin()
+			userID = uint64(0)
 		}
 
 		log.Debug().
-			Str("@chat", fmt.Sprintf("%d:%d", chatID, peerID)).
+			Str("@chat", fmt.Sprintf("@%d_%d", peerID, userID)).
 			Uint32("@seq", msg.GetMessageHead().GetMessageSeq()).
 			Uint64("from", msg.GetMessageHead().GetFromUin()).
 			Int64("time", msg.GetMessageHead().GetMessageTime()).
@@ -33,15 +33,15 @@ func syncUinPairMessage(uinPairMessage *pb.UinPairMessage) {
 }
 
 func syncMessage(msg *pb.Message) {
-	chatID := msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-	peerID := uint64(0)
-	if msg.GetMessageHead().GetC2CCmd() != 0 {
-		chatID = msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
-		peerID = msg.GetMessageHead().GetToUin()
+	peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+	userID := msg.GetMessageHead().GetToUin()
+	if msg.GetMessageHead().GetC2CCmd() == 0 {
+		peerID = msg.GetMessageHead().GetGroupInfo().GetGroupCode()
+		userID = uint64(0)
 	}
 
 	log.Debug().
-		Str("@chat", fmt.Sprintf("%d:%d", chatID, peerID)).
+		Str("@chat", fmt.Sprintf("@%d_%d", peerID, userID)).
 		Uint32("@seq", msg.GetMessageHead().GetMessageSeq()).
 		Uint64("from", msg.GetMessageHead().GetFromUin()).
 		Int64("time", msg.GetMessageHead().GetMessageTime()).

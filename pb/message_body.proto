@@ -112,7 +112,7 @@ message Element {
   optional CustomElement custom = 31;
   // optional string location_info = 32;
   // optional string pub_acc_info = 33;
-  // optional string small_emoji = 34;
+  optional SmallEmoji small_emoji = 34;
   // optional string fsj_msg_elem = 35;
   // optional string ark_app = 36;
   optional GeneralFlags general_flags = 37;
@@ -125,7 +125,7 @@ message Element {
   // optional string bless_msg = 44;
   optional SourceMessage source_message = 45;
   // optional string lola_msg = 46;
-  optional GroupBusinessMessage group_business_msg = 47;
+  optional GroupBusinessMessage group_business_message = 47;
   // optional string msg_workflow_notify = 48;
   // optional string pat_elem = 49;
   optional GroupPostElement group_post = 50;
@@ -489,6 +489,11 @@ message ShakeWindow {
   uint32 type = 1;
   uint32 reserve = 2;
   uint64 uin = 3;
+}
+
+message SmallEmoji {
+  uint32 pack_id_sum = 1;
+  uint32 image_type = 2;
 }
 
 message SourceMessage {

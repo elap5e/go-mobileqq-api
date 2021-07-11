@@ -36,7 +36,7 @@ func (c *Client) MessageSendMessage(
 	if req.GetMessageSeq() == 0 {
 		peerID := req.GetRoutingHead().GetGroup().GetCode()
 		userID := req.GetRoutingHead().GetC2C().GetToUin()
-		chatID := fmt.Sprintf("@%du%d", peerID, userID)
+		chatID := fmt.Sprintf("@%d_%d", peerID, userID)
 		req.MessageSeq = c.getNextMessageSeq(chatID)
 	}
 	if req.GetMessageRand() == 0 {

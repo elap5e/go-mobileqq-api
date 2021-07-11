@@ -17,6 +17,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/api"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/auth"
 	"github.com/elap5e/go-mobileqq-api/pb"
@@ -27,6 +28,7 @@ var (
 	homeDir, _ = os.UserHomeDir()
 	baseDir    = path.Join(homeDir, "."+mobileqq.PackageName)
 	config     mobileqq.Config
+	tokens     = make(map[string]string)
 )
 
 var reader = bufio.NewReader(os.Stdin)
@@ -53,6 +55,9 @@ func init() {
 		if err := viper.Unmarshal(&config); err != nil {
 			log.Fatal().Err(err).Msg("x_x [init] failed to unmarshal config")
 		}
+		for _, account := range config.Accounts {
+			tokens[account.Username] = account.BotToken
+		}
 	}
 }
 
@@ -63,7 +68,7 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 		userID := config.Targets[0].UserID
 		if peerID == 0 && userID == 0 {
 			chatId := strings.TrimPrefix(config.Targets[0].ChatID, "@")
-			ids := strings.Split(chatId, ":")
+			ids := strings.Split(chatId, "_")
 			_ = ids[1]
 			peerID, _ = strconv.ParseUint(ids[0], 10, 64)
 			userID, _ = strconv.ParseUint(ids[1], 10, 64)
@@ -72,7 +77,7 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 		peerName := strconv.FormatUint(peerID, 10)
 		userName := strconv.FormatUint(userID, 10)
 		fromName := strconv.FormatUint(fromID, 10)
-		seq := rpc.GetNextMessageSeq(fmt.Sprintf("%d:%d", peerID, userID))
+		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%d_%d", peerID, userID))
 		routingHead := &pb.RoutingHead{}
 		if userID == 0 {
 			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
@@ -157,6 +162,12 @@ func main() {
 		}
 
 		go func() {
+			if err := api.NewServer(mqq.GetClient(), tokens).Run(ctx); err != nil {
+				errCh <- err
+				return
+			}
+		}()
+		go func() {
 			for {
 				text, _ := util.ReadLine(reader)
 				if err := send(ctx, mqq.GetClient(), text); err != nil {
@@ -166,7 +177,7 @@ func main() {
 			}
 		}()
 		go func() {
-			for range time.NewTicker(300 * time.Second).C {
+			for range time.NewTicker(600 * time.Second).C {
 				if err := send(ctx, mqq.GetClient(), "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)"); err != nil {
 					errCh <- err
 					return

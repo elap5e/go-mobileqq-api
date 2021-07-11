@@ -11,7 +11,7 @@ func PrintMessage(time time.Time, peerName, userName, fromName string, peerID, u
 	}
 	fmt.Println(
 		Colorize(time.Format("[15:04:05]"), ColorBrightBlack, false) +
-			Colorize(fmt.Sprintf("[%s(%d:%d:%d)]", peerName, peerID, userID, seq), ColorWhite, false) + " " +
+			Colorize(fmt.Sprintf("[%s(@%d_%d:%d)]", peerName, peerID, userID, seq), ColorWhite, false) + " " +
 			Colorize(Colorize(fmt.Sprintf("%s(%d):", fromName, fromID), ColorBrightCyan, false), ColorBold, false) + " " +
 			Colorize(Colorize(text, ColorBrightWhite, false), ColorBold, false),
 	)
@@ -23,7 +23,7 @@ func PrintMessageSimple(time time.Time, peerName, userName, fromName string, pee
 	}
 	fmt.Println(
 		Colorize(time.Format("[15:04:05]"), ColorBrightBlack, false) +
-			Colorize(fmt.Sprintf("[%s(%d:%d)]", peerName, peerID, userID), ColorWhite, false) + " " +
+			Colorize(fmt.Sprintf("[%s(@%d_%d)]", peerName, peerID, userID), ColorWhite, false) + " " +
 			Colorize(Colorize(fmt.Sprintf("%s:", fromName), ColorBrightCyan, false), ColorBold, false) + " " +
 			Colorize(Colorize(text, ColorBrightWhite, false), ColorBold, false),
 	)

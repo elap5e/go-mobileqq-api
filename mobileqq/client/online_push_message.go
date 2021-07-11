@@ -110,7 +110,7 @@ func (c *Client) handleOnlinePushMessage(
 	)
 
 	if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
-		id := fmt.Sprintf("%d:%d", chatID, peerID)
+		id := fmt.Sprintf("@%d_%d", chatID, peerID)
 		routingHead := &pb.RoutingHead{}
 		if msg.GetMessageHead().GetC2CCmd() == 0 {
 			c.setMessageSeq(id, msg.GetMessageHead().GetMessageSeq())

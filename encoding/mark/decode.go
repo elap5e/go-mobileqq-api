@@ -105,6 +105,7 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 					key, _ := base64.URLEncoding.DecodeString(uri.Query().Get("key"))
 					h, _ := strconv.ParseUint(uri.Query().Get("h"), 10, 32)
 					w, _ := strconv.ParseUint(uri.Query().Get("w"), 10, 32)
+					p, _ := base64.URLEncoding.DecodeString(uri.Query().Get("p"))
 					if len(id) != 0 {
 						elems = append(elems, &pb.Element{
 							MarketFace: &pb.MarketFace{
@@ -117,6 +118,23 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 								ItemType:    6,
 								FaceInfo:    1,
 								SubType:     3,
+								MobileParam: p,
+							},
+						})
+						elems = append(elems, &pb.Element{
+							Text: &pb.Text{
+								Data: body[idx[2]:idx[3]],
+							},
+						})
+					}
+				case "/smallEmoji":
+					id, _ := strconv.ParseUint(uri.Query().Get("id"), 10, 32)
+					typ, _ := strconv.ParseUint(uri.Query().Get("type"), 10, 32)
+					if id != 0 {
+						elems = append(elems, &pb.Element{
+							SmallEmoji: &pb.SmallEmoji{
+								PackIdSum: uint32(id),
+								ImageType: uint32(typ),
 							},
 						})
 						elems = append(elems, &pb.Element{

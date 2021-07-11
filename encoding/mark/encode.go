@@ -103,13 +103,23 @@ func Marshal(msg *pb.Message) ([]byte, error) {
 				name = elems[i+1].GetText().GetData()
 			}
 			text += fmt.Sprintf(
-				"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s&h=%d&w=%d)",
+				"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s&h=%d&w=%d&p=%s)",
 				name,
 				base64.URLEncoding.EncodeToString(v.GetFaceId()),
 				v.GetTabId(),
 				base64.URLEncoding.EncodeToString(v.GetKey()),
 				v.GetImageHeight(),
 				v.GetImageWidth(),
+				base64.URLEncoding.EncodeToString(v.GetMobileParam()),
+			)
+			skip++
+		} else if v := elem.GetSmallEmoji(); v != nil {
+			name := elems[i+1].GetText().GetData()
+			text += fmt.Sprintf(
+				"![%s](goqq://res/smallEmoji?id=%d&type=%d)",
+				name,
+				v.GetPackIdSum(),
+				v.GetImageType(),
 			)
 			skip++
 		} else if v := elem.GetCustomFace(); v != nil {
