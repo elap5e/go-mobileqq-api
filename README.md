@@ -1,10 +1,10 @@
 # Go MobileQQ API
 
-> An open-source RPC-based fast MobileQQ client API in go
+> An open-source RPC-based fast MobileQQ Client API in go
 
-Refer to the [wiki](https://github.com/elap5e/go-mobileqq-api/wiki) ([简体中文](https://github.com/elap5e/go-mobileqq-api/wiki/Home.zh_Hans)) for advanced usage.
+Refer to the [wiki](https://github.com/elap5e/go-mobileqq-api/wiki) ([简体中文](https://github.com/elap5e/go-mobileqq-api/wiki/Home.zh‐Hans)) for advanced usage.
 
-## Try MobileQQ client API
+## Try MobileQQ Client API
 
 Waiting for `v0.1.0-alpha`, or you can build it from source.
 
@@ -75,7 +75,7 @@ go-mobileqq-echo
 
 ## TODO
 
-> just a plan here
+> Just a plan here
 
 1. Full support `Markdown` messages (Release `v0.1.0-alpha`)
 2. Multi-users login (Release `v0.1.0-alpha`)
