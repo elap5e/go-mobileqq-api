@@ -63,7 +63,14 @@ func (c *Client) MessageSendMessage(
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}
+	// resp.Result
+	//     0: success
+	//     1: ???
+	//    16: elements (notFriend)
+	//   241: ???
+	// -3902: marketFace (vip/svip)
+	// -4902: marketFace magic (vip/svip)
 
-	c.dumpServerToClientMessage(&s2c, &resp)
+	dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

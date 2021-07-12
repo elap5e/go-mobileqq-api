@@ -196,13 +196,24 @@ func (d *decoder) decodeMap(v reflect.Value) error {
 	var subv reflect.Value
 	for i := 0; i < n; i++ {
 		ttyp, _ := d.decodeHead()
-		key := d.decodeString(ttyp)
-		subv = reflect.New(t.Elem()).Elem()
-		d.typ, _ = d.decodeHead()
-		if err := d.decodeValue(subv); err != nil {
-			return err
+		switch ttyp {
+		case 0x00, 0x01, 0x02, 0x03, 0x0c:
+			key := d.decodeUint(ttyp)
+			subv = reflect.New(t.Elem()).Elem()
+			d.typ, _ = d.decodeHead()
+			if err := d.decodeValue(subv); err != nil {
+				return err
+			}
+			v.SetMapIndex(reflect.ValueOf(key), subv)
+		case 0x06, 0x07:
+			key := d.decodeString(ttyp)
+			subv = reflect.New(t.Elem()).Elem()
+			d.typ, _ = d.decodeHead()
+			if err := d.decodeValue(subv); err != nil {
+				return err
+			}
+			v.SetMapIndex(reflect.ValueOf(key), subv)
 		}
-		v.SetMapIndex(reflect.ValueOf(key), subv)
 	}
 	return nil
 }

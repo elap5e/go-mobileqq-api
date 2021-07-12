@@ -127,10 +127,10 @@ func (h *Handler) SignIn(ctx context.Context, username, password string) (*Respo
 
 var handlerCtxKey struct{}
 
-func ForHandler(ctx context.Context) *Handler {
+func forHandler(ctx context.Context) *Handler {
 	return ctx.Value(handlerCtxKey).(*Handler)
 }
 
-func (h *Handler) WithHandler(ctx context.Context) context.Context {
+func (h *Handler) withHandler(ctx context.Context) context.Context {
 	return context.WithValue(ctx, handlerCtxKey, h)
 }

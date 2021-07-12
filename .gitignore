@@ -1,5 +1,6 @@
 bin/
 tmp/
+__debug_bin
 *_dev_test.go
 
 # Binaries for programs and plugins

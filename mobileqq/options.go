@@ -71,8 +71,6 @@ func (opt *Options) init() {
 		zerolog.MultiLevelWriter(log.ConsoleWriter, logFileWriter),
 	).With().Timestamp().Logger().Level(logLevel)
 	opt.Engine = &rpc.Config{
-		Network:     "tcp",
-		Address:     "msfwifi.3g.qq.com:8080",
 		FixID:       opt.Client.Engine.Client.AppID,
 		AppID:       opt.Client.Engine.Client.AppID,
 		NetworkType: 0x01,

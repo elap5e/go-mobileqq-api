@@ -58,6 +58,6 @@ func (c *Client) MessageGetMessage(
 
 	c.syncCookie = resp.GetSyncCookie()
 
-	c.dumpServerToClientMessage(&s2c, &resp)
+	dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

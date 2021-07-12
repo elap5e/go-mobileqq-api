@@ -8,9 +8,10 @@ import (
 	"io"
 	"strings"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/elap5e/go-mobileqq-api/encoding/mark/emoticon"
 	"github.com/elap5e/go-mobileqq-api/pb"
-	"google.golang.org/protobuf/proto"
 )
 
 func Marshal(msg *pb.Message) ([]byte, error) {

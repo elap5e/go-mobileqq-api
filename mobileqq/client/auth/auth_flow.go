@@ -64,7 +64,6 @@ type FlowHandler interface {
 	SignIn(ctx context.Context, username, password string) (*Response, error)
 
 	GetUserSignature(username string) *rpc.UserSignature
-	WithHandler(ctx context.Context) context.Context
 }
 
 type FlowOptions struct {

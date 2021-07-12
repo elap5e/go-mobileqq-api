@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+message OIDB0x0D50Request {
+  uint64 app_id = 1;
+  uint32 max_pkg_size = 2;
+  uint32 start_time = 3;
+  uint32 start_index = 4;
+  uint32 req_num = 5;
+  repeated uint64 uin_list = 6;
+  uint32 req_lovers = 11002;
+  uint32 req_confidante = 21002;
+  uint32 req_buddy = 31002;
+  uint32 req_frd_tree = 41001;
+  uint32 req_chat = 51001;
+  uint32 req_praise = 61001;
+  uint32 req_qzone_love = 71001;
+  uint32 req_qzone_house = 81001;
+  uint32 req_music_switch = 91001;
+  uint32 req_mutualmark_alienation = 101001;
+  uint32 req_unread_message = 111001;
+  uint32 req_boat = 121002;
+  uint32 req_close_frd = 131001;
+  uint32 req_mutualmark_score = 141001;
+  uint32 req_ksing_switch = 151001;
+  uint32 req_mutualmark_lbsshare = 181001;
+  uint32 req_dont_forget_me = 211001;
+  uint32 req_my_online_status_visible_to_frd = 221001;
+  uint32 req_frd_online_status_visible_to_me = 221002;
+  uint32 req_visitor_record = 231001;
+  uint32 req_frd_steal_record = 231002;
+  uint32 req_my_steal_record = 231003;
+  uint32 req_avgame = 241001;
+  uint32 req_aio_quick_app = 251001;
+} // Oidb_0xd50
+
+message OIDB0x0D6BRequest {}

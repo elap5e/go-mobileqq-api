@@ -24,7 +24,7 @@ func (h *Handler) getSessionTickets(
 	req.SetSeq(h.GetNextSeq())
 	uin, _ := strconv.ParseUint(req.GetUsername(), 10, 64)
 	req.SetUin(uin)
-	tlvs := req.MustGetTLVs(h.WithHandler(ctx))
+	tlvs := req.MustGetTLVs(h.withHandler(ctx))
 	buf, err := oicq.Marshal(ctx, &oicq.Message{
 		Version:       0x1f41,
 		ServiceMethod: 0x0810,

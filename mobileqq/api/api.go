@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 
 	"github.com/elap5e/go-mobileqq-api/pb"
@@ -40,11 +41,13 @@ func NewServer(client Client, tokens map[string]string) *Server {
 }
 
 func (s *Server) Run(ctx context.Context) error {
-	router := gin.Default()
+	engine := gin.Default()
+	pprof.Register(engine)
 
-	router.Use(s.checkToken(ctx))
+	engine.Use(s.checkToken(ctx))
 
-	router.POST("/:token/sendMessage", s.sendMessage(ctx))
+	engine.POST("/:token/sendMessage", s.sendMessage(ctx))
+	engine.GET("/:token/sendMessage", s.sendMessage(ctx))
 
-	return router.Run(":8080")
+	return engine.Run(":8080")
 }

@@ -74,9 +74,6 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 			userID, _ = strconv.ParseUint(ids[1], 10, 64)
 		}
 		fromID, _ := strconv.ParseUint(account.Username, 10, 64)
-		peerName := strconv.FormatUint(peerID, 10)
-		userName := strconv.FormatUint(userID, 10)
-		fromName := strconv.FormatUint(fromID, 10)
 		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%d_%d", peerID, userID))
 		routingHead := &pb.RoutingHead{}
 		if userID == 0 {
@@ -106,9 +103,10 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 			return err
 		}
 
-		log.PrintMessage(
+		rpc.PrintMessage(
 			time.Unix(resp.GetSendTime(), 0),
-			peerName, userName, fromName, peerID, userID, fromID, seq, text,
+			peerID, userID, fromID,
+			seq, text,
 		)
 	}
 	return nil
@@ -145,9 +143,19 @@ func main() {
 				}
 				uin, _ := strconv.ParseInt(username, 10, 64)
 				if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
-					uint64(uin),
-					client.AccountStatusOnline,
-					false,
+					uint64(uin), client.AccountStatusOnline, false,
+				)); err != nil {
+					errCh <- err
+					return
+				}
+				if _, err := rpc.FriendListGetFriendGroupList(ctx, client.NewFriendListGetFriendGroupListRequest(
+					uint64(uin), 0, 100, 0, 100,
+				)); err != nil {
+					errCh <- err
+					return
+				}
+				if _, err := rpc.FriendListGetGroupList(ctx, client.NewFriendListGetGroupListRequest(
+					uint64(uin), nil,
 				)); err != nil {
 					errCh <- err
 					return

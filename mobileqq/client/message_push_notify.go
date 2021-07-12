@@ -8,7 +8,6 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
-	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
@@ -28,7 +27,7 @@ type MessagePushNotifyRequest struct {
 	MessageCtrlBuffer string       `jce:",10" json:",omitempty"`
 	ServerBuffer      []byte       `jce:",11" json:",omitempty"`
 	PingFlag          uint64       `jce:",12" json:",omitempty"`
-	ServerIP          int32        `jce:",13" json:",omitempty"`
+	ServerIP          uint32       `jce:",13" json:",omitempty"`
 }
 
 type MessageInfo struct {
@@ -82,7 +81,7 @@ func (c *Client) handleMessagePushNotify(
 	}); err != nil {
 		return nil, err
 	}
-	c.dumpServerToClientMessage(s2c, &req)
+	dumpServerToClientMessage(s2c, &req)
 
 	resp, err := c.MessageGetMessage(
 		ctx, s2c.Username, NewMessageGetMessageRequest(
@@ -118,15 +117,12 @@ func (c *Client) handleMessagePushNotify(
 					peerID = uinPairMessage.GetPeerUin()
 					userID = uint64(0)
 				}
-				chatName := strconv.FormatUint(peerID, 10)
-				peerName := strconv.FormatUint(userID, 10)
-				fromName := strconv.FormatUint(fromID, 10)
 				seq := msg.GetMessageHead().GetMessageSeq()
-				text := string(data)
 
-				log.PrintMessage(
+				c.PrintMessage(
 					time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
-					chatName, peerName, fromName, peerID, userID, fromID, seq, text,
+					peerID, userID, fromID,
+					seq, string(data),
 				)
 
 				// message processed
@@ -204,7 +200,7 @@ func (c *Client) handleMessagePushNotify(
 			}
 		}
 		if resp.GetSyncFlag() == 0x00000001 {
-			c.dumpServerToClientMessage(s2c, &req)
+			dumpServerToClientMessage(s2c, &req)
 			resp, err := c.MessageGetMessage(
 				ctx, s2c.Username, NewMessageGetMessageRequest(
 					resp.GetSyncFlag(), c.syncCookie,
@@ -255,16 +251,10 @@ func (c *Client) handleMessagePushNotify(
 		if err != nil {
 			return nil, err
 		}
-		peerID := item.PeerID
-		userID := item.UserID
-		fromID := item.FromID
-		chatName := strconv.FormatUint(peerID, 10)
-		peerName := strconv.FormatUint(userID, 10)
-		fromName := strconv.FormatUint(fromID, 10)
-		text := string(data)
-		log.PrintMessage(
+		c.PrintMessage(
 			time.Unix(resp.GetSendTime(), 0),
-			chatName, peerName, fromName, peerID, userID, uint64(fromID), seq, text,
+			item.PeerID, item.UserID, item.FromID,
+			seq, string(data),
 		)
 	}
 

@@ -2,54 +2,55 @@ package client
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
 	"path"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
 type ConfigPushRequest struct {
-	Type   uint32 `jce:",1" json:",omitempty"`
-	Seq    uint64 `jce:",3" json:",omitempty"`
-	Buffer []byte `jce:",2" json:",omitempty"`
+	Type   uint32 `jce:",1" json:"type,omitempty"`
+	Seq    uint64 `jce:",3" json:"seq,omitempty"`
+	Buffer []byte `jce:",2" json:"buffer,omitempty"`
 }
 
 type ConfigPushResponse struct {
-	Type   uint32 `jce:",1" json:",omitempty"`
-	Seq    uint64 `jce:",2" json:",omitempty"`
-	Buffer []byte `jce:",3" json:",omitempty"`
+	Type   uint32 `jce:",1" json:"type,omitempty"`
+	Seq    uint64 `jce:",2" json:"seq,omitempty"`
+	Buffer []byte `jce:",3" json:"buffer,omitempty"`
 }
 
 type SSOServerList struct {
-	TGTGList     []SSOServerListInfo `jce:",1" json:",omitempty"`
-	WiFiList     []SSOServerListInfo `jce:",3" json:",omitempty"`
-	Reconnect    uint32              `jce:",4" json:",omitempty"`
-	TestSpeed    bool                `jce:",5" json:",omitempty"`
-	UseNewList   bool                `jce:",6" json:",omitempty"`
-	MultiConn    uint32              `jce:",7" json:",omitempty"`
-	HTTP2G3GList []SSOServerListInfo `jce:",8" json:",omitempty"`
-	HTTPWiFiList []SSOServerListInfo `jce:",9" json:",omitempty"`
+	TGTGList     []SSOServerListInfo `jce:",1" json:"2g3g_list,omitempty"`
+	WiFiList     []SSOServerListInfo `jce:",3" json:"wifi_list,omitempty"`
+	Reconnect    uint32              `jce:",4" json:"reconnect,omitempty"`
+	TestSpeed    bool                `jce:",5" json:"test_speed,omitempty"`
+	UseNewList   bool                `jce:",6" json:"use_new_list,omitempty"`
+	MultiConn    uint32              `jce:",7" json:"multi_conn,omitempty"`
+	HTTP2G3GList []SSOServerListInfo `jce:",8" json:"http_2g3g_list,omitempty"`
+	HTTPWiFiList []SSOServerListInfo `jce:",9" json:"http_wifi_list,omitempty"`
 
-	Unknown12 []uint64 `jce:",12" json:",omitempty"`
-	Unknown13 []uint64 `jce:",13" json:",omitempty"`
-	Unknown14 uint64   `jce:",14" json:",omitempty"`
-	Unknown15 uint64   `jce:",15" json:",omitempty"`
-	Unknown16 string   `jce:",16" json:",omitempty"`
-}
+	Unknown12 []uint64 `jce:",12" json:"unknown12,omitempty"`
+	Unknown13 []uint64 `jce:",13" json:"unknown13,omitempty"`
+	Unknown14 uint64   `jce:",14" json:"unknown14,omitempty"`
+	Unknown15 uint64   `jce:",15" json:"unknown15,omitempty"`
+	Unknown16 string   `jce:",16" json:"unknown16,omitempty"`
+} // SsoServerList
 
 type SSOServerListInfo struct {
-	IP           string `jce:",1" json:",omitempty"`
-	Port         uint32 `jce:",2" json:",omitempty"`
-	LinkType     bool   `jce:",3" json:",omitempty"`
-	Proxy        bool   `jce:",4" json:",omitempty"`
-	ProtocolType bool   `jce:",5" json:",omitempty"`
-	Timeout      uint32 `jce:",6" json:",omitempty"`
-
-	Unknown8 string `jce:",8" json:",omitempty"`
-}
+	IP           string `jce:",1" json:"ip,omitempty"`
+	Port         uint32 `jce:",2" json:"port,omitempty"`
+	LinkType     bool   `jce:",3" json:"link_type,omitempty"`
+	Proxy        bool   `jce:",4" json:"proxy,omitempty"`
+	ProtocolType bool   `jce:",5" json:"protocol_type,omitempty"`
+	Timeout      uint32 `jce:",6" json:"timeout,omitempty"`
+	Location     string `jce:",8" json:"location,omitempty"`
+} // SsoServerListInfo
 
 type FileStorageServerList struct {
 	UpLoadList           []FileStorageServerListInfo `jce:",0" json:",omitempty"`
@@ -195,11 +196,13 @@ func (c *Client) handleConfigPushRequest(
 		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {
 			return nil, err
 		}
+		log.Debug().Msg(">>> [dump] req.Buffer 0x03:\n" + hex.Dump(req.Buffer))
 	case 0x04:
 		data := ProxyIPChannel{}
 		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {
 			return nil, err
 		}
+		log.Debug().Msg(">>> [dump] req.Buffer 0x04:\n" + hex.Dump(req.Buffer))
 	}
 	resp := &ConfigPushResponse{
 		Type:   req.Type,

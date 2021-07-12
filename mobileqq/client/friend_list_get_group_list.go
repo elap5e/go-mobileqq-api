@@ -1,0 +1,185 @@
+package client
+
+import (
+	"context"
+	"strconv"
+
+	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+)
+
+type FriendListGetGroupListRequest struct {
+	Uin              uint64             `jce:",0" json:",omitempty"`
+	GetMSFMsgFlag    uint8              `jce:",1" json:",omitempty"`
+	Cookie           []byte             `jce:",2" json:",omitempty"`
+	GroupInfoList    []GroupInfoRequest `jce:",3" json:",omitempty"`
+	GroupFlagExtra   uint8              `jce:",4" json:",omitempty"`
+	Version          uint32             `jce:",5" json:",omitempty"`
+	CompanyID        uint64             `jce:",6" json:",omitempty"`
+	VersionNumber    uint64             `jce:",7" json:",omitempty"`
+	GetLongGroupName uint8              `jce:",8" json:",omitempty"`
+}
+
+type GroupInfoRequest struct {
+	GroupCode              uint64 `jce:",0" json:",omitempty"`
+	GroupInfoRequestSeq    uint64 `jce:",1" json:",omitempty"`
+	GroupFlagExt           uint64 `jce:",2" json:",omitempty"`
+	GroupRankSeq           uint64 `jce:",3" json:",omitempty"`
+	GroupInfoRequestExtSeq uint64 `jce:",4" json:",omitempty"`
+}
+
+type FriendListGetGroupListResponse struct {
+	Uin                uint64          `jce:",0" json:",omitempty"`
+	GroupCount         uint16          `jce:",1" json:",omitempty"`
+	Result             uint32          `jce:",2" json:",omitempty"`
+	ErrorCode          uint16          `jce:",3" json:",omitempty"`
+	Cookie             []byte          `jce:",4" json:",omitempty"`
+	GroupList          []GroupInfo     `jce:",5" json:",omitempty"`
+	GroupListDelete    []GroupInfo     `jce:",6" json:",omitempty"`
+	GroupRankList      []GroupRankInfo `jce:",7" json:",omitempty"`
+	FavouriteGroupList []FavoriteGroup `jce:",8" json:",omitempty"`
+	GroupListExtra     []GroupInfo     `jce:",9" json:",omitempty"`
+	GroupInfoExtra     []uint64        `jce:",10" json:",omitempty"`
+}
+
+type FavoriteGroup struct {
+	GroupCode     uint64 `jce:",0" json:",omitempty"`
+	Timestamp     uint64 `jce:",1" json:",omitempty"`
+	SNSFlag       uint64 `jce:",2" json:",omitempty"`
+	OpenTimestamp uint64 `jce:",3" json:",omitempty"`
+}
+
+type GroupRankInfo struct {
+	GroupCode            uint64          `jce:",0" json:",omitempty"`
+	GroupRankSysFlag     uint8           `jce:",1" json:",omitempty"`
+	GroupRankUserFlag    uint8           `jce:",2" json:",omitempty"`
+	RankMap              []LevelRankPair `jce:",3" json:",omitempty"`
+	GroupRankSeq         uint64          `jce:",4" json:",omitempty"`
+	OwnerName            string          `jce:",5" json:",omitempty"`
+	AdminName            string          `jce:",6" json:",omitempty"`
+	OfficeMode           uint64          `jce:",7" json:",omitempty"`
+	GroupRankUserFlagNew uint8           `jce:",8" json:",omitempty"`
+	RankMapNew           []LevelRankPair `jce:",9" json:",omitempty"`
+}
+
+type LevelRankPair struct {
+	Level uint64 `jce:",0" json:",omitempty"`
+	Rank  string `jce:",1" json:",omitempty"`
+}
+
+type GroupInfo struct {
+	GroupUin              uint64 `jce:",0" json:",omitempty"`
+	GroupCode             uint64 `jce:",1" json:",omitempty"`
+	Flag                  uint8  `jce:",2" json:",omitempty"`
+	GroupInfoSeq          uint64 `jce:",3" json:",omitempty"`
+	GroupName             string `jce:",4" json:",omitempty"`
+	GroupMemo             string `jce:",5" json:",omitempty"`
+	GroupFlagExt          uint64 `jce:",6" json:",omitempty"`
+	GroupRankSeq          uint64 `jce:",7" json:",omitempty"`
+	CertificationType     uint64 `jce:",8" json:",omitempty"`
+	ShutupTimestamp       uint64 `jce:",9" json:",omitempty"`
+	MyShutupTimestamp     uint64 `jce:",10" json:",omitempty"`
+	CmdUinUinFlag         uint64 `jce:",11" json:",omitempty"`
+	AdditionalFlag        uint64 `jce:",12" json:",omitempty"`
+	GroupTypeFlag         uint64 `jce:",13" json:",omitempty"`
+	GroupSecType          uint64 `jce:",14" json:",omitempty"`
+	GroupSecTypeInfo      uint64 `jce:",15" json:",omitempty"`
+	GroupClassExt         uint64 `jce:",16" json:",omitempty"`
+	AppPrivilegeFlag      uint64 `jce:",17" json:",omitempty"`
+	SubscriptionUin       uint64 `jce:",18" json:",omitempty"`
+	MemberNum             uint64 `jce:",19" json:",omitempty"`
+	MemberNumSeq          uint64 `jce:",20" json:",omitempty"`
+	MemberCardSeq         uint64 `jce:",21" json:",omitempty"`
+	GroupFlagExt3         uint64 `jce:",22" json:",omitempty"`
+	GroupOwnerUin         uint64 `jce:",23" json:",omitempty"`
+	IsConfGroup           bool   `jce:",24" json:",omitempty"`
+	IsModifyConfGroupFace bool   `jce:",25" json:",omitempty"`
+	IsModifyConfGroupName bool   `jce:",26" json:",omitempty"`
+	CmduinJoinTime        uint64 `jce:",27" json:",omitempty"`
+	CompanyID             uint64 `jce:",28" json:",omitempty"`
+	MaxGroupMemberNum     uint64 `jce:",29" json:",omitempty"`
+	CmdUinGroupMask       uint64 `jce:",30" json:",omitempty"`
+	HLGuildAppid          uint64 `jce:",31" json:",omitempty"`
+	HLGuildSubType        uint64 `jce:",32" json:",omitempty"`
+	CmdUinRingtoneID      uint64 `jce:",33" json:",omitempty"`
+	CmdUinFlagEx2         uint64 `jce:",34" json:",omitempty"`
+	GroupFlagExt4         uint64 `jce:",35" json:",omitempty"`
+	AppealDeadline        uint64 `jce:",36" json:",omitempty"`
+	GroupFlag             uint64 `jce:",37" json:",omitempty"`
+	GroupRemark           []byte `jce:",38" json:",omitempty"`
+}
+
+func NewFriendListGetGroupListRequest(
+	uin uint64,
+	cookie []byte,
+) *FriendListGetGroupListRequest {
+	return &FriendListGetGroupListRequest{
+		Uin:              uin,
+		GetMSFMsgFlag:    0x00,
+		Cookie:           cookie,
+		GroupInfoList:    nil,
+		GroupFlagExtra:   0x01,
+		Version:          0x00000009,
+		CompanyID:        0x0000000000000000,
+		VersionNumber:    0x0000000000000001,
+		GetLongGroupName: 0x01,
+	}
+}
+
+func (c *Client) FriendListGetGroupList(
+	ctx context.Context,
+	req *FriendListGetGroupListRequest,
+) (*FriendListGetGroupListResponse, error) {
+	buf, err := uni.Marshal(ctx, &uni.Message{
+		Version:     0x0003,
+		PacketType:  0x00,
+		MessageType: 0x00000000,
+		RequestID:   c.getNextRequestSeq(),
+		ServantName: "mqq.IMService.FriendListServiceServantObj",
+		FuncName:    "GetTroopListReqV2Simplify",
+		Buffer:      []byte{},
+		Timeout:     0x00000000,
+		Context:     map[string]string{},
+		Status:      map[string]string{},
+	}, map[string]interface{}{
+		"GetTroopListReqV2Simplify": req,
+	})
+	if err != nil {
+		return nil, err
+	}
+	c2s, s2c := codec.ClientToServerMessage{
+		Username: strconv.FormatInt(int64(req.Uin), 10),
+		Buffer:   buf,
+		Simple:   true,
+	}, codec.ServerToClientMessage{}
+	err = c.rpc.Call(ServiceMethodFriendListGetGroupList, &c2s, &s2c)
+	if err != nil {
+		return nil, err
+	}
+	msg := uni.Message{}
+	resp := FriendListGetGroupListResponse{}
+	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
+		"GetTroopListRespV2": &resp,
+	}); err != nil {
+		return nil, err
+	}
+
+	dumpServerToClientMessage(&s2c, &resp)
+
+	for i := range resp.GroupList {
+		c.channels[resp.GroupList[i].GroupCode] = &resp.GroupList[i]
+		subResp := &FriendListGetGroupMemberListResponse{}
+		for {
+			subResp, err = c.FriendListGetGroupMemberList(ctx, NewFriendListGetGroupMemberListRequest(
+				req.Uin, resp.GroupList[i].GroupCode, resp.GroupList[i].GroupUin, subResp.NextUin,
+			))
+			if err != nil {
+				return nil, err
+			}
+			if subResp.NextUin == 0 {
+				break
+			}
+		}
+	}
+	return &resp, nil
+}

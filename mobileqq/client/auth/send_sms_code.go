@@ -42,7 +42,7 @@ func newSendSMSCodeRequest(
 func (req *SendSMSCodeRequest) MustGetTLVs(
 	ctx context.Context,
 ) map[uint16]tlv.TLVCodec {
-	h := ForHandler(ctx)
+	h := forHandler(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0008] = tlv.NewT8(0x0000, defaultClientLocaleID, 0x0000)
 	tlvs[0x0104] = tlv.NewT104(

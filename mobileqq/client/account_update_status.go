@@ -160,7 +160,7 @@ func (c *Client) AccountUpdateStatus(
 		Version:     0x0003,
 		PacketType:  0x00,
 		MessageType: 0x00000000,
-		RequestID:   0x00000000,
+		RequestID:   c.getNextRequestSeq(),
 		ServantName: "PushService",
 		FuncName:    "SvcReqRegister",
 		Buffer:      []byte{},
@@ -188,6 +188,7 @@ func (c *Client) AccountUpdateStatus(
 	}); err != nil {
 		return nil, err
 	}
-	c.dumpServerToClientMessage(&s2c, &resp)
+
+	dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

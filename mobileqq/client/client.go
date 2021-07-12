@@ -19,8 +19,11 @@ type Client struct {
 	userSignatures    map[string]*rpc.UserSignature
 	userSignaturesMux sync.RWMutex
 
-	channels map[uint64]string
-	contacts map[uint64]string
+	channels map[uint64]*GroupInfo
+	cmembers map[uint64]map[uint64]*GroupMemberInfo
+	contacts map[uint64]*FriendInfo
+
+	requestSeq uint32
 
 	// message
 	messageSeq map[string]*uint32
@@ -29,8 +32,11 @@ type Client struct {
 
 func NewClient(cfg *config.Config, rpc rpc.Engine) *Client {
 	c := &Client{
-		cfg: cfg,
-		rpc: rpc,
+		cfg:      cfg,
+		rpc:      rpc,
+		channels: make(map[uint64]*GroupInfo),
+		cmembers: make(map[uint64]map[uint64]*GroupMemberInfo),
+		contacts: make(map[uint64]*FriendInfo),
 	}
 	c.init()
 	return c
@@ -76,6 +82,14 @@ func (c *Client) getNextMessageSeq(id string) uint32 {
 	seq := atomic.AddUint32(c.messageSeq[id], 1)
 	if seq > 60000 {
 		c.messageSeq[id] = &[]uint32{uint32(r.Int31n(1000)) + 600}[0]
+	}
+	return seq
+}
+
+func (c *Client) getNextRequestSeq() uint32 {
+	seq := atomic.AddUint32(&c.requestSeq, 1)
+	if seq > 1000000 {
+		c.requestSeq = uint32(rand.Int31n(100000)) + 60000
 	}
 	return seq
 }

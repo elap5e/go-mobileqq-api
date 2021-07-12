@@ -1,14 +1,16 @@
 package client
 
 import (
+	"encoding/binary"
 	"encoding/json"
+	"net"
 	"reflect"
 
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
-func (c *Client) dumpClientToServerMessage(
+func dumpClientToServerMessage(
 	c2s *codec.ClientToServerMessage,
 	msg interface{},
 ) {
@@ -24,7 +26,7 @@ func (c *Client) dumpClientToServerMessage(
 		Msg("<<< [dump] message:" + typ.String() + ":" + string(dump))
 }
 
-func (c *Client) dumpServerToClientMessage(
+func dumpServerToClientMessage(
 	s2c *codec.ServerToClientMessage,
 	msg interface{},
 ) {
@@ -38,4 +40,11 @@ func (c *Client) dumpServerToClientMessage(
 		Str("method", s2c.ServiceMethod).
 		Str("uin", s2c.Username).
 		Msg(">>> [dump] message:" + typ.String() + ":" + string(dump))
+}
+
+func dumpServerIP(u uint32) {
+	ip := net.IP{0, 0, 0, 0}
+	binary.LittleEndian.PutUint32(ip, u)
+	log.Debug().
+		Msg(">>> [dump] server ip:" + ip.String())
 }

@@ -57,7 +57,7 @@ func newGetSessionTicketsWithoutPasswordRequest(
 func (req *getSessionTicketsWithoutPasswordRequest) MustGetTLVs(
 	ctx context.Context,
 ) map[uint16]tlv.TLVCodec {
-	h := ForHandler(ctx)
+	h := forHandler(ctx)
 	sig := h.client.GetUserSignature(req.GetUsername())
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	tlvs[0x0100] = tlv.NewT100(

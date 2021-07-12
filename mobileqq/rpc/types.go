@@ -1,9 +1,6 @@
 package rpc
 
 type Config struct {
-	Network string
-	Address string
-
 	FixID       uint32
 	AppID       uint32
 	NetworkType uint8

@@ -17,15 +17,14 @@ const (
 	ServiceMethodAccountUpdateStatus    = "StatSvc.register"
 	ServiceMethodAccountPushLoginNotify = "StatSvc.SvcReqMSFLoginNotify"
 
-	ServiceMethodAuthLogin           = "wtlogin.login"
-	ServiceMethodAuthExchange        = "wtlogin.exchange"
-	ServiceMethodAuthExchangeAccount = "wtlogin.exchange_emp"
-	ServiceMethodAuthUsernameToUin   = "wtlogin.name2uin"
-	ServiceMethodAuthRegisterAccount = "wtlogin.trans_emp"
-
 	ServiceMethodConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	ServiceMethodConfigPushRequest  = "ConfigPushSvc.PushReq"
 	ServiceMethodConfigPushResponse = "ConfigPushSvc.PushResp"
+
+	ServiceMethodFriendListDeleteFriend       = "friendlist.delFriend"
+	ServiceMethodFriendListGetFriendGroupList = "friendlist.getFriendGroupList"
+	ServiceMethodFriendListGetGroupList       = "friendlist.GetTroopListReqV2"
+	ServiceMethodFriendListGetGroupMemberList = "friendlist.GetTroopMemberListReq"
 
 	ServiceMethodMessageDeleteMessage = "MessageSvc.PbDeleteMsg"
 	ServiceMethodMessageGetMessage    = "MessageSvc.PbGetMsg"

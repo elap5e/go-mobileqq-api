@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rs/zerolog"
+
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/crypto"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/tlv"
-	"github.com/rs/zerolog"
 )
 
 func Unmarshal(ctx context.Context, data []byte, msg *Message) error {

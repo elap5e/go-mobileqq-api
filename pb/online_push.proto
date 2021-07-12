@@ -8,7 +8,7 @@ import "message.proto";
 
 message OnlinePush {
   Message message = 1;
-  int32 server_ip = 2;
+  uint32 server_ip = 2;
   bytes push_token = 3;
   uint32 ping_flag = 4;
   uint32 general_flag = 5;

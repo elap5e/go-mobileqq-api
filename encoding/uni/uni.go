@@ -7,16 +7,16 @@ import (
 )
 
 type Message struct {
-	Version     uint16            `jce:",1" json:"Version,omitempty"`
-	PacketType  uint8             `jce:",2" json:"PacketType,omitempty"`
-	MessageType uint32            `jce:",3" json:"MessageType,omitempty"`
-	RequestID   uint32            `jce:",4" json:"RequestID,omitempty"`
-	ServantName string            `jce:",5" json:"ServantName,omitempty"`
-	FuncName    string            `jce:",6" json:"FuncName,omitempty"`
-	Buffer      []byte            `jce:",7" json:"Buffer,omitempty"`
-	Timeout     uint32            `jce:",8" json:"Timeout,omitempty"`
-	Context     map[string]string `jce:",9" json:"Context,omitempty"`
-	Status      map[string]string `jce:",10" json:"Status,omitempty"`
+	Version     uint16            `jce:",1" json:"version,omitempty"`
+	PacketType  uint8             `jce:",2" json:"packet_type,omitempty"`
+	MessageType uint32            `jce:",3" json:"message_type,omitempty"`
+	RequestID   uint32            `jce:",4" json:"request_id,omitempty"`
+	ServantName string            `jce:",5" json:"servant_name,omitempty"`
+	FuncName    string            `jce:",6" json:"func_name,omitempty"`
+	Buffer      []byte            `jce:",7" json:"buffer,omitempty"`
+	Timeout     uint32            `jce:",8" json:"timeout,omitempty"`
+	Context     map[string]string `jce:",9" json:"context,omitempty"`
+	Status      map[string]string `jce:",10" json:"status,omitempty"`
 }
 
 type MapBuffer map[string]map[string][]byte

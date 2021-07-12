@@ -40,19 +40,19 @@ func (h *Handler) initPrivateKey() {
 	var err error
 	if h.privateKey, err = ecdh.GenerateKey(); err != nil {
 		log.Fatal().Err(err).
-			Msg("··· [init] failed to generate client ECDH private key")
+			Msg("··· [auth] failed to generate client ECDH private key")
 	}
 }
 
 func (h *Handler) initServerPublicKey() {
-	log.Info().Msg("··· [init] updating server ECDH public key...")
+	log.Info().Msg("··· [auth] updating server ECDH public key...")
 	if err := h.setServerPublicKey(serverECDHPublicKey, 0x0001); err != nil {
 		log.Fatal().Err(err).
-			Msg("··· [init] failed to set default server ECDH public key")
+			Msg("··· [auth] failed to set default server ECDH public key")
 	}
 	if err := h.updateServerPublicKey(); err != nil {
 		log.Error().Err(err).
-			Msg("··· [init] failed to update server ECDH public key")
+			Msg("··· [auth] failed to update server ECDH public key")
 	}
 }
 

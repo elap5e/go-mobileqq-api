@@ -30,7 +30,7 @@ func (c *Client) handleOnlinePushRequest(
 	}); err != nil {
 		return nil, err
 	}
-	c.dumpServerToClientMessage(s2c, &req)
+	dumpServerToClientMessage(s2c, &req)
 	// TODO: handle
 
 	return nil, nil

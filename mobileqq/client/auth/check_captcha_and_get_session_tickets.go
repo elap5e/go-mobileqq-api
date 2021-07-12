@@ -42,7 +42,7 @@ func newCheckCaptchaAndGetSessionTicketsRequest(
 func (req *checkCaptchaAndGetSessionTicketsRequest) MustGetTLVs(
 	ctx context.Context,
 ) map[uint16]tlv.TLVCodec {
-	h := ForHandler(ctx)
+	h := forHandler(ctx)
 	tlvs := make(map[uint16]tlv.TLVCodec)
 	if req.isCaptcha {
 		tlvs[0x0193] = tlv.NewT193(req.Code)

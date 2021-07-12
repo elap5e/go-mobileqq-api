@@ -45,6 +45,6 @@ func (c *Client) MessageDeleteMessage(
 		return nil, err
 	}
 
-	c.dumpServerToClientMessage(&s2c, &resp)
+	dumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

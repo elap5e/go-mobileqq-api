@@ -2,10 +2,48 @@ package client
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/rs/zerolog"
 )
+
+func (c *Client) PrintMessage(time time.Time, peerID, userID, fromID uint64, seq uint32, text string) {
+	peerName := strconv.FormatUint(peerID, 10)
+	userName := strconv.FormatUint(userID, 10)
+	fromName := strconv.FormatUint(fromID, 10)
+	if peerID == 0 {
+		if contact, ok := c.contacts[userID]; ok {
+			userName = contact.Remark
+		}
+		if contact, ok := c.contacts[fromID]; ok {
+			fromName = contact.Remark
+		}
+	} else {
+		if channel, ok := c.channels[peerID]; ok {
+			peerName = channel.GroupName
+		}
+		if cmember, ok := c.cmembers[peerID][userID]; ok {
+			userName = cmember.AutoRemark
+		}
+		if cmember, ok := c.cmembers[peerID][fromID]; ok {
+			fromName = cmember.AutoRemark
+		}
+	}
+	if log.GetLevel() > zerolog.DebugLevel {
+		if peerID == 0 {
+			log.PrintMessageSimple(time, userName, fromName, seq, text)
+		} else if userID == 0 {
+			log.PrintMessageSimple(time, peerName, fromName, seq, text)
+		} else {
+			log.PrintMessageSimple(time, userName+"("+peerName+")", fromName, seq, text)
+		}
+	} else {
+		log.PrintMessage(time, peerName, userName, fromName, peerID, userID, fromID, seq, text)
+	}
+}
 
 func syncUinPairMessage(uinPairMessage *pb.UinPairMessage) {
 	log.Info().
