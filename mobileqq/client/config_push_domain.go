@@ -20,7 +20,7 @@ func (c *Client) handleConfigPushDomain(
 	if err := proto.Unmarshal(s2c.Buffer, &data); err != nil {
 		return nil, err
 	}
-	tdata, err := json.MarshalIndent(data.GetDomainList(), "", "  ")
+	tdata, err := json.MarshalIndent(data.GetDomainConfig(), "", "  ")
 	if err != nil {
 		return nil, err
 	}

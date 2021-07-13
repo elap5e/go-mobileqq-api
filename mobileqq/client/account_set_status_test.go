@@ -9,7 +9,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 )
 
-func TestMarshalAccountUpdateStatus(t *testing.T) {
+func TestMarshalAccountSetStatus(t *testing.T) {
 	msg := &uni.Message{
 		Version:     0x0003,
 		PacketType:  0x00,
@@ -29,7 +29,7 @@ func TestMarshalAccountUpdateStatus(t *testing.T) {
 	}
 	push := &AppPushInfo{
 		Bid: bid,
-		AccountUpdateStatus: AccountUpdateStatus{
+		AccountStatus: AccountStatus{
 			Uin:       0x0000000000002710,
 			PushIDs:   ids,
 			Status:    uint32(AccountStatusOnline),
@@ -39,18 +39,18 @@ func TestMarshalAccountUpdateStatus(t *testing.T) {
 			LargeSeq:  0x00000000,
 		},
 	}
-	req := &AccountUpdateStatusRequest{
-		Uin:          push.AccountUpdateStatus.Uin,
+	req := &AccountSetStatusRequest{
+		Uin:          push.AccountStatus.Uin,
 		Bid:          push.Bid,
 		ConnType:     0x00,
 		Other:        "",
-		Status:       push.AccountUpdateStatus.Status,
+		Status:       push.AccountStatus.Status,
 		OnlinePush:   false,
 		IsOnline:     false,
 		IsShowOnline: false,
-		KickPC:       push.AccountUpdateStatus.KickPC,
-		KickWeak:     push.AccountUpdateStatus.KickWeak,
-		Timestamp:    push.AccountUpdateStatus.Timestamp,
+		KickPC:       push.AccountStatus.KickPC,
+		KickWeak:     push.AccountStatus.KickWeak,
+		Timestamp:    push.AccountStatus.Timestamp,
 		SDKVersion:   defaultDeviceOSSDKVersion,
 		NetworkType:  0x01,
 		BuildVersion: "",
@@ -63,7 +63,7 @@ func TestMarshalAccountUpdateStatus(t *testing.T) {
 		DeviceType:   defaultDeviceOSBuildModel,
 		OSVersion:    defaultDeviceOSVersion,
 		OpenPush:     true,
-		LargeSeq:     push.AccountUpdateStatus.LargeSeq,
+		LargeSeq:     push.AccountStatus.LargeSeq,
 	}
 	type args struct {
 		ctx  context.Context

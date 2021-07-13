@@ -3,25 +3,25 @@ syntax = "proto3";
 option go_package = "./;pb";
 
 message ConfigPushDomain {
-  DomainList domainList = 1;
+  DomainConfig domain_config = 1;
 }
 
-message DomainList {
+message DomainConfig {
   uint32 uip = 1;
   uint32 uin = 2;
-  repeated DomainIPList domainIPList = 3;
-  repeated DomainIPList domainIPv6List = 4;
+  repeated DomainIP domain_ip_list = 3;
+  repeated DomainIP domain_ipv6_list = 4;
 }
 
-message DomainIPList {
+message DomainIP {
   uint32 result = 1;
   string domain = 2;
   uint32 type = 3;
   uint32 ttl = 4;
-  repeated DomainIP ip = 5;
+  repeated DomainIPInfo ip = 5;
 }
 
-message DomainIP {
+message DomainIPInfo {
   string ip = 1;
   uint32 port = 2;
 }

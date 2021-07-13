@@ -9,75 +9,75 @@ import (
 )
 
 type FriendListGetGroupMemberListRequest struct {
-	Uin                 uint64 `jce:",0"`
-	GroupCode           uint64 `jce:",1"`
-	NextUin             uint64 `jce:",2"`
-	GroupUin            uint64 `jce:",3"`
-	Version             uint64 `jce:",4"`
-	ReqType             uint64 `jce:",5"`
-	GetListAppointTime  uint64 `jce:",6"`
-	RichCardNameVersion uint8  `jce:",7"`
+	Uin                 uint64 `jce:",0" json:",omitempty"`
+	GroupCode           uint64 `jce:",1" json:",omitempty"`
+	NextUin             uint64 `jce:",2" json:",omitempty"`
+	GroupUin            uint64 `jce:",3" json:",omitempty"`
+	Version             uint64 `jce:",4" json:",omitempty"`
+	ReqType             uint64 `jce:",5" json:",omitempty"`
+	GetListAppointTime  uint64 `jce:",6" json:",omitempty"`
+	RichCardNameVersion uint8  `jce:",7" json:",omitempty"`
 }
 
 type FriendListGetGroupMemberListResponse struct {
-	Uin             uint64            `jce:",0"`
-	GroupCode       uint64            `jce:",1"`
-	GroupUin        uint64            `jce:",2"`
-	GroupMemberList []GroupMemberInfo `jce:",3"`
-	NextUin         uint64            `jce:",4"`
-	Result          uint32            `jce:",5"`
-	ErrorCode       uint16            `jce:",6"`
-	OfficeMode      uint64            `jce:",7"`
-	NextGetTime     uint64            `jce:",8"`
+	Uin             uint64            `jce:",0" json:",omitempty"`
+	GroupCode       uint64            `jce:",1" json:",omitempty"`
+	GroupUin        uint64            `jce:",2" json:",omitempty"`
+	GroupMemberList []GroupMemberInfo `jce:",3" json:",omitempty"`
+	NextUin         uint64            `jce:",4" json:",omitempty"`
+	Result          uint32            `jce:",5" json:",omitempty"`
+	ErrorCode       uint16            `jce:",6" json:",omitempty"`
+	OfficeMode      uint64            `jce:",7" json:",omitempty"`
+	NextGetTime     uint64            `jce:",8" json:",omitempty"`
 }
 
 type GroupMemberInfo struct {
-	MemberUin              uint64         `jce:",0"`
-	FaceID                 uint16         `jce:",1"`
-	Age                    uint8          `jce:",2"`
-	Gender                 uint8          `jce:",3"`
-	Nick                   string         `jce:",4"`
-	Status                 uint8          `jce:",5"`
-	ShowName               string         `jce:",6"`
-	Name                   string         `jce:",8"`
-	Gender2                uint8          `jce:",9"`
-	Phone                  string         `jce:",10"`
-	Email                  string         `jce:",11"`
-	Memo                   string         `jce:",12"`
-	AutoRemark             string         `jce:",13"`
-	MemberLevel            uint64         `jce:",14"`
-	JoinTime               uint64         `jce:",15"`
-	LastSpeakTime          uint64         `jce:",16"`
-	CreditLevel            uint64         `jce:",17"`
-	Flag                   uint64         `jce:",18"`
-	FlagExt                uint64         `jce:",19"`
-	Point                  uint64         `jce:",20"`
-	Concerned              uint8          `jce:",21"`
-	Shielded               uint8          `jce:",22"`
-	SpecialTitle           string         `jce:",23"`
-	SpecialTitleExpireTime uint64         `jce:",24"`
-	Job                    string         `jce:",25"`
-	ApolloFlag             uint8          `jce:",26"`
-	ApolloTimestamp        uint64         `jce:",27"`
-	GlobalGroupLevel       uint64         `jce:",28"`
-	TitleId                uint64         `jce:",29"`
-	ShutupTimestap         uint64         `jce:",30"`
-	GlobalGroupPoint       uint64         `jce:",31"`
-	QZoneUserInfo          *QZoneUserInfo `jce:",32"`
-	RichCardNameVer        uint8          `jce:",33"`
-	VipType                uint64         `jce:",34"`
-	VipLevel               uint64         `jce:",35"`
-	BigClubLevel           uint64         `jce:",36"`
-	BigClubFlag            uint64         `jce:",37"`
-	Nameplate              uint64         `jce:",38"`
-	GroupHonor             []byte         `jce:",39"`
-	Name2                  []byte         `jce:",40"`
-	RichFlag               uint8          `jce:",41"`
+	MemberUin              uint64         `jce:",0" json:",omitempty"`
+	FaceID                 uint16         `jce:",1" json:",omitempty"`
+	Age                    uint8          `jce:",2" json:",omitempty"`
+	Gender                 uint8          `jce:",3" json:",omitempty"`
+	Nick                   string         `jce:",4" json:",omitempty"`
+	Status                 uint8          `jce:",5" json:",omitempty"`
+	ShowName               string         `jce:",6" json:",omitempty"`
+	Name                   string         `jce:",8" json:",omitempty"`
+	Gender2                uint8          `jce:",9" json:",omitempty"`
+	Phone                  string         `jce:",10" json:",omitempty"`
+	Email                  string         `jce:",11" json:",omitempty"`
+	Memo                   string         `jce:",12" json:",omitempty"`
+	AutoRemark             string         `jce:",13" json:",omitempty"`
+	MemberLevel            uint64         `jce:",14" json:",omitempty"`
+	JoinTime               uint64         `jce:",15" json:",omitempty"`
+	LastSpeakTime          uint64         `jce:",16" json:",omitempty"`
+	CreditLevel            uint64         `jce:",17" json:",omitempty"`
+	Flag                   uint64         `jce:",18" json:",omitempty"`
+	FlagExt                uint64         `jce:",19" json:",omitempty"`
+	Point                  uint64         `jce:",20" json:",omitempty"`
+	Concerned              uint8          `jce:",21" json:",omitempty"`
+	Shielded               uint8          `jce:",22" json:",omitempty"`
+	SpecialTitle           string         `jce:",23" json:",omitempty"`
+	SpecialTitleExpireTime uint64         `jce:",24" json:",omitempty"`
+	Job                    string         `jce:",25" json:",omitempty"`
+	ApolloFlag             uint8          `jce:",26" json:",omitempty"`
+	ApolloTimestamp        uint64         `jce:",27" json:",omitempty"`
+	GlobalGroupLevel       uint64         `jce:",28" json:",omitempty"`
+	TitleId                uint64         `jce:",29" json:",omitempty"`
+	ShutupTimestap         uint64         `jce:",30" json:",omitempty"`
+	GlobalGroupPoint       uint64         `jce:",31" json:",omitempty"`
+	QZoneUserInfo          *QZoneUserInfo `jce:",32" json:",omitempty"`
+	RichCardNameVer        uint8          `jce:",33" json:",omitempty"`
+	VipType                uint64         `jce:",34" json:",omitempty"`
+	VipLevel               uint64         `jce:",35" json:",omitempty"`
+	BigClubLevel           uint64         `jce:",36" json:",omitempty"`
+	BigClubFlag            uint64         `jce:",37" json:",omitempty"`
+	Nameplate              uint64         `jce:",38" json:",omitempty"`
+	GroupHonor             []byte         `jce:",39" json:",omitempty"`
+	Name2                  []byte         `jce:",40" json:",omitempty"`
+	RichFlag               uint8          `jce:",41" json:",omitempty"`
 }
 
 type QZoneUserInfo struct {
-	StarState  uint32            `jce:",0"`
-	ExtendInfo map[string]string `jce:",1"`
+	StarState  uint32            `jce:",0" json:",omitempty"`
+	ExtendInfo map[string]string `jce:",1" json:",omitempty"`
 }
 
 func NewFriendListGetGroupMemberListRequest(

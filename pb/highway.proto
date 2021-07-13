@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+message HighwayBaseHead {
+  uint32 version = 1;
+  string uin = 2;
+  string command = 3;
+  uint32 seq = 4;
+  uint32 retry_times = 5;
+  uint32 app_id = 6;
+  uint32 data_flag = 7;
+  uint32 command_id = 8;
+  string build_version = 9;
+  uint32 locale_id = 10;
+  uint32 env_id = 11;
+} // DataHighwayHead
+
+message HighwayLoginSigHead {}
+
+message HighwayRequestHead {
+  HighwayBaseHead base_head = 1;
+  HighwaySegmentHead segment_head = 2;
+  bytes extend_info = 3;
+  uint64 timestamp = 4;
+  HighwayLoginSigHead login_sig_head = 5;
+} // ReqDataHighwayHead
+
+message HighwayResponseHead {
+  HighwayBaseHead base_head = 1;
+  HighwaySegmentHead segment_head = 2;
+  uint32 error_code = 3;
+  uint32 allow_retry = 4;
+  uint32 cache_cost = 5;
+  uint32 ht_cost = 6;
+  bytes extend_info = 7;
+  uint64 timestamp = 8;
+  uint64 range = 9;
+  uint32 is_reset = 10;
+} // RspDataHighwayHead
+
+message HighwaySegmentHead {
+  uint32 service_id = 1;
+  uint64 file_size = 2;
+  uint64 data_offset = 3;
+  uint32 data_length = 4;
+  uint32 return_code = 5;
+  bytes service_ticket = 6;
+  uint32 flag = 7;
+  bytes md5 = 8;
+  bytes file_md5 = 9;
+  uint32 cache_address = 10;
+  uint32 query_times = 11;
+  uint32 update_cache_ip = 12;
+  uint32 cache_port = 13;
+} // SegHead

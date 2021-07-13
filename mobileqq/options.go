@@ -46,7 +46,12 @@ func (opt *Options) init() {
 	} else {
 		opt.LogLevel = logLevel.String()
 	}
-	for _, dir := range []string{opt.BaseDir, opt.CacheDir, opt.LogDir} {
+	for _, dir := range []string{
+		opt.BaseDir,
+		opt.CacheDir,
+		path.Join(opt.CacheDir, "downloads"),
+		opt.LogDir,
+	} {
 		_, err := os.Stat(dir)
 		if os.IsNotExist(err) {
 			err = os.Mkdir(dir, 0777)

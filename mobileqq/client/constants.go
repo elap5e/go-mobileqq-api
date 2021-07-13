@@ -13,9 +13,10 @@ var (
 )
 
 const (
-	ServiceMethodAccountGetLoginDevice  = "StatSvc.GetDevLoginInfo"
-	ServiceMethodAccountUpdateStatus    = "StatSvc.register"
-	ServiceMethodAccountPushLoginNotify = "StatSvc.SvcReqMSFLoginNotify"
+	ServiceMethodAccountGetLoginDevice      = "StatSvc.GetDevLoginInfo"
+	ServiceMethodAccountSetStatus           = "StatSvc.register"
+	ServiceMethodAccountSetStatusFromClient = "StatSvc.SetStatusFromClient"
+	ServiceMethodAccountPushLoginNotify     = "StatSvc.SvcReqMSFLoginNotify"
 
 	ServiceMethodConfigPushDomain   = "ConfigPushSvc.PushDomain"
 	ServiceMethodConfigPushRequest  = "ConfigPushSvc.PushReq"
@@ -31,6 +32,9 @@ const (
 	ServiceMethodMessageSendMessage   = "MessageSvc.PbSendMsg"
 	ServiceMethodMessagePushNotify    = "MessageSvc.PushNotify"
 	ServiceMethodMessagePushReaded    = "MessageSvc.PushReaded"
+
+	ServiceMethodMessageUploadImageC2C   = "LongConn.OffPicUp"
+	ServiceMethodMessageUploadImageGroup = "ImgStore.GroupPicUp"
 
 	ServiceMethodOnlinePushMessageSyncC2C   = "OnlinePush.PbC2CMsgSync"
 	ServiceMethodOnlinePushMessageSyncGroup = "OnlinePush.PbPushGroupMsg"

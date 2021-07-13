@@ -8,11 +8,15 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 type Client interface {
 	MessageSendMessage(ctx context.Context, username string, req *pb.MessageSendMessageRequest) (*pb.MessageSendMessageResponse, error)
+	MessageUploadImage(ctx context.Context, username string, name string, fileID uint64, req *client.UploadImageRequest) (*pb.Cmd0X0388Response, error)
+
+	NewMessageUploadImageRequest(name string, req *client.UploadRequest) (*client.UploadImageRequest, error)
 }
 
 type Server struct {
@@ -48,6 +52,8 @@ func (s *Server) Run(ctx context.Context) error {
 
 	engine.POST("/:token/sendMessage", s.sendMessage(ctx))
 	engine.GET("/:token/sendMessage", s.sendMessage(ctx))
+	engine.POST("/:token/sendPhoto", s.sendPhoto(ctx))
+	engine.GET("/:token/sendPhoto", s.sendPhoto(ctx))
 
 	return engine.Run(":8080")
 }

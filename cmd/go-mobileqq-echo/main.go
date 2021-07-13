@@ -78,7 +78,7 @@ func main() {
 					return
 				}
 				uin, _ := strconv.ParseInt(username, 10, 64)
-				if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
+				if _, err := rpc.AccountSetStatus(ctx, client.NewAccountSetStatusRequest(
 					uint64(uin),
 					client.AccountStatusOnline,
 					false,

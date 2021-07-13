@@ -18,7 +18,7 @@ var (
 	AccountStatusReceiveOfflineMessage AccountStatusType = 0x0000005f // 95
 )
 
-type AccountUpdateStatus struct {
+type AccountStatus struct {
 	Uin       uint64   `jce:",1" json:",omitempty"`
 	PushIDs   []uint64 `jce:",2" json:",omitempty"` // constant
 	Status    uint32   `jce:",3" json:",omitempty"`
@@ -28,7 +28,7 @@ type AccountUpdateStatus struct {
 	LargeSeq  uint32   `jce:",7" json:",omitempty"` // constant 0x00000000
 }
 
-type AccountUpdateStatusRequest struct {
+type AccountSetStatusRequest struct {
 	Uin          uint64 `jce:",0" json:",omitempty"`
 	Bid          uint64 `jce:",1" json:",omitempty"`
 	ConnType     uint8  `jce:",2" json:",omitempty"` // constant 0x00
@@ -77,7 +77,7 @@ type VendorPushInfo struct {
 	Type uint64 `jce:",0" json:",omitempty"`
 }
 
-type AccountUpdateStatusResponse struct {
+type AccountSetStatusResponse struct {
 	Uin            uint64 `jce:",0" json:",omitempty"`
 	Bid            uint64 `jce:",1" json:",omitempty"`
 	ReplyCode      uint8  `jce:",2" json:",omitempty"`
@@ -101,11 +101,11 @@ type AccountUpdateStatusResponse struct {
 	ClientAutoStatusInterval uint64 `jce:",19" json:",omitempty"`
 }
 
-func NewAccountUpdateStatusRequest(
+func NewAccountSetStatusRequest(
 	uin uint64,
 	status AccountStatusType,
 	kick bool,
-) *AccountUpdateStatusRequest {
+) *AccountSetStatusRequest {
 	ids := []uint64{0x01, 0x02, 0x04}
 	bid := uint64(0x0000000000000000)
 	for _, id := range ids {
@@ -113,7 +113,7 @@ func NewAccountUpdateStatusRequest(
 	}
 	push := &AppPushInfo{
 		Bid: bid,
-		AccountUpdateStatus: AccountUpdateStatus{
+		AccountStatus: AccountStatus{
 			Uin:       uin,
 			PushIDs:   ids,
 			Status:    uint32(status),
@@ -123,18 +123,18 @@ func NewAccountUpdateStatusRequest(
 			LargeSeq:  0x00000000,
 		},
 	}
-	return &AccountUpdateStatusRequest{
-		Uin:          push.AccountUpdateStatus.Uin,
+	return &AccountSetStatusRequest{
+		Uin:          push.AccountStatus.Uin,
 		Bid:          push.Bid,
 		ConnType:     0x00,
 		Other:        "",
-		Status:       push.AccountUpdateStatus.Status,
+		Status:       push.AccountStatus.Status,
 		OnlinePush:   false,
 		IsOnline:     false,
 		IsShowOnline: false,
-		KickPC:       push.AccountUpdateStatus.KickPC,
-		KickWeak:     push.AccountUpdateStatus.KickWeak,
-		Timestamp:    push.AccountUpdateStatus.Timestamp,
+		KickPC:       push.AccountStatus.KickPC,
+		KickWeak:     push.AccountStatus.KickWeak,
+		Timestamp:    push.AccountStatus.Timestamp,
 		SDKVersion:   defaultDeviceOSSDKVersion,
 		NetworkType:  0x01,
 		BuildVersion: "",
@@ -147,14 +147,14 @@ func NewAccountUpdateStatusRequest(
 		DeviceType:   defaultDeviceOSBuildModel,
 		OSVersion:    defaultDeviceOSVersion,
 		OpenPush:     true,
-		LargeSeq:     push.AccountUpdateStatus.LargeSeq,
+		LargeSeq:     push.AccountStatus.LargeSeq,
 	}
 }
 
-func (c *Client) AccountUpdateStatus(
+func (c *Client) AccountSetStatus(
 	ctx context.Context,
-	req *AccountUpdateStatusRequest,
-) (*AccountUpdateStatusResponse, error) {
+	req *AccountSetStatusRequest,
+) (*AccountSetStatusResponse, error) {
 	req.GUID = c.cfg.Device.GUID
 	buf, err := uni.Marshal(ctx, &uni.Message{
 		Version:     0x0003,
@@ -173,16 +173,17 @@ func (c *Client) AccountUpdateStatus(
 	if err != nil {
 		return nil, err
 	}
-	s2c := codec.ServerToClientMessage{}
-	if err := c.rpc.Call(ServiceMethodAccountUpdateStatus, &codec.ClientToServerMessage{
+	c2s, s2c := codec.ClientToServerMessage{
 		Username: strconv.FormatInt(int64(req.Uin), 10),
 		Buffer:   buf,
 		Simple:   false,
-	}, &s2c); err != nil {
+	}, codec.ServerToClientMessage{}
+	err = c.rpc.Call(ServiceMethodAccountSetStatus, &c2s, &s2c)
+	if err != nil {
 		return nil, err
 	}
 	msg := uni.Message{}
-	resp := AccountUpdateStatusResponse{}
+	resp := AccountSetStatusResponse{}
 	if err := uni.Unmarshal(ctx, s2c.Buffer, &msg, map[string]interface{}{
 		"SvcRespRegister": &resp,
 	}); err != nil {

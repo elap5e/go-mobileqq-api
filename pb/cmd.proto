@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+message Cmd0x0388Request {
+  uint32 net_type = 1;
+  uint32 sub_cmd = 2;
+  repeated TryUploadImageRequest try_upload_image = 3;
+  repeated GetImageURLRequest get_image_url = 4;
+  repeated TryUploadPTTRequest try_upload_ptt = 5;
+  repeated GetPTTURLRequest get_ptt_url = 6;
+  uint32 command_id = 7;
+  repeated DeleteImageRequest del_image = 8;
+  bytes extension = 9;
+}
+
+message Cmd0x0388Response {
+  uint32 client_ip = 1;
+  uint32 sub_cmd = 2;
+  repeated TryUploadImageResponse try_upload_image = 3;
+  repeated GetImageURLResponse get_image_url = 4;
+  repeated TryUploadPTTResponse try_upload_ptt = 5;
+  repeated GetPTTURLResponse get_ptt_url = 6;
+  repeated DeleteImageResponse del_image = 7;
+}
+
+message DeleteImageRequest {}
+
+message DeleteImageResponse {}
+
+message GetImageURLRequest {}
+
+message GetImageURLResponse {}
+
+message GetPTTURLRequest {}
+
+message GetPTTURLResponse {}
+
+message ImageInfo {
+  bytes file_md5 = 1;
+  uint32 file_type = 2;
+  uint64 file_size = 3;
+  uint32 file_width = 4;
+  uint32 file_height = 5;
+}
+
+message IPv6Info {
+  bytes ip6 = 1;
+  uint32 port = 2;
+}
+
+message TryUploadImageRequest {
+  uint64 group_code = 1;
+  uint64 src_uin = 2;
+  uint64 file_id = 3;
+  bytes file_md5 = 4;
+  uint64 file_size = 5;
+  string file_name = 6;
+  uint32 src_term = 7;
+  uint32 platform_type = 8;
+  uint32 bu_type = 9;
+  uint32 picture_width = 10;
+  uint32 picture_height = 11;
+  uint32 picture_type = 12;
+  string build_version = 13;
+  uint32 inner_ip = 14;
+  uint32 app_picture_type = 15;
+  uint32 original_picture = 16;
+  bytes file_index = 17;
+  uint64 dst_uin = 18;
+  uint32 server_upload = 19;
+  string transfer_url = 20;
+} // TryUpImgReq
+
+message TryUploadImageResponse {
+  uint64 file_id1 = 1;
+  uint32 result = 2;
+  string fail_message = 3;
+  bool file_exist = 4;
+  ImageInfo img_info = 5;
+  repeated uint32 upload_ip = 6;
+  repeated uint32 upload_port = 7;
+  bytes upload_key = 8;
+  uint64 file_id = 9;
+  uint64 upload_offset = 10;
+  uint64 block_size = 11;
+  bool new_big_chan = 12;
+  repeated IPv6Info upload_ip6 = 13;
+  bytes client_ip6 = 14;
+  Info info4busi = 15;
+  message Info {
+    string down_domain = 1;
+    string thumb_down_url = 2;
+    string original_down_url = 3;
+    string big_down_url = 4;
+    string file_resouce_id = 5;
+  } // TryUpInfo4Busi
+} // TryUpImgRsp
+
+message TryUploadPTTRequest {}
+
+message TryUploadPTTResponse {}

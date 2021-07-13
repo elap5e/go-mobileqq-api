@@ -17,7 +17,6 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
-	"github.com/elap5e/go-mobileqq-api/mobileqq/api"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/auth"
 	"github.com/elap5e/go-mobileqq-api/pb"
@@ -142,7 +141,7 @@ func main() {
 					return
 				}
 				uin, _ := strconv.ParseInt(username, 10, 64)
-				if _, err := rpc.AccountUpdateStatus(ctx, client.NewAccountUpdateStatusRequest(
+				if _, err := rpc.AccountSetStatus(ctx, client.NewAccountSetStatusRequest(
 					uint64(uin), client.AccountStatusOnline, false,
 				)); err != nil {
 					errCh <- err
@@ -169,12 +168,6 @@ func main() {
 		default:
 		}
 
-		go func() {
-			if err := api.NewServer(mqq.GetClient(), tokens).Run(ctx); err != nil {
-				errCh <- err
-				return
-			}
-		}()
 		go func() {
 			for {
 				text, _ := util.ReadLine(reader)
