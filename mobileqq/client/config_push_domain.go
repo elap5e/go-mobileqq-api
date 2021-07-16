@@ -24,8 +24,8 @@ func (c *Client) handleConfigPushDomain(
 	if err != nil {
 		return nil, err
 	}
-	if ioutil.WriteFile(path.Join(
-		c.cfg.CacheDir, s2c.Username, "domian-list.json",
+	if err := ioutil.WriteFile(path.Join(
+		c.GetCacheByUsernameDir(s2c.Username), "domian-config.json",
 	), append(tdata, '\n'), 0600); err != nil {
 		return nil, err
 	}

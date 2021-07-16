@@ -34,10 +34,6 @@ func Unmarshal(ctx context.Context, data []byte, msg *Message) error {
 	if err := unmarshalData(ctx, buf, msg); err != nil {
 		return err
 	}
-	log.Debug().
-		Uint8("code", msg.Code).
-		Uint16("type", msg.Type).
-		Msg("--> [oicq]")
 	if log.GetLevel() == zerolog.TraceLevel {
 		tlv.DumpTLVs(ctx, msg.TLVs)
 	}

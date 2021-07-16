@@ -79,10 +79,10 @@ func (c *Client) GetUserSignature(username string) *rpc.UserSignature {
 		rand.Read(sig.Session.Cookie)
 		c.userSignatures[username] = sig
 		c.rpc.SetUserSignature(username, sig)
-		cacheDir := path.Join(c.cfg.CacheDir, username)
+		cacheDir := c.GetCacheByUsernameDir(username)
 		_, err := os.Stat(cacheDir)
 		if os.IsNotExist(err) {
-			err = os.Mkdir(cacheDir, 0777)
+			err = os.Mkdir(cacheDir, 0755)
 		}
 		if err != nil {
 			log.Fatalf("failed to mkdir %s, error %s", cacheDir, err.Error())

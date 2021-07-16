@@ -63,58 +63,66 @@ func main() {
 		Client:   cfg,
 	})
 
-	if err := mqq.Run(context.Background(), func(ctx context.Context, restart chan struct{}) error {
-		errCh := make(chan error, 1)
-		wg := sync.WaitGroup{}
-		for _, account := range config.Accounts {
-			wg.Add(1)
-			go func(username, password string) {
-				defer wg.Done()
-				rpc := mqq.GetClient()
-				if err := auth.NewFlow(&auth.FlowOptions{
-					Username: username,
-					Password: password,
-					AuthAddr: cfg.AuthAddress,
-					CacheDir: cfg.CacheDir,
-				}, auth.NewHandler(&auth.HandlerOptions{
-					BaseDir: cfg.BaseDir,
-					Client:  cfg.Engine.Client,
-					Device:  cfg.Engine.Device,
-				}, rpc)).Run(ctx); err != nil {
-					errCh <- err
-					return
-				}
-				uin, _ := strconv.ParseInt(username, 10, 64)
-				if _, err := rpc.AccountSetStatus(ctx, client.NewAccountSetStatusRequest(
-					uint64(uin),
-					client.AccountStatusOnline,
-					false,
-				)); err != nil {
-					errCh <- err
-					return
-				}
-			}(account.Username, account.Password)
+	srv := api.NewServer(tokens)
+	go func() {
+		if err := srv.Run(context.Background()); err != nil {
+			log.Panic().Err(err).Msg("server unexpected exit")
 		}
-		wg.Wait()
-		select {
-		case err := <-errCh:
-			return err
-		default:
-		}
+	}()
 
-		go func() {
-			if err := api.NewServer(mqq.GetClient(), tokens).Run(ctx); err != nil {
-				errCh <- err
-				return
+	if err := mqq.Run(
+		context.Background(),
+		func(ctx context.Context, restart chan struct{}) error {
+			errCh := make(chan error, 1)
+			wg := sync.WaitGroup{}
+			for _, account := range config.Accounts {
+				wg.Add(1)
+				go func(username, password string) {
+					defer wg.Done()
+					rpc := mqq.GetClient()
+					if err := auth.NewFlow(&auth.FlowOptions{
+						Username: username,
+						Password: password,
+						AuthAddr: cfg.AuthAddress,
+						CacheDir: cfg.CacheDir,
+					}, auth.NewHandler(&auth.HandlerOptions{
+						BaseDir: cfg.BaseDir,
+						Client:  cfg.Engine.Client,
+						Device:  cfg.Engine.Device,
+					}, rpc)).Run(ctx); err != nil {
+						errCh <- err
+						return
+					}
+					uin, _ := strconv.ParseInt(username, 10, 64)
+					if _, err := rpc.AccountSetStatus(
+						ctx,
+						client.NewAccountSetStatusRequest(
+							uint64(uin),
+							client.AccountStatusOnline,
+							false,
+						),
+					); err != nil {
+						errCh <- err
+						return
+					}
+				}(account.Username, account.Password)
 			}
-		}()
-		select {
-		case err := <-errCh:
-			return err
-		case <-restart:
-			return nil
-		}
-	}); err != nil {
+			wg.Wait()
+			select {
+			case err := <-errCh:
+				return err
+			default:
+			}
+
+			srv.ResetClient(ctx, mqq.GetClient())
+			select {
+			case err := <-errCh:
+				return err
+			case <-restart:
+				return nil
+			}
+		},
+	); err != nil {
 		log.Panic().Err(err).Msg("client unexpected exit")
 	}
 }

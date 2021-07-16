@@ -1,56 +1,49 @@
 package highway
 
 import (
-	"errors"
-	"fmt"
-
 	"google.golang.org/protobuf/proto"
-
-	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (hw *Highway) send(req, body []byte) (err error) {
+func (hw *Highway) write(body []byte) error {
+	head, err := proto.Marshal(hw.req)
+	if err != nil {
+		return err
+	}
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
 	buf.WriteUint8(0x28)
-	buf.WriteUint32(uint32(len(req)))
+	buf.WriteUint32(uint32(len(head)))
 	buf.WriteUint32(uint32(len(body)))
-	buf.Write(req)
+	buf.Write(head)
 	buf.Write(body)
 	buf.WriteUint8(0x29)
 	_, err = hw.conn.Write(buf.Bytes())
-	return
+	return err
 }
 
-func (hw *Highway) mustSend(req, body []byte) error {
+func (hw *Highway) send(call *Call) {
+	hw.reqMux.Lock()
+	defer hw.reqMux.Unlock()
+
 	hw.mux.Lock()
-	defer hw.mux.Unlock()
-
-	err := hw.send(req, body)
-	if err != nil {
-		return err
+	seq := call.ReqHead.GetBaseHead().GetSeq()
+	if seq == 0 {
+		seq = hw.getNextSeq()
+		call.ReqHead.GetBaseHead().Seq = seq
 	}
-	head, _, err := hw.recv()
-	if err != nil {
-		return err
-	}
+	hw.pending[seq] = call
+	hw.mux.Unlock()
 
-	resp := pb.HighwayResponseHead{}
-	err = proto.Unmarshal(head, &resp)
+	hw.req = call.ReqHead
+	err := hw.write(call.ReqBody)
 	if err != nil {
-		return err
-	}
-
-	switch code := resp.GetErrorCode(); code {
-	case 0:
-		return nil
-	case 67:
-		return errors.New("invalid upload key")
-	case 81:
-		return errors.New("checksum not match")
-	case 199:
-		return errors.New("nil upload key")
-	default:
-		return fmt.Errorf("not implement %d", code)
+		hw.mux.Lock()
+		call := hw.pending[seq]
+		delete(hw.pending, seq)
+		hw.mux.Unlock()
+		if call != nil {
+			call.Error = err
+			call.done()
+		}
 	}
 }

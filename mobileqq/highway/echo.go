@@ -1,13 +1,11 @@
 package highway
 
 import (
-	"google.golang.org/protobuf/proto"
-
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (hw *Highway) echo() error {
-	head, err := proto.Marshal(&pb.HighwayRequestHead{
+func (hw *Highway) Echo() error {
+	return hw.Call(&pb.HighwayRequestHead{
 		BaseHead: &pb.HighwayBaseHead{
 			Version:      0x00000001,
 			Uin:          hw.uin,
@@ -21,9 +19,5 @@ func (hw *Highway) echo() error {
 			LocaleId:     0x00000804,
 			EnvId:        0x00000000, // nil
 		},
-	})
-	if err != nil {
-		return err
-	}
-	return hw.mustSend(head, nil)
+	}, nil, nil)
 }

@@ -97,6 +97,15 @@ func (c *Client) handleOnlinePushMessage(
 		userID = uint64(0)
 	}
 	seq := msg.GetMessageHead().GetMessageSeq()
+	if info, ok := c.channels[peerID]; ok &&
+		msg.GetMessageHead().GetGroupInfo().GetGroupInfoSeq() > info.GroupInfoSeq {
+		uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
+		if _, err := c.FriendListGetGroupList(ctx, NewFriendListGetGroupListRequest(
+			uin, nil,
+		)); err != nil {
+			return nil, err
+		}
+	}
 
 	c.PrintMessage(
 		time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),

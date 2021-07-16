@@ -2,10 +2,8 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,36 +23,43 @@ const (
 )
 
 type SendMessageRequest struct {
-	ChatID                   string        `form:"chat_id" json:"chat_id"`
-	Text                     string        `form:"text" json:"text"`
-	ParseMode                ParseModeType `json:"parse_mode,omitempty"`
-	Entities                 []interface{} `json:"entities,omitempty"`
-	DisableWebPagePreview    bool          `json:"disable_web_page_preview,omitempty"`
-	DisableNotification      bool          `json:"disable_notification,omitempty"`
-	ReplyToMessageID         int64         `json:"reply_to_message_id,omitempty"`
-	AllowSendingWithoutReply bool          `json:"allow_sending_without_reply,omitempty"`
-	ReplyMarkup              []interface{} `json:"reply_markup,omitempty"`
+	ChatID                   string        `binding:"required" form:"chat_id" json:"chat_id"`
+	Text                     string        `binding:"required" form:"text" json:"text"`
+	ParseMode                ParseModeType `form:"parse_mode" json:"parse_mode,omitempty"`
+	Entities                 []interface{} `form:"entities" json:"entities,omitempty"`
+	DisableWebPagePreview    bool          `form:"disable_web_page_preview" json:"disable_web_page_preview,omitempty"`
+	DisableNotification      bool          `form:"disable_notification" json:"disable_notification,omitempty"`
+	ReplyToMessageID         int64         `form:"reply_to_message_id" json:"reply_to_message_id,omitempty"`
+	AllowSendingWithoutReply bool          `form:"allow_sending_without_reply" json:"allow_sending_without_reply,omitempty"`
+	ReplyMarkup              interface{}   `form:"reply_markup" json:"reply_markup,omitempty"`
 }
 
 func (s *Server) sendMessage(ctx context.Context) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		botID, ok := c.Get("botID")
 		if !ok {
-			c.String(http.StatusUnauthorized, "error: invalid botId")
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"ok":          false,
+				"error_code":  http.StatusUnauthorized,
+				"description": "Invalid botId",
+			})
 			return
 		}
 		req := SendMessageRequest{}
-		c.Bind(&req)
+		if err := c.Bind(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"ok":          false,
+				"error_code":  http.StatusBadRequest,
+				"description": err.Error(),
+			})
+			return
+		}
 		s.handleSendMessageRequest(ctx, botID.(string), &req, c)
 	}
 }
 
 func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req *SendMessageRequest, c *gin.Context) {
-	chatID := strings.TrimPrefix(req.ChatID, "@")
-	ids := strings.Split(chatID, "_")
-	_ = ids[1]
-	peerID, _ := strconv.ParseUint(ids[0], 10, 64)
-	userID, _ := strconv.ParseUint(ids[1], 10, 64)
+	peerID, userID := s.parseChatID(req.ChatID)
 	fromID, _ := strconv.ParseUint(botID, 10, 64)
 	peerName := strconv.FormatUint(peerID, 10)
 	userName := strconv.FormatUint(userID, 10)
@@ -74,7 +79,11 @@ func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req
 
 	msg := pb.Message{}
 	if err := mark.Unmarshal([]byte(text), &msg); err != nil {
-		c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"ok":          false,
+			"error_code":  http.StatusInternalServerError,
+			"description": err.Error(),
+		})
 		return
 	}
 	subReq := client.NewMessageSendMessageRequest(
@@ -86,7 +95,11 @@ func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req
 	)
 	resp, err := s.client.MessageSendMessage(ctx, botID, subReq)
 	if err != nil {
-		c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"ok":          false,
+			"error_code":  http.StatusInternalServerError,
+			"description": err.Error(),
+		})
 		return
 	}
 
@@ -96,8 +109,11 @@ func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message_id":  subReq.GetMessageSeq(),
-		"sender_chat": c.PostForm("chat_id"),
-		"date":        resp.GetSendTime(),
+		"ok": true,
+		"result": gin.H{
+			"message_id":  subReq.GetMessageSeq(),
+			"sender_chat": c.PostForm("chat_id"),
+			"date":        resp.GetSendTime(),
+		},
 	})
 }

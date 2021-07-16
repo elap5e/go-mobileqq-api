@@ -7,8 +7,6 @@ import (
 	"os"
 	"time"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
@@ -33,11 +31,13 @@ func (hw *Highway) Upload(name string, ukey []byte) error {
 	}
 	defer hw.conn.Close()
 
-	if err := hw.echo(); err != nil {
+	go hw.recv()
+
+	if err := hw.Echo(); err != nil {
 		return err
 	}
+	chunk := make([]byte, 0x00010000) // 64KiB
 	offset := 0
-	chunk := make([]byte, 0x00010000) // 64KB
 	for {
 		n, err := file.Read(chunk)
 		if err != nil && err != io.EOF {
@@ -46,7 +46,7 @@ func (hw *Highway) Upload(name string, ukey []byte) error {
 		if n == 0 {
 			break
 		}
-		if err := hw.uploadChunk(size, offset, chunk[:n], sum, ukey); err != nil {
+		if err := hw.uploadChunk(0x00000002, size, offset, chunk[:n], sum, ukey); err != nil {
 			return err
 		}
 		offset += n
@@ -54,9 +54,9 @@ func (hw *Highway) Upload(name string, ukey []byte) error {
 	return nil
 }
 
-func (hw *Highway) uploadChunk(size int64, offset int, body, hash, ukey []byte) error {
+func (hw *Highway) uploadChunk(cmd uint32, size int64, offset int, body, hash, ukey []byte) error {
 	sum := md5.Sum(body)
-	req, err := proto.Marshal(&pb.HighwayRequestHead{
+	return hw.Call(&pb.HighwayRequestHead{
 		BaseHead: &pb.HighwayBaseHead{
 			Version:      0x00000001,
 			Uin:          hw.uin,
@@ -65,8 +65,8 @@ func (hw *Highway) uploadChunk(size int64, offset int, body, hash, ukey []byte) 
 			RetryTimes:   0x00000000, // nil
 			AppId:        hw.appID,   // constant
 			DataFlag:     0x00001000, // constant
-			CommandId:    0x00000002, // TODO: fix
-			BuildVersion: "",         // nil
+			CommandId:    cmd,
+			BuildVersion: "", // nil
 			LocaleId:     0x00000804,
 			EnvId:        0x00000000, // nil
 		},
@@ -86,9 +86,5 @@ func (hw *Highway) uploadChunk(size int64, offset int, body, hash, ukey []byte) 
 			CachePort:     0x00000000, // nil
 		},
 		ExtendInfo: []byte{},
-	})
-	if err != nil {
-		return err
-	}
-	return hw.mustSend(req, body)
+	}, body, nil)
 }

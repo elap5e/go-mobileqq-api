@@ -7,7 +7,6 @@ import (
 	"fmt"
 	_rand "math/rand"
 	"net"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,7 +18,11 @@ import (
 
 var rand = _rand.New(_rand.NewSource(time.Now().UnixNano()))
 
-var ErrShutdown = errors.New("connection is shut down")
+var (
+	ErrClosedByRemote  = errors.New("connection is closed by timeout")
+	ErrClosedByTimeout = errors.New("connection is closed by timeout")
+	ErrShutdown        = errors.New("connection is shut down")
+)
 
 type Engine interface {
 	Start(ctx context.Context) error
@@ -30,7 +33,12 @@ type Engine interface {
 		serviceMethod string,
 		c2s *codec.ClientToServerMessage,
 		s2c *codec.ServerToClientMessage,
-		timeout ...time.Duration,
+	) error
+	CallWithDeadline(
+		serviceMethod string,
+		c2s *codec.ClientToServerMessage,
+		s2c *codec.ServerToClientMessage,
+		d time.Time,
 	) error
 	Go(
 		serviceMethod string,
@@ -199,16 +207,16 @@ func (e *engine) Start(ctx context.Context) error {
 
 	e.interval = 60 * time.Second
 	e.watchDog = time.AfterFunc(0, func() {
-		s2c := codec.ServerToClientMessage{}
-		if err := e.HeartbeatAlive(&s2c); err != nil {
+		c2s := codec.ClientToServerMessage{}
+		if err := e.HeartbeatAlive(&c2s); err != nil {
 			log.Error().Err(err).
-				Uint32("@seq", s2c.Seq).
-				Str("uin", s2c.Username).
+				Uint32("@seq", c2s.Seq).
+				Str("uin", c2s.Username).
 				Msg("x-x [conn] heartbeat alive")
 		} else {
 			log.Info().
-				Uint32("@seq", s2c.Seq).
-				Str("uin", s2c.Username).
+				Uint32("@seq", c2s.Seq).
+				Str("uin", c2s.Username).
 				Msg("<-> [conn] heartbeat alive")
 		}
 	})
@@ -268,10 +276,19 @@ func (e *engine) Call(
 	serviceMethod string,
 	c2s *codec.ClientToServerMessage,
 	s2c *codec.ServerToClientMessage,
-	timeout ...time.Duration,
+) error {
+	call := <-e.Go(serviceMethod, c2s, s2c, make(chan *Call, 1)).Done
+	return call.Error
+}
+
+func (e *engine) CallWithDeadline(
+	serviceMethod string,
+	c2s *codec.ClientToServerMessage,
+	s2c *codec.ServerToClientMessage,
+	d time.Time,
 ) error {
 	var err error
-	err = e.codec.SetReadDeadline(time.Now().Add(2 * time.Second))
+	err = e.codec.SetReadDeadline(d)
 	if err != nil {
 		return err
 	}
@@ -279,9 +296,6 @@ func (e *engine) Call(
 	err = e.codec.SetReadDeadline(time.Time{})
 	if err != nil {
 		return err
-	}
-	if os.IsTimeout(call.Error) {
-		e.err <- call.Error
 	}
 	return call.Error
 }

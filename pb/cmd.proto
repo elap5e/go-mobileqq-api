@@ -55,7 +55,7 @@ message TryUploadImageRequest {
   uint64 file_id = 3;
   bytes file_md5 = 4;
   uint64 file_size = 5;
-  string file_name = 6;
+  string filename = 6;
   uint32 src_term = 7;
   uint32 platform_type = 8;
   uint32 bu_type = 9;

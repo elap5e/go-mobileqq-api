@@ -18,7 +18,6 @@ type Client interface {
 		serviceMethod string,
 		c2s *codec.ClientToServerMessage,
 		s2c *codec.ServerToClientMessage,
-		timeout ...time.Duration,
 	) error
 	GetNextSeq() uint32
 

@@ -57,13 +57,18 @@ func (e *engine) recv() {
 			err = io.ErrUnexpectedEOF
 		}
 	}
-	for _, call := range e.pending {
+	for key, call := range e.pending {
+		delete(e.pending, key)
 		call.Error = err
 		call.done()
 	}
 	e.mux.Unlock()
 	e.c2sMux.Unlock()
-	if err != io.EOF && !os.IsTimeout(err) && !closing {
+	if err == io.ErrUnexpectedEOF {
+		e.err <- ErrClosedByRemote
+	} else if os.IsTimeout(err) {
+		e.err <- ErrClosedByTimeout
+	} else if err != io.EOF && !closing {
 		log.Error().Err(err).
 			Msg("--> [recv] client protocol")
 	}

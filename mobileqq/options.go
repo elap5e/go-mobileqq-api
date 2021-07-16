@@ -49,12 +49,13 @@ func (opt *Options) init() {
 	for _, dir := range []string{
 		opt.BaseDir,
 		opt.CacheDir,
+		path.Join(opt.CacheDir, "by-username"),
 		path.Join(opt.CacheDir, "downloads"),
 		opt.LogDir,
 	} {
 		_, err := os.Stat(dir)
 		if os.IsNotExist(err) {
-			err = os.Mkdir(dir, 0777)
+			err = os.Mkdir(dir, 0755)
 		}
 		if err != nil {
 			panic(err)

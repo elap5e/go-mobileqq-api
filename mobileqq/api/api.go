@@ -3,25 +3,43 @@ package api
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 
-	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/highway"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 type Client interface {
-	MessageSendMessage(ctx context.Context, username string, req *pb.MessageSendMessageRequest) (*pb.MessageSendMessageResponse, error)
-	MessageUploadImage(ctx context.Context, username string, name string, fileID uint64, req *client.UploadImageRequest) (*pb.Cmd0X0388Response, error)
+	GetCacheDownloadsDir() string
+	GetHighway(addr, username string) *highway.Highway
 
-	NewMessageUploadImageRequest(name string, req *client.UploadRequest) (*client.UploadImageRequest, error)
+	MessageSendMessage(ctx context.Context, username string, req *pb.MessageSendMessageRequest) (*pb.MessageSendMessageResponse, error)
+	MessageUploadImage(ctx context.Context, username string, reqs ...*pb.TryUploadImageRequest) ([]*pb.TryUploadImageResponse, error)
 }
 
 type Server struct {
+	ctx    context.Context
 	client Client
 	tokens map[string]string
+}
+
+func (s *Server) checkClient(ctx context.Context) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if s.client == nil {
+			c.JSON(http.StatusGatewayTimeout, gin.H{
+				"ok":          false,
+				"error_code":  http.StatusGatewayTimeout,
+				"description": "Client Not Ready",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }
 
 func (s *Server) checkToken(ctx context.Context) gin.HandlerFunc {
@@ -31,7 +49,11 @@ func (s *Server) checkToken(ctx context.Context) gin.HandlerFunc {
 		token := c.Param("token")
 		strs := strings.Split(strings.TrimPrefix(token, "bot"), ":")
 		if t, ok := s.tokens[strs[0]]; !ok || token != "bot"+t {
-			c.String(http.StatusUnauthorized, "error: invalid token")
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"ok":          false,
+				"error_code":  http.StatusUnauthorized,
+				"description": "Invalid Token",
+			})
 			c.Abort()
 			return
 		}
@@ -40,20 +62,39 @@ func (s *Server) checkToken(ctx context.Context) gin.HandlerFunc {
 	}
 }
 
-func NewServer(client Client, tokens map[string]string) *Server {
-	return &Server{client: client, tokens: tokens}
+func (s *Server) parseChatID(chatID string) (peerID, userID uint64) {
+	chatID = strings.TrimPrefix(chatID, "@")
+	ids := strings.Split(chatID, "u")
+	peerID, _ = strconv.ParseUint(ids[0], 10, 64)
+	if len(ids) == 2 {
+		userID, _ = strconv.ParseUint(ids[1], 10, 64)
+	} else {
+		userID = 0
+	}
+	return peerID, userID
+}
+
+func NewServer(tokens map[string]string) *Server {
+	return &Server{tokens: tokens}
+}
+
+func (s *Server) ResetClient(ctx context.Context, client Client) {
+	// TODO: mux
+	s.ctx = ctx
+	s.client = client
 }
 
 func (s *Server) Run(ctx context.Context) error {
 	engine := gin.Default()
 	pprof.Register(engine)
 
+	engine.Use(s.checkClient(ctx))
 	engine.Use(s.checkToken(ctx))
 
-	engine.POST("/:token/sendMessage", s.sendMessage(ctx))
-	engine.GET("/:token/sendMessage", s.sendMessage(ctx))
-	engine.POST("/:token/sendPhoto", s.sendPhoto(ctx))
-	engine.GET("/:token/sendPhoto", s.sendPhoto(ctx))
+	engine.POST("/:token/sendMessage", s.sendMessage(s.ctx))
+	engine.GET("/:token/sendMessage", s.sendMessage(s.ctx))
+	engine.POST("/:token/sendPhoto", s.sendPhoto(s.ctx))
+	engine.GET("/:token/sendPhoto", s.sendPhoto(s.ctx))
 
-	return engine.Run(":8080")
+	return engine.Run("localhost:8080")
 }

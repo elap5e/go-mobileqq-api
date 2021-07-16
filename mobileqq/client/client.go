@@ -3,12 +3,14 @@ package client
 import (
 	"context"
 	"math/rand"
+	"path"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/config"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/highway"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 )
 
@@ -94,13 +96,25 @@ func (c *Client) getNextRequestSeq() uint32 {
 	return seq
 }
 
+func (c *Client) GetCacheByUsernameDir(username string) string {
+	return path.Join(c.cfg.CacheDir, "by-username", username)
+}
+
+func (c *Client) GetCacheDownloadsDir() string {
+	return path.Join(c.cfg.CacheDir, "downloads")
+}
+
+func (c *Client) GetHighway(addr, username string) *highway.Highway {
+	return highway.NewHighway(addr, username, c.cfg.Client.AppID)
+}
+
 func (c *Client) Call(
 	serviceMethod string,
 	c2s *codec.ClientToServerMessage,
 	s2c *codec.ServerToClientMessage,
-	timeout ...time.Duration,
 ) error {
-	return c.rpc.Call(serviceMethod, c2s, s2c, timeout...)
+	d := time.Now().Add(30 * time.Second)
+	return c.rpc.CallWithDeadline(serviceMethod, c2s, s2c, d)
 }
 
 func (c *Client) GetEngine() rpc.Engine {

@@ -9,23 +9,23 @@ import (
 )
 
 type FriendListGetGroupListRequest struct {
-	Uin              uint64             `jce:",0" json:",omitempty"`
-	GetMSFMsgFlag    uint8              `jce:",1" json:",omitempty"`
-	Cookie           []byte             `jce:",2" json:",omitempty"`
-	GroupInfoList    []GroupInfoRequest `jce:",3" json:",omitempty"`
-	GroupFlagExtra   uint8              `jce:",4" json:",omitempty"`
-	Version          uint32             `jce:",5" json:",omitempty"`
-	CompanyID        uint64             `jce:",6" json:",omitempty"`
-	VersionNumber    uint64             `jce:",7" json:",omitempty"`
-	GetLongGroupName uint8              `jce:",8" json:",omitempty"`
+	Uin               uint64             `jce:",0" json:",omitempty"`
+	GetMSFMessageFlag uint8              `jce:",1" json:",omitempty"`
+	Cookie            []byte             `jce:",2" json:",omitempty"`
+	GroupInfoList     []GroupInfoRequest `jce:",3" json:",omitempty"`
+	GroupFlagExtra    uint8              `jce:",4" json:",omitempty"`
+	Version           uint32             `jce:",5" json:",omitempty"`
+	CompanyID         uint64             `jce:",6" json:",omitempty"`
+	VersionNumber     uint64             `jce:",7" json:",omitempty"`
+	GetLongGroupName  uint8              `jce:",8" json:",omitempty"`
 }
 
 type GroupInfoRequest struct {
-	GroupCode              uint64 `jce:",0" json:",omitempty"`
-	GroupInfoRequestSeq    uint64 `jce:",1" json:",omitempty"`
-	GroupFlagExt           uint64 `jce:",2" json:",omitempty"`
-	GroupRankSeq           uint64 `jce:",3" json:",omitempty"`
-	GroupInfoRequestExtSeq uint64 `jce:",4" json:",omitempty"`
+	GroupCode         uint64 `jce:",0" json:",omitempty"`
+	GroupInfoSeq      uint64 `jce:",1" json:",omitempty"`
+	GroupFlagExtra    uint64 `jce:",2" json:",omitempty"`
+	GroupRankSeq      uint64 `jce:",3" json:",omitempty"`
+	GroupInfoExtraSeq uint64 `jce:",4" json:",omitempty"`
 }
 
 type FriendListGetGroupListResponse struct {
@@ -114,15 +114,15 @@ func NewFriendListGetGroupListRequest(
 	cookie []byte,
 ) *FriendListGetGroupListRequest {
 	return &FriendListGetGroupListRequest{
-		Uin:              uin,
-		GetMSFMsgFlag:    0x00,
-		Cookie:           cookie,
-		GroupInfoList:    nil,
-		GroupFlagExtra:   0x01,
-		Version:          0x00000009,
-		CompanyID:        0x0000000000000000,
-		VersionNumber:    0x0000000000000001,
-		GetLongGroupName: 0x01,
+		Uin:               uin,
+		GetMSFMessageFlag: 0x00,
+		Cookie:            cookie,
+		GroupInfoList:     nil,
+		GroupFlagExtra:    0x01,
+		Version:           0x00000009,
+		CompanyID:         0x0000000000000000,
+		VersionNumber:     0x0000000000000001,
+		GetLongGroupName:  0x01,
 	}
 }
 
