@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -45,6 +46,14 @@ func (req *PhotoString) GetPhoto() interface{} { return req.Photo }
 
 type PhotoInputFile struct {
 	Photo *multipart.FileHeader `binding:"required" form:"photo" json:"photo"`
+}
+
+type PhotoSize struct {
+	FileID       string `json:"file_id"`
+	FileUniqueID string `json:"file_unique_id"`
+	Width        int64  `json:"width"`
+	Height       int64  `json:"height"`
+	FileSize     int64  `json:"file_size"`
 }
 
 func (req *PhotoInputFile) GetPhoto() interface{} { return req.Photo }
@@ -83,23 +92,36 @@ func (s *Server) sendPhoto(ctx context.Context) gin.HandlerFunc {
 			}
 		}
 		req.Photo = photo.GetPhoto()
-		s.handleSendPhotoRequest(ctx, botID.(string), &req, c)
+
+		h, err := s.handleSendPhotoRequest(ctx, botID.(string), &req, c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"ok":          false,
+				"error_code":  http.StatusInternalServerError,
+				"description": err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"ok":     true,
+				"result": h,
+			})
+		}
 	}
 }
 
-func (s *Server) handleSendPhotoRequest(ctx context.Context, botID string, req *SendPhotoRequest, c *gin.Context) {
+func (s *Server) handleSendPhotoRequest(
+	ctx context.Context,
+	botID string,
+	req *SendPhotoRequest,
+	c *gin.Context,
+) (gin.H, error) {
 	peerID, _ := s.parseChatID(req.ChatID)
 	fromID, _ := strconv.ParseUint(botID, 10, 64)
 
 	fileID := ""
 	switch photo := req.Photo.(type) {
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{
-			"ok":          false,
-			"error_code":  http.StatusBadRequest,
-			"description": "Not Support",
-		})
-		return
+		return nil, fmt.Errorf("Not Support")
 	case string:
 		fileID = photo
 	case *multipart.FileHeader:
@@ -112,12 +134,7 @@ func (s *Server) handleSendPhotoRequest(ctx context.Context, botID string, req *
 		blobName := path.Join(s.client.GetCacheDownloadsDir(), fileID)
 		blob, err := os.OpenFile(blobName, os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"ok":          false,
-				"error_code":  http.StatusBadRequest,
-				"description": err,
-			})
-			return
+			return nil, err
 		}
 		defer blob.Close()
 		defer func() {
@@ -128,23 +145,13 @@ func (s *Server) handleSendPhotoRequest(ctx context.Context, botID string, req *
 
 		file, err := photo.Open()
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"ok":          false,
-				"error_code":  http.StatusBadRequest,
-				"description": err,
-			})
-			return
+			return nil, err
 		}
 		defer file.Close()
 
 		_, err = io.Copy(blob, file)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"ok":          false,
-				"error_code":  http.StatusBadRequest,
-				"description": err,
-			})
-			return
+			return nil, err
 		}
 
 		defer func() {
@@ -162,22 +169,14 @@ func (s *Server) handleSendPhotoRequest(ctx context.Context, botID string, req *
 		peerID, fromID, fileID, s.client.GetCacheDownloadsDir(),
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"ok":          false,
-			"error_code":  http.StatusInternalServerError,
-			"description": err.Error(),
-		})
-		return
+		return nil, err
 	}
 	resp, err := s.client.MessageUploadImage(ctx, botID, subReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"ok":          false,
-			"error_code":  http.StatusInternalServerError,
-			"description": err.Error(),
-		})
-		return
+		return nil, err
 	}
+
+	photoSizes := []PhotoSize{}
 
 	if len(resp) == 1 {
 		item := resp[0]
@@ -190,14 +189,16 @@ func (s *Server) handleSendPhotoRequest(ctx context.Context, botID string, req *
 			blobName := path.Join(s.client.GetCacheDownloadsDir(), tempBlob.Name)
 			hw := s.client.GetHighway(addr.String(), botID)
 			if err := hw.Upload(blobName, item.UploadKey); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"ok":          false,
-					"error_code":  http.StatusInternalServerError,
-					"description": err.Error(),
-				})
-				return
+				return nil, err
 			}
 		}
+		photoSizes = append(photoSizes, PhotoSize{
+			FileID:       strconv.FormatUint(item.FileId, 10),
+			FileUniqueID: strings.ToUpper(hex.EncodeToString(subReq.GetFileMd5())),
+			Width:        int64(subReq.GetPictureWidth()),
+			Height:       int64(subReq.GetPictureHeight()),
+			FileSize:     int64(subReq.GetFileSize()),
+		})
 	}
 
 	text := fmt.Sprintf(
@@ -213,8 +214,14 @@ func (s *Server) handleSendPhotoRequest(ctx context.Context, botID string, req *
 		text += "\n" + req.Caption
 	}
 
-	s.handleSendMessageRequest(ctx, botID, &SendMessageRequest{
+	h, err := s.handleSendMessageRequest(ctx, botID, &SendMessageRequest{
 		ChatID: req.ChatID,
 		Text:   text,
 	}, c)
+	if err != nil {
+		return nil, err
+	}
+	h["photo"] = photoSizes
+
+	return h, nil
 }

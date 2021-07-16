@@ -54,11 +54,29 @@ func (s *Server) sendMessage(ctx context.Context) gin.HandlerFunc {
 			})
 			return
 		}
-		s.handleSendMessageRequest(ctx, botID.(string), &req, c)
+
+		h, err := s.handleSendMessageRequest(ctx, botID.(string), &req, c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"ok":          false,
+				"error_code":  http.StatusInternalServerError,
+				"description": err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"ok":     true,
+				"result": h,
+			})
+		}
 	}
 }
 
-func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req *SendMessageRequest, c *gin.Context) {
+func (s *Server) handleSendMessageRequest(
+	ctx context.Context,
+	botID string,
+	req *SendMessageRequest,
+	c *gin.Context,
+) (gin.H, error) {
 	peerID, userID := s.parseChatID(req.ChatID)
 	fromID, _ := strconv.ParseUint(botID, 10, 64)
 	peerName := strconv.FormatUint(peerID, 10)
@@ -79,12 +97,7 @@ func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req
 
 	msg := pb.Message{}
 	if err := mark.Unmarshal([]byte(text), &msg); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"ok":          false,
-			"error_code":  http.StatusInternalServerError,
-			"description": err.Error(),
-		})
-		return
+		return nil, err
 	}
 	subReq := client.NewMessageSendMessageRequest(
 		routingHead,
@@ -95,12 +108,7 @@ func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req
 	)
 	resp, err := s.client.MessageSendMessage(ctx, botID, subReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"ok":          false,
-			"error_code":  http.StatusInternalServerError,
-			"description": err.Error(),
-		})
-		return
+		return nil, err
 	}
 
 	log.PrintMessage(
@@ -108,12 +116,10 @@ func (s *Server) handleSendMessageRequest(ctx context.Context, botID string, req
 		peerName, userName, fromName, peerID, userID, fromID, subReq.GetMessageSeq(), text,
 	)
 
-	c.JSON(http.StatusOK, gin.H{
-		"ok": true,
-		"result": gin.H{
-			"message_id":  subReq.GetMessageSeq(),
-			"sender_chat": c.PostForm("chat_id"),
-			"date":        resp.GetSendTime(),
-		},
-	})
+	return gin.H{
+		"message_id":  subReq.GetMessageSeq(),
+		"sender_chat": c.PostForm("chat_id"),
+		"date":        resp.GetSendTime(),
+		"text":        text,
+	}, nil
 }

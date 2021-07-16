@@ -30,7 +30,7 @@ go-mobileqq-echo
 
 ### Auth
 
-1. Check captcha (click twice, open the link and drag the slider)
+1. Check captcha (click twice! open the link and drag the slider)
 2. Check picture (integrated with iTerm2)
 3. Check SMS (confirm to refresh SMS)
 4. Password/Non-Password sign in
@@ -45,6 +45,7 @@ go-mobileqq-echo
 4. Handle online push message
 5. Handle push notify
 6. Handle push readed (not fully implement)
+7. Upload image/photo (with HTTP proxy)
 
 ## Packages
 
@@ -66,6 +67,7 @@ go-mobileqq-echo
 2. Heartbeat alive
 3. Server notify
 4. TCP dialing test
+5. Upload highway
 
 ### Others
 
@@ -75,7 +77,7 @@ go-mobileqq-echo
 
 ## TODO
 
-> Just a plan here
+> just a plan here
 
 1. Full support `Markdown` messages (Release `v0.1.0-alpha`)
 2. Multi-users login (Release `v0.1.0-alpha`)
