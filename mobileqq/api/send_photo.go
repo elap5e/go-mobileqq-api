@@ -18,8 +18,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
+	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 type SendPhotoRequest struct {
@@ -44,9 +46,11 @@ type PhotoString struct {
 
 func (req *PhotoString) GetPhoto() interface{} { return req.Photo }
 
-type PhotoInputFile struct {
-	Photo *multipart.FileHeader `binding:"required" form:"photo" json:"photo"`
+type PhotoInputFiles struct {
+	Photo []*multipart.FileHeader `binding:"required" form:"photo" json:"photo"`
 }
+
+func (req *PhotoInputFiles) GetPhoto() interface{} { return req.Photo }
 
 type PhotoSize struct {
 	FileID       string `json:"file_id"`
@@ -55,8 +59,6 @@ type PhotoSize struct {
 	Height       int64  `json:"height"`
 	FileSize     int64  `json:"file_size"`
 }
-
-func (req *PhotoInputFile) GetPhoto() interface{} { return req.Photo }
 
 func (s *Server) sendPhoto(ctx context.Context) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -80,9 +82,10 @@ func (s *Server) sendPhoto(ctx context.Context) gin.HandlerFunc {
 		}
 		var photo PhotoInterface
 		photo = &PhotoString{}
-		if err := c.Bind(photo); err != nil {
-			photo = &PhotoInputFile{}
-			if err := c.Bind(photo); err != nil {
+		b := binding.Default(c.Request.Method, c.ContentType())
+		if err := c.ShouldBindWith(photo, b); err != nil {
+			photo = &PhotoInputFiles{}
+			if err := c.ShouldBindWith(photo, b); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"ok":          false,
 					"error_code":  http.StatusBadRequest,
@@ -119,97 +122,121 @@ func (s *Server) handleSendPhotoRequest(
 	fromID, _ := strconv.ParseUint(botID, 10, 64)
 
 	fileID := ""
-	switch photo := req.Photo.(type) {
+	subReqs, tempBlobs := []*pb.TryUploadImageRequest{}, []*client.UploadTempBlob{}
+	switch photos := req.Photo.(type) {
 	default:
 		return nil, fmt.Errorf("Not Support")
 	case string:
-		fileID = photo
-	case *multipart.FileHeader:
-		hash := sha256.New()
-		hash.Write([]byte(photo.Filename))
-		uriSum := hex.EncodeToString(hash.Sum(nil))
+		for _, photo := range strings.Split(photos, "\n") {
+			fileID = photo
 
-		fileID = uriSum + "--" + path.Base(photo.Filename)
-
-		blobName := path.Join(s.client.GetCacheDownloadsDir(), fileID)
-		blob, err := os.OpenFile(blobName, os.O_CREATE|os.O_RDWR, 0644)
-		if err != nil {
-			return nil, err
-		}
-		defer blob.Close()
-		defer func() {
-			if _, err := os.Stat(blobName); !os.IsNotExist(err) {
-				os.Remove(blobName)
+			subReq, tempBlob, err := client.NewMessageUploadImageRequest(
+				peerID, fromID, fileID, s.client.GetCacheDownloadsDir(),
+			)
+			if err != nil {
+				return nil, err
 			}
-		}()
 
-		file, err := photo.Open()
-		if err != nil {
-			return nil, err
+			subReqs, tempBlobs = append(subReqs, subReq), append(tempBlobs, tempBlob)
 		}
-		defer file.Close()
-
-		_, err = io.Copy(blob, file)
-		if err != nil {
-			return nil, err
-		}
-
-		defer func() {
+	case []*multipart.FileHeader:
+		for _, item := range photos {
 			hash := sha256.New()
-			hash.Write([]byte("/" + url.PathEscape(fileID)))
+			hash.Write([]byte(item.Filename))
 			uriSum := hex.EncodeToString(hash.Sum(nil))
-			tempPath := path.Join(s.client.GetCacheDownloadsDir(), uriSum+".json")
-			if _, err := os.Stat(tempPath); !os.IsNotExist(err) {
-				os.Remove(tempPath)
+
+			fileID = uriSum + "--" + path.Base(item.Filename)
+
+			blobName := path.Join(s.client.GetCacheDownloadsDir(), fileID)
+			blob, err := os.OpenFile(blobName, os.O_CREATE|os.O_RDWR, 0644)
+			if err != nil {
+				return nil, err
 			}
-		}()
+			defer blob.Close()
+			defer func() {
+				if _, err := os.Stat(blobName); !os.IsNotExist(err) {
+					os.Remove(blobName)
+				}
+			}()
+
+			file, err := item.Open()
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+
+			_, err = io.Copy(blob, file)
+			if err != nil {
+				return nil, err
+			}
+
+			defer func() {
+				hash := sha256.New()
+				hash.Write([]byte("/" + url.PathEscape(fileID)))
+				uriSum := hex.EncodeToString(hash.Sum(nil))
+				tempPath := path.Join(s.client.GetCacheDownloadsDir(), uriSum+".json")
+				if _, err := os.Stat(tempPath); !os.IsNotExist(err) {
+					os.Remove(tempPath)
+				}
+			}()
+
+			subReq, tempBlob, err := client.NewMessageUploadImageRequest(
+				peerID, fromID, fileID, s.client.GetCacheDownloadsDir(),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			subReqs, tempBlobs = append(subReqs, subReq), append(tempBlobs, tempBlob)
+		}
 	}
 
-	subReq, tempBlob, err := client.NewMessageUploadImageRequest(
-		peerID, fromID, fileID, s.client.GetCacheDownloadsDir(),
-	)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := s.client.MessageUploadImage(ctx, botID, subReq)
+	resp, err := s.client.MessageUploadImage(ctx, botID, subReqs...)
 	if err != nil {
 		return nil, err
 	}
 
 	photoSizes := []PhotoSize{}
 
-	if len(resp) == 1 {
-		item := resp[0]
+	for i, item := range resp {
+		photoSizes = append(photoSizes, PhotoSize{
+			FileID:       strconv.FormatUint(item.FileId, 10),
+			FileUniqueID: strings.ToUpper(hex.EncodeToString(subReqs[i].GetFileMd5())),
+			Width:        int64(subReqs[i].GetPictureWidth()),
+			Height:       int64(subReqs[i].GetPictureHeight()),
+			FileSize:     int64(subReqs[i].GetFileSize()),
+		})
+		for _, photoSize := range photoSizes {
+			if photoSize.FileUniqueID == hex.EncodeToString(item.GetImgInfo().GetFileMd5()) {
+				continue
+			}
+		}
 		if !item.FileExist {
 			addr := net.TCPAddr{
 				IP:   net.IP{0, 0, 0, 0},
 				Port: int(item.UploadPort[0]),
 			}
 			binary.LittleEndian.PutUint32(addr.IP, item.UploadIp[0])
-			blobName := path.Join(s.client.GetCacheDownloadsDir(), tempBlob.Name)
+			blobName := path.Join(s.client.GetCacheDownloadsDir(), tempBlobs[i].Name)
 			hw := s.client.GetHighway(addr.String(), botID)
 			if err := hw.Upload(blobName, item.UploadKey); err != nil {
 				return nil, err
 			}
 		}
-		photoSizes = append(photoSizes, PhotoSize{
-			FileID:       strconv.FormatUint(item.FileId, 10),
-			FileUniqueID: strings.ToUpper(hex.EncodeToString(subReq.GetFileMd5())),
-			Width:        int64(subReq.GetPictureWidth()),
-			Height:       int64(subReq.GetPictureHeight()),
-			FileSize:     int64(subReq.GetFileSize()),
-		})
 	}
 
-	text := fmt.Sprintf(
-		"![%s](goqq://res/image?md5=%s&type=0&uin=%d&size=%d&h=%d&w=%d)",
-		subReq.Filename,
-		base64.URLEncoding.EncodeToString(subReq.GetFileMd5()),
-		fromID,
-		subReq.GetFileSize(),
-		subReq.GetPictureHeight(),
-		subReq.GetPictureWidth(),
-	)
+	text := ""
+	for _, subReq := range subReqs {
+		text += fmt.Sprintf(
+			"![%s](goqq://res/image?md5=%s&type=0&uin=%d&size=%d&h=%d&w=%d)",
+			subReq.Filename,
+			base64.URLEncoding.EncodeToString(subReq.GetFileMd5()),
+			fromID,
+			subReq.GetFileSize(),
+			subReq.GetPictureHeight(),
+			subReq.GetPictureWidth(),
+		)
+	}
 	if req.Caption != "" {
 		text += "\n" + req.Caption
 	}

@@ -70,6 +70,7 @@ func main() {
 		}
 	}()
 
+	once := sync.Once{}
 	if err := mqq.Run(
 		context.Background(),
 		func(ctx context.Context, restart chan struct{}) error {
@@ -80,19 +81,21 @@ func main() {
 				go func(username, password string) {
 					defer wg.Done()
 					rpc := mqq.GetClient()
-					if err := auth.NewFlow(&auth.FlowOptions{
-						Username: username,
-						Password: password,
-						AuthAddr: cfg.AuthAddress,
-						CacheDir: cfg.CacheDir,
-					}, auth.NewHandler(&auth.HandlerOptions{
-						BaseDir: cfg.BaseDir,
-						Client:  cfg.Engine.Client,
-						Device:  cfg.Engine.Device,
-					}, rpc)).Run(ctx); err != nil {
-						errCh <- err
-						return
-					}
+					once.Do(func() {
+						if err := auth.NewFlow(&auth.FlowOptions{
+							Username: username,
+							Password: password,
+							AuthAddr: cfg.AuthAddress,
+							CacheDir: cfg.CacheDir,
+						}, auth.NewHandler(&auth.HandlerOptions{
+							BaseDir: cfg.BaseDir,
+							Client:  cfg.Engine.Client,
+							Device:  cfg.Engine.Device,
+						}, rpc)).Run(ctx); err != nil {
+							errCh <- err
+							return
+						}
+					})
 					uin, _ := strconv.ParseInt(username, 10, 64)
 					if _, err := rpc.AccountSetStatus(
 						ctx,

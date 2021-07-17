@@ -254,7 +254,7 @@ const (
 	U4ED4U7EC6U5206U6790_Face FaceType = 314 // "/仔细分析"
 	U52A0U6CB9_Face           FaceType = 315 // "/加油"
 	U6211U6CA1U4E8B_Face      FaceType = 316 // "/我没事"
-	U83DCU72D7_Face           FaceType = 317 // "/菜狗"
+	U83DCU6C6A_Face           FaceType = 317 // "/菜汪"
 	U5D07U62DC_Face           FaceType = 318 // "/崇拜"
 	U6BD4U5FC3_Face           FaceType = 319 // "/比心"
 	U5E86U795D_Face           FaceType = 320 // "/庆祝"
@@ -262,6 +262,8 @@ const (
 	U62D2U7EDD_Face           FaceType = 322 // "/拒绝"
 	U5ACCU5F03_Face           FaceType = 323 // "/嫌弃"
 	U5403U7CD6_Face           FaceType = 324 // "/吃糖"
+	U60CAU5413_Face           FaceType = 325 // "/惊吓"
+	U751FU6C14_Face           FaceType = 326 // "/生气"
 )
 
 func (t FaceType) String() string {
@@ -756,8 +758,8 @@ func (t FaceType) String() string {
 		return "/加油"
 	case U6211U6CA1U4E8B_Face:
 		return "/我没事"
-	case U83DCU72D7_Face:
-		return "/菜狗"
+	case U83DCU6C6A_Face:
+		return "/菜汪"
 	case U5D07U62DC_Face:
 		return "/崇拜"
 	case U6BD4U5FC3_Face:
@@ -772,6 +774,10 @@ func (t FaceType) String() string {
 		return "/嫌弃"
 	case U5403U7CD6_Face:
 		return "/吃糖"
+	case U60CAU5413_Face:
+		return "/惊吓"
+	case U751FU6C14_Face:
+		return "/生气"
 	}
 	return "/unknown"
 }
@@ -1268,8 +1274,8 @@ func ParseFaceType(s string) (FaceType, error) {
 		return U52A0U6CB9_Face, nil
 	case "/我没事":
 		return U6211U6CA1U4E8B_Face, nil
-	case "/菜狗":
-		return U83DCU72D7_Face, nil
+	case "/菜汪":
+		return U83DCU6C6A_Face, nil
 	case "/崇拜":
 		return U5D07U62DC_Face, nil
 	case "/比心":
@@ -1284,6 +1290,10 @@ func ParseFaceType(s string) (FaceType, error) {
 		return U5ACCU5F03_Face, nil
 	case "/吃糖":
 		return U5403U7CD6_Face, nil
+	case "/惊吓":
+		return U60CAU5413_Face, nil
+	case "/生气":
+		return U751FU6C14_Face, nil
 	}
 	return UNKNOWN_Face, fmt.Errorf("Unknown Face String: '%s', defaulting to UNKNOWN_Face", s)
 }

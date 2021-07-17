@@ -69,6 +69,7 @@ func (e *engine) recv() {
 	} else if os.IsTimeout(err) {
 		e.err <- ErrClosedByTimeout
 	} else if err != io.EOF && !closing {
+		e.err <- err
 		log.Error().Err(err).
 			Msg("--> [recv] client protocol")
 	}

@@ -19,7 +19,7 @@ import (
 var rand = _rand.New(_rand.NewSource(time.Now().UnixNano()))
 
 var (
-	ErrClosedByRemote  = errors.New("connection is closed by timeout")
+	ErrClosedByRemote  = errors.New("connection is closed by remote")
 	ErrClosedByTimeout = errors.New("connection is closed by timeout")
 	ErrShutdown        = errors.New("connection is shut down")
 )
@@ -155,6 +155,7 @@ func (e *engine) init() {
 	e.seq = uint32(rand.Int31n(100000)) + 60000
 	e.pending = make(map[uint32]*Call)
 	e.handlers = make(map[string]HandleFunc)
+	e.tcpTesting(getServerList("wifi"))
 }
 
 func (e *engine) reset() {
@@ -193,12 +194,10 @@ func (e *engine) withContextS2C(s2c *codec.ServerToClientMessage) {
 }
 
 func (e *engine) Start(ctx context.Context) error {
-	e.tcpTesting(getServerList("wifi"))
 	conn, err := net.Dial("tcp", e.addrs[0])
 	if err != nil {
 		return err
 	}
-	conn.SetWriteDeadline(time.Time{})
 	log.Info().Msg("<-> [conn] connected to server " + e.addrs[0])
 	e.codec = tcp.NewClientCodec(conn)
 

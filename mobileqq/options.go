@@ -65,7 +65,7 @@ func (opt *Options) init() {
 		logDir,
 		fmt.Sprintf(
 			"goqq-%s.log",
-			time.Now().Local().Format("20060102150405"),
+			time.Now().Local().Format("2006-01-02"),
 		),
 	), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {

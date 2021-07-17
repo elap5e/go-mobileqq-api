@@ -49,13 +49,15 @@ func (c *Client) init() {
 }
 
 func (c *Client) connect(ctx context.Context) {
-	if err := c.rpc.Start(ctx); err != nil {
-		log.Error().
+	err := c.rpc.Start(ctx)
+	if err != nil && err != rpc.ErrShutdown {
+		log.Error().Err(err).
 			Msg("x-x [conn] failed to start rpc engine, retry in 5 seconds...")
 		c.restart <- struct{}{}
 		time.Sleep(5 * time.Second)
-	} else {
-		return
+	} else if err == rpc.ErrShutdown {
+		log.Error().Err(err).
+			Msg("x-x [conn] rpc engine shut down")
 	}
 }
 
