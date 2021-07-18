@@ -65,13 +65,13 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 		userID := config.Targets[0].UserID
 		if peerID == 0 && userID == 0 {
 			chatId := strings.TrimPrefix(config.Targets[0].ChatID, "@")
-			ids := strings.Split(chatId, "_")
+			ids := strings.Split(chatId, "u")
 			_ = ids[1]
 			peerID, _ = strconv.ParseInt(ids[0], 10, 64)
 			userID, _ = strconv.ParseInt(ids[1], 10, 64)
 		}
-		// fromID, _ := strconv.ParseInt(account.Username, 10, 64)
-		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%d_%d", peerID, userID))
+
+		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%du%d", peerID, userID))
 		routingHead := &pb.RoutingHead{}
 		if userID == 0 {
 			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
@@ -87,7 +87,7 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 		if err := mark.Unmarshal([]byte(text), &msg); err != nil {
 			return err
 		}
-		resp, err := rpc.MessageSendMessage(
+		if _, err := rpc.MessageSendMessage(
 			ctx, account.Username, client.NewMessageSendMessageRequest(
 				routingHead,
 				msg.GetContentHead(),
@@ -95,16 +95,9 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 				seq,
 				nil,
 			),
-		)
-		if err != nil {
+		); err != nil {
 			return err
 		}
-		_ = resp
-		// rpc.PrintMessage(
-		// 	time.Unix(resp.GetSendTime(), 0),
-		// 	peerID, userID, fromID,
-		// 	seq, text,
-		// )
 	}
 	return nil
 }
