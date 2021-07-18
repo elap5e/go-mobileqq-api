@@ -3,13 +3,10 @@ package api
 import (
 	"context"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
-	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
@@ -78,10 +75,6 @@ func (s *Server) handleSendMessageRequest(
 	c *gin.Context,
 ) (gin.H, error) {
 	peerID, userID := s.parseChatID(req.ChatID)
-	fromID, _ := strconv.ParseUint(botID, 10, 64)
-	peerName := strconv.FormatUint(peerID, 10)
-	userName := strconv.FormatUint(userID, 10)
-	fromName := strconv.FormatUint(fromID, 10)
 	text := req.Text
 
 	routingHead := &pb.RoutingHead{}
@@ -110,11 +103,6 @@ func (s *Server) handleSendMessageRequest(
 	if err != nil {
 		return nil, err
 	}
-
-	log.PrintMessage(
-		time.Unix(resp.GetSendTime(), 0),
-		peerName, userName, fromName, peerID, userID, fromID, subReq.GetMessageSeq(), text,
-	)
 
 	return gin.H{
 		"message_id":  subReq.GetMessageSeq(),

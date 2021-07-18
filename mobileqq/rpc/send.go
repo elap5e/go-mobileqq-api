@@ -37,6 +37,11 @@ func (e *engine) send(call *Call) {
 			call.Error = err
 			call.done()
 		}
+		log.Error().Err(err).
+			Uint32("@seq", e.c2s.Seq).
+			Str("method", e.c2s.ServiceMethod).
+			Str("uin", e.c2s.Username).
+			Msg("x<- [send]")
 	} else {
 		log.Debug().
 			Uint32("@seq", e.c2s.Seq).

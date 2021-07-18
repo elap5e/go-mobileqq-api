@@ -3,51 +3,58 @@ package client
 import (
 	"fmt"
 	"strconv"
-	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/elap5e/go-mobileqq-api/log"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/pb"
-	"github.com/rs/zerolog"
 )
 
-func (c *Client) PrintMessage(time time.Time, peerID, userID, fromID uint64, seq uint32, text string) {
-	peerName := strconv.FormatUint(peerID, 10)
-	userName := strconv.FormatUint(userID, 10)
-	fromName := strconv.FormatUint(fromID, 10)
-	if peerID == 0 {
-		if contact, ok := c.contacts[userID]; ok {
+func (c *Client) PrintMessageRecord(mr *db.MessageRecord) {
+	peerName := strconv.FormatInt(mr.PeerID, 10)
+	userName := strconv.FormatInt(mr.UserID, 10)
+	fromName := strconv.FormatInt(mr.FromID, 10)
+	if mr.PeerID == 0 {
+		if contact, ok := c.contacts[mr.UserID]; ok {
 			userName = contact.Remark
 		}
-		if contact, ok := c.contacts[fromID]; ok {
+		if contact, ok := c.contacts[mr.FromID]; ok {
 			fromName = contact.Remark
 		}
 	} else {
-		if channel, ok := c.channels[peerID]; ok {
-			peerName = channel.GroupName
+		if channel, ok := c.channels[mr.PeerID]; ok {
+			peerName = channel.Name
 		}
-		if cmember, ok := c.cmembers[peerID][userID]; ok {
-			userName = cmember.AutoRemark
+		if cmember, ok := c.cmembers[mr.PeerID][mr.UserID]; ok {
+			userName = cmember.Remark
+			if userName == "" {
+				userName = cmember.Nick
+			}
 		}
-		if cmember, ok := c.cmembers[peerID][fromID]; ok {
-			fromName = cmember.AutoRemark
+		if cmember, ok := c.cmembers[mr.PeerID][mr.FromID]; ok {
+			fromName = cmember.Remark
+			if fromName == "" {
+				fromName = cmember.Nick
+			}
 		}
 	}
 	if log.GetLevel() > zerolog.DebugLevel {
-		if peerID == 0 {
-			log.PrintMessageSimple(time, userName, fromName, seq, text)
-		} else if userID == 0 {
-			log.PrintMessageSimple(time, peerName, fromName, seq, text)
+		if mr.PeerID == 0 {
+			log.PrintMessageSimple(mr.Time, userName, fromName, mr.Seq, mr.Text)
+		} else if mr.UserID == 0 {
+			log.PrintMessageSimple(mr.Time, peerName, fromName, mr.Seq, mr.Text)
 		} else {
-			log.PrintMessageSimple(time, userName+"("+peerName+")", fromName, seq, text)
+			log.PrintMessageSimple(mr.Time, userName+"("+peerName+")", fromName, mr.Seq, mr.Text)
 		}
 	} else {
-		log.PrintMessage(time, peerName, userName, fromName, peerID, userID, fromID, seq, text)
+		log.PrintMessage(mr.Time, peerName, userName, fromName, mr.PeerID, mr.UserID, mr.FromID, mr.Seq, mr.Text)
 	}
 }
 
 func syncUinPairMessage(uinPairMessage *pb.UinPairMessage) {
 	log.Info().
-		Uint64("@peer", uinPairMessage.GetPeerUin()).
+		Int64("@peer", uinPairMessage.GetPeerUin()).
 		Int64("readAt", uinPairMessage.GetLastReadTime()).
 		Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetMessages()))
 
@@ -56,34 +63,16 @@ func syncUinPairMessage(uinPairMessage *pb.UinPairMessage) {
 		userID := uinPairMessage.GetPeerUin()
 		if msg.GetMessageHead().GetC2CCmd() == 0 {
 			peerID = uinPairMessage.GetPeerUin()
-			userID = uint64(0)
+			userID = 0
 		}
 
 		log.Debug().
-			Str("@chat", fmt.Sprintf("@%d_%d", peerID, userID)).
-			Uint32("@seq", msg.GetMessageHead().GetMessageSeq()).
-			Uint64("from", msg.GetMessageHead().GetFromUin()).
+			Str("@chat", fmt.Sprintf("@%du%d", peerID, userID)).
+			Int32("@seq", msg.GetMessageHead().GetMessageSeq()).
+			Int64("from", msg.GetMessageHead().GetFromUin()).
 			Int64("time", msg.GetMessageHead().GetMessageTime()).
-			Uint32("type", msg.GetMessageHead().GetMessageType()).
-			Uint64("uid", msg.GetMessageHead().GetMessageUid()).
+			Int32("type", msg.GetMessageHead().GetMessageType()).
+			Int64("uid", msg.GetMessageHead().GetMessageUid()).
 			Msg("--> [recv]")
 	}
-}
-
-func syncMessage(msg *pb.Message) {
-	peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
-	userID := msg.GetMessageHead().GetToUin()
-	if msg.GetMessageHead().GetC2CCmd() == 0 {
-		peerID = msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-		userID = uint64(0)
-	}
-
-	log.Debug().
-		Str("@chat", fmt.Sprintf("@%d_%d", peerID, userID)).
-		Uint32("@seq", msg.GetMessageHead().GetMessageSeq()).
-		Uint64("from", msg.GetMessageHead().GetFromUin()).
-		Int64("time", msg.GetMessageHead().GetMessageTime()).
-		Uint32("type", msg.GetMessageHead().GetMessageType()).
-		Uint64("uid", msg.GetMessageHead().GetMessageUid()).
-		Msg("--> [recv]")
 }

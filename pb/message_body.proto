@@ -290,7 +290,8 @@ message MarketTransfer {
 
 message MessageBody {
   RichText rich_text = 1;
-  bytes message_content = 2;
+  bytes content = 2;
+  bytes encrypt_content = 3;
 }
 
 message NotOnlineFile {
@@ -313,16 +314,16 @@ message NotOnlineFile {
 }
 
 message NotOnlineImage {
-  bytes file_path = 1;
-  uint32 file_len = 2;
-  bytes download_path = 3;
+  string file_path = 1;
+  uint32 file_size = 2;
+  string download_path = 3;
   bytes send_file = 4;
   uint32 img_type = 5;
   bytes previews_image = 6;
-  bytes pic_md5 = 7;
-  uint32 pic_height = 8;
-  uint32 pic_width = 9;
-  bytes resource_id = 10;
+  bytes picture_md5 = 7;
+  uint32 picture_height = 8;
+  uint32 picture_width = 9;
+  string resource_id = 10;
   bytes flag = 11;
   string thumb_url = 12;
   uint32 original = 13;
@@ -332,7 +333,7 @@ message NotOnlineImage {
   uint32 result = 17;
   uint32 index = 18;
   bytes op_ace_buffer = 19;
-  bool old_pic_md5 = 20;
+  bool old_picture_md5 = 20;
   uint32 thumb_width = 21;
   uint32 thumb_height = 22;
   uint32 file_id = 23;
@@ -356,24 +357,30 @@ message PCSupportDef {
 }
 
 message PTT {
-  uint32 fileType = 1;
+  uint32 file_type = 1;
   uint64 src_uin = 2;
-  bytes file_uuid = 3;
-  bytes fileMd5 = 4;
-  bytes fileName = 5;
-  uint32 fileSize = 6;
-  bytes reserveData = 7;
-  uint32 fileId = 8;
-  uint32 serverIp = 9;
-  uint32 serverPort = 10;
+  string file_uuid = 3;
+  bytes file_md5 = 4;
+  string file_name = 5;
+  uint32 file_size = 6;
+  bytes reserve_data = 7;
+  uint32 file_id = 8;
+  uint32 server_ip = 9;
+  uint32 server_port = 10;
   bool valid = 11;
   bytes signature = 12;
   bytes shortcut = 13;
-  bytes fileKey = 14;
-  uint32 magicPttIndex = 15;
-  uint32 voiceSwitch = 16;
+  bytes file_key = 14;
+  uint32 magic_ptt_index = 15;
+  uint32 voice_switch = 16;
   bytes ptt_url = 17;
-  bytes groupAileKey = 18;
+  bytes group_aile_key = 18;
+  uint32 time = 19;
+  bytes download_url = 20;
+  uint32 format = 21;
+  bytes pb_reserve = 22;
+  repeated bytes ptt_urls = 23;
+  uint32 download_flag = 24;
 }
 
 message PublicAccount {

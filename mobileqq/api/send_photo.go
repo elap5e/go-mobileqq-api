@@ -119,7 +119,7 @@ func (s *Server) handleSendPhotoRequest(
 	c *gin.Context,
 ) (gin.H, error) {
 	peerID, _ := s.parseChatID(req.ChatID)
-	fromID, _ := strconv.ParseUint(botID, 10, 64)
+	fromID, _ := strconv.ParseInt(botID, 10, 64)
 
 	fileID := ""
 	subReqs, tempBlobs := []*pb.TryUploadImageRequest{}, []*client.UploadTempBlob{}
@@ -200,7 +200,7 @@ func (s *Server) handleSendPhotoRequest(
 
 	for i, item := range resp {
 		photoSizes = append(photoSizes, PhotoSize{
-			FileID:       strconv.FormatUint(item.FileId, 10),
+			FileID:       strconv.FormatInt(item.FileId, 10),
 			FileUniqueID: strings.ToUpper(hex.EncodeToString(subReqs[i].GetFileMd5())),
 			Width:        int64(subReqs[i].GetPictureWidth()),
 			Height:       int64(subReqs[i].GetPictureHeight()),

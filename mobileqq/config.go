@@ -28,12 +28,22 @@ accounts:
 
 configs:
   auth:
-    address: 127.0.0.1:0
+    address: localhost:0
     captcha: true
+  database:
+    dataSourceName: goqqd.db?parseTime=true
+    driverName: sqlite3
   deviceInfo:
     randomSeed: %d
   logLevel: info
   protocol: android
+
+servers:
+  endpoints:
+    - socket://msfwifi.3g.qq.com:8080
+    - socket://msfwifiv6.3g.qq.com:8080
+  forceIPv6: false
+  overwrite: false
 
 targets:
   - peerId: 0
@@ -51,25 +61,31 @@ type Config struct {
 			Address string `json:"address"`
 			Captcha bool   `json:"captcha"`
 		} `json:"auth"`
+		Database struct {
+			DataSourceName string `json:"dataSourceName"`
+			DriverName     string `json:"driverName"`
+		} `json:"database"`
 		DeviceInfo struct {
 			RandomSeed int64 `json:"randomSeed"`
 		} `json:"deviceInfo"`
 		LogLevel string `json:"logLevel"`
 		Protocol string `json:"protocol"`
 	} `json:"configs"`
+	Servers *struct {
+		Endpoints []string `json:"endpoints,omitempty"`
+		ForceIPv6 bool     `json:"forceIPv6,omitempty"`
+		Overwrite bool     `json:"overwrite,omitempty"`
+	} `json:"servers,omitempty"`
 	Targets []*struct {
-		ChatID string `json:"chatId"`
-		PeerID uint64 `json:"peerId"`
-		UserID uint64 `json:"ueerId"`
-	} `json:"targets"`
+		ChatID string `json:"chatId,omitempty"`
+		PeerID int64  `json:"peerId,omitempty"`
+		UserID int64  `json:"ueerId,omitempty"`
+	} `json:"targets,omitempty"`
 }
 
 type ClientConfig struct {
 	BaseDir  string
 	CacheDir string
-
-	AuthAddress string
-	AuthCaptcha bool
 
 	Engine *config.Config
 }
@@ -80,10 +96,8 @@ func NewClientConfig() *ClientConfig {
 
 func NewClientConfigForAndroid() *ClientConfig {
 	return &ClientConfig{
-		BaseDir:     baseDir,
-		CacheDir:    cacheDir,
-		AuthAddress: "127.0.0.1:0",
-		AuthCaptcha: true,
+		BaseDir:  baseDir,
+		CacheDir: cacheDir,
 		Engine: &config.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
@@ -95,10 +109,8 @@ func NewClientConfigForAndroid() *ClientConfig {
 
 func NewClientConfigForAndroidTablet() *ClientConfig {
 	return &ClientConfig{
-		BaseDir:     baseDir,
-		CacheDir:    cacheDir,
-		AuthAddress: "127.0.0.1:0",
-		AuthCaptcha: true,
+		BaseDir:  baseDir,
+		CacheDir: cacheDir,
 		Engine: &config.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
@@ -110,22 +122,14 @@ func NewClientConfigForAndroidTablet() *ClientConfig {
 
 func NewClientConfigFromViper() *ClientConfig {
 	cfg := &ClientConfig{
-		BaseDir:     baseDir,
-		CacheDir:    cacheDir,
-		AuthAddress: "127.0.0.1:0",
-		AuthCaptcha: true,
+		BaseDir:  baseDir,
+		CacheDir: cacheDir,
 		Engine: &config.Config{
 			BaseDir:  baseDir,
 			CacheDir: cacheDir,
 			Client:   config.NewClientConfig(),
 			Device:   config.NewDeviceConfig(),
 		},
-	}
-	if viper.IsSet("configs.auth.address") {
-		cfg.AuthAddress = viper.GetString("configs.auth.address")
-	}
-	if viper.IsSet("configs.auth.captcha") {
-		cfg.AuthCaptcha = viper.GetBool("configs.auth.captcha")
 	}
 	if viper.IsSet("configs.deviceInfo.randomSeed") {
 		cfg.Engine.Device = config.NewDeviceConfigBySeed(viper.GetInt64("configs.deviceInfo.randomSeed"))

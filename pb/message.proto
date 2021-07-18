@@ -15,8 +15,8 @@ message AppShareInfo {
 message C2CTempMessageHead {
   uint32 c2c_type = 1;
   uint32 service_type = 2;
-  uint64 group_uin = 3;
-  uint64 group_code = 4;
+  int64 group_uin = 3;
+  int64 group_code = 4;
   bytes sig = 5;
   uint32 sig_type = 6;
   string from_phone = 7;
@@ -26,33 +26,33 @@ message C2CTempMessageHead {
 }
 
 message ContentHead {
-  uint32 package_number = 1;
-  uint32 package_index = 2;
-  uint32 div_seq = 3;
-  uint32 auto_reply = 4;
+  int32 package_number = 1;
+  int32 package_index = 2;
+  int32 div_seq = 3;
+  int32 auto_reply = 4;
 }
 
 message DiscussInfo {
-  uint64 discuss_uin = 1;
-  uint32 discuss_type = 2;
-  uint64 discuss_info_seq = 3;
+  int64 discuss_uin = 1;
+  int32 discuss_type = 2;
+  int64 discuss_info_seq = 3;
   bytes discuss_remark = 4;
 }
 
 message ExtraGroupKeyInfo {
-  uint32 current_max_seq = 1;
-  uint64 current_time = 2;
-  uint32 operate_by_parents = 3;
+  int32 current_max_seq = 1;
+  int64 current_time = 2;
+  int32 operate_by_parents = 3;
   bytes extra_group_info = 4;
 }
 
 message GroupInfo {
-  uint64 group_code = 1;
-  uint32 group_type = 2;
-  uint64 group_info_seq = 3;
+  int64 group_code = 1;
+  int32 group_type = 2;
+  int64 group_info_seq = 3;
   bytes group_card = 4;
   bytes group_rank = 5;
-  uint32 group_level = 6;
+  int32 group_level = 6;
 }
 
 message Message {
@@ -63,23 +63,23 @@ message Message {
 }
 
 message MessageHead {
-  uint64 from_uin = 1;
-  uint64 to_uin = 2;
-  uint32 message_type = 3;
-  uint32 c2c_cmd = 4;
-  uint32 message_seq = 5;
+  int64 from_uin = 1;
+  int64 to_uin = 2;
+  int32 message_type = 3;
+  int32 c2c_cmd = 4;
+  int32 message_seq = 5;
   int64 message_time = 6;
-  uint64 message_uid = 7;
+  int64 message_uid = 7;
   C2CTempMessageHead c2c_temp_message_head = 8;
   GroupInfo group_info = 9;
-  uint32 from_app_id = 10;
-  uint32 from_instant_id = 11;
-  uint32 user_active = 12;
+  int32 from_app_id = 10;
+  int32 from_instant_id = 11;
+  int32 user_active = 12;
   DiscussInfo discuss_info = 13;
   string from_nick = 14;
   uint64 auth_uin = 15;
   string auth_nick = 16;
-  uint32 message_flag = 17;
+  int32 message_flag = 17;
   string auth_remark = 18;
   string group_name = 19;
   MutilTransferHead mutil_transfer_head = 20;
@@ -131,10 +131,10 @@ message PluginInfo {
 
 message UinPairMessage {
   int64 last_read_time = 1;
-  uint64 peer_uin = 2;
-  uint32 message_completed = 3;
+  int64 peer_uin = 2;
+  int32 message_completed = 3;
   repeated Message messages = 4;
-  uint32 unread_message_number = 5;
+  int32 unread_message_number = 5;
 }
 
 message WithdrawWordingInfo {

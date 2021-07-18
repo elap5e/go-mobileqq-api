@@ -67,6 +67,8 @@ func (d *decoder) decodeValue(v reflect.Value) error {
 		v.SetString(d.decodeString(d.typ))
 	case reflect.Float64, reflect.Float32:
 		v.SetFloat(d.decodeFloat(d.typ))
+	case reflect.Int64, reflect.Int32, reflect.Int, reflect.Int16, reflect.Int8:
+		v.SetInt(d.decodeInt(d.typ))
 	case reflect.Uint64, reflect.Uint32, reflect.Uint, reflect.Uint16, reflect.Uint8:
 		v.SetUint(d.decodeUint(d.typ))
 	case reflect.Bool:
@@ -283,6 +285,20 @@ func (d *decoder) decodeUint(typ uint8) uint64 {
 		val = val<<8 + uint64(d.data[d.off])
 		d.off++
 	case 0x0c:
+	}
+	return val
+}
+
+func (d *decoder) decodeInt(typ uint8) int64 {
+	var val int64
+	switch typ {
+	default:
+		log.Fatalf(
+			"(decode uint) unexpected type 0x%02x 0x%08x dump\n%s",
+			typ, d.off, hex.Dump(d.data),
+		)
+	case 0x03, 0x02, 0x01, 0x00, 0x0c:
+		val = int64(d.decodeUint(typ))
 	}
 	return val
 }

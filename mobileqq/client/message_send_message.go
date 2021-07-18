@@ -4,18 +4,60 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/go-mobileqq-api/encoding/mark"
+	"github.com/elap5e/go-mobileqq-api/log"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
+
+func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessage, req *pb.MessageSendMessageRequest, resp *pb.MessageSendMessageResponse) {
+	dumpServerToClientMessage(s2c, resp)
+
+	if resp.Result == 0 && c.db != nil {
+		uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
+		mr := &db.MessageRecord{
+			Time:   resp.GetSendTime(),
+			Seq:    req.GetMessageSeq(),
+			Uid:    int64(req.GetMessageRand()) | 1<<56,
+			PeerID: req.GetRoutingHead().GetGroup().GetCode(),
+			UserID: req.GetRoutingHead().GetC2C().GetToUin(),
+			FromID: int64(uin),
+			Text:   string(""),
+			Type:   0,
+		}
+		if mr.UserID != 0 {
+			mr.Type = 166
+		} else if mr.PeerID != 0 {
+			mr.Type = 82
+		} else {
+			mr.PeerID = req.GetRoutingHead().GetGroupTemp().GetUin()
+			mr.UserID = req.GetRoutingHead().GetGroupTemp().GetToUin()
+			mr.Type = 141
+		}
+		text, _ := mark.NewMarshaler(mr.PeerID, mr.UserID, mr.FromID).
+			Marshal(req.GetMessageBody().GetRichText().GetElements())
+		mr.Text = string(text)
+
+		c.PrintMessageRecord(mr)
+		if c.db != nil {
+			err := c.dbInsertMessageRecord(uin, mr)
+			if err != nil {
+				log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
+			}
+		}
+	}
+}
 
 func NewMessageSendMessageRequest(
 	routingHead *pb.RoutingHead,
 	contentHead *pb.ContentHead,
 	messageBody *pb.MessageBody,
-	seq uint32,
+	seq int32,
 	cookie []byte,
 ) *pb.MessageSendMessageRequest {
 	return &pb.MessageSendMessageRequest{
@@ -36,11 +78,11 @@ func (c *Client) MessageSendMessage(
 	if req.GetMessageSeq() == 0 {
 		peerID := req.GetRoutingHead().GetGroup().GetCode()
 		userID := req.GetRoutingHead().GetC2C().GetToUin()
-		chatID := fmt.Sprintf("@%d_%d", peerID, userID)
+		chatID := fmt.Sprintf("@%du%d", peerID, userID)
 		req.MessageSeq = c.getNextMessageSeq(chatID)
 	}
 	if req.GetMessageRand() == 0 {
-		req.MessageRand = rand.Uint32()
+		req.MessageRand = rand.Int31()
 	}
 	if len(req.GetSyncCookie()) == 0 {
 		req.SyncCookie = c.syncCookie
@@ -71,6 +113,6 @@ func (c *Client) MessageSendMessage(
 	// -3902: marketFace (vip/svip)
 	// -4902: marketFace magic (vip/svip)
 
-	dumpServerToClientMessage(&s2c, &resp)
+	c.handleMessageSendMessageResponse(&s2c, req, &resp)
 	return &resp, nil
 }

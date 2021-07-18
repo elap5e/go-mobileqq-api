@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"database/sql"
 	"math/rand"
 	"path"
 	"sync"
@@ -9,26 +10,30 @@ import (
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/config"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/highway"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 )
 
 type Client struct {
+	mux sync.Mutex
+
 	cfg *config.Config
+	db  *sql.DB
 	rpc rpc.Engine
 
 	userSignatures    map[string]*rpc.UserSignature
 	userSignaturesMux sync.RWMutex
 
-	channels map[uint64]*GroupInfo
-	cmembers map[uint64]map[uint64]*GroupMemberInfo
-	contacts map[uint64]*FriendInfo
+	channels map[int64]*db.Channel
+	cmembers map[int64]map[int64]*db.ChannelMember
+	contacts map[int64]*db.Contact
 
-	requestSeq uint32
+	requestSeq int32
 
 	// message
-	messageSeq map[string]*uint32
+	messageSeq map[string]*int32
 	syncCookie []byte
 }
 
@@ -36,9 +41,9 @@ func NewClient(cfg *config.Config, rpc rpc.Engine) *Client {
 	c := &Client{
 		cfg:      cfg,
 		rpc:      rpc,
-		channels: make(map[uint64]*GroupInfo),
-		cmembers: make(map[uint64]map[uint64]*GroupMemberInfo),
-		contacts: make(map[uint64]*FriendInfo),
+		channels: make(map[int64]*db.Channel),
+		cmembers: make(map[int64]map[int64]*db.ChannelMember),
+		contacts: make(map[int64]*db.Contact),
 	}
 	c.init()
 	return c
@@ -62,36 +67,36 @@ func (c *Client) initHandlers() {
 }
 
 func (c *Client) initSync() {
-	c.messageSeq = make(map[string]*uint32)
+	c.messageSeq = make(map[string]*int32)
 }
 
-func (c *Client) setMessageSeq(id string, seq uint32) bool {
+func (c *Client) setMessageSeq(id string, seq int32) bool {
 	if _, ok := c.messageSeq[id]; !ok {
-		c.messageSeq[id] = &[]uint32{seq}[0]
+		c.messageSeq[id] = &[]int32{seq}[0]
 	}
 	if *c.messageSeq[id] < seq {
-		atomic.StoreUint32(c.messageSeq[id], seq)
+		atomic.StoreInt32(c.messageSeq[id], seq)
 		return true
 	}
 	return false
 }
 
-func (c *Client) getNextMessageSeq(id string) uint32 {
+func (c *Client) getNextMessageSeq(id string) int32 {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	if _, ok := c.messageSeq[id]; !ok {
-		c.messageSeq[id] = &[]uint32{uint32(r.Int31n(1000)) + 600}[0]
+		c.messageSeq[id] = &[]int32{r.Int31n(1000) + 600}[0]
 	}
-	seq := atomic.AddUint32(c.messageSeq[id], 1)
+	seq := atomic.AddInt32(c.messageSeq[id], 1)
 	if seq > 60000 {
-		c.messageSeq[id] = &[]uint32{uint32(r.Int31n(1000)) + 600}[0]
+		c.messageSeq[id] = &[]int32{r.Int31n(1000) + 600}[0]
 	}
 	return seq
 }
 
-func (c *Client) getNextRequestSeq() uint32 {
-	seq := atomic.AddUint32(&c.requestSeq, 1)
+func (c *Client) getNextRequestSeq() int32 {
+	seq := atomic.AddInt32(&c.requestSeq, 1)
 	if seq > 1000000 {
-		c.requestSeq = uint32(rand.Int31n(100000)) + 60000
+		c.requestSeq = rand.Int31n(100000) + 60000
 	}
 	return seq
 }
@@ -125,8 +130,14 @@ func (c *Client) GetNextSeq() uint32 {
 	return c.rpc.GetNextSeq()
 }
 
-func (c *Client) GetNextMessageSeq(id string) uint32 {
+func (c *Client) GetNextMessageSeq(id string) int32 {
 	return c.getNextMessageSeq(id)
+}
+
+func (c *Client) SetDB(db *sql.DB) {
+	c.mux.Lock()
+	c.db = db
+	c.mux.Unlock()
 }
 
 var clientCtxKey struct{}

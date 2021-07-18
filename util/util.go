@@ -60,7 +60,7 @@ func HashToBraceString(p []byte) string {
 	return fmt.Sprintf("{%X-%X-%X-%X-%X}", u[0:4], u[4:6], u[6:8], u[8:10], u[10:16])
 }
 
-func ParseExtToPictureType(ext string) uint32 {
+func ParseExtToPictureType(ext string) int32 {
 	switch ext {
 	case ".jpeg", ".jpg":
 		return 1000

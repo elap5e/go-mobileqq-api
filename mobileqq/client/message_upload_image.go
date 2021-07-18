@@ -26,39 +26,39 @@ import (
 )
 
 type UploadRequest struct {
-	PeerUin   uint64
-	SecondUin uint64
-	SelfUin   uint64
+	PeerUin   int64
+	SecondUin int64
+	SelfUin   int64
 	UinType   int
 }
 
 type UploadImageRequest struct {
 	*UploadRequest
-	BusinessType   uint32
+	BusinessType   int32
 	Filename       string
-	FileSize       uint64
-	Height         uint32
-	Width          uint32
+	FileSize       int64
+	Height         int32
+	Width          int32
 	IsContact      bool
 	IsRaw          bool
 	IsSnapChat     bool
 	MD5            []byte
-	PictureType    uint32
+	PictureType    int32
 	TransferURL    string
-	TypeHotPicture uint32
+	TypeHotPicture int32
 }
 
 type UploadTempBlob struct {
 	URL     string               `json:"url"`
 	Name    string               `json:"name"`
-	Size    uint64               `json:"size"`
+	Size    int64                `json:"size"`
 	Digests map[string][]byte    `json:"digests"`
 	Photo   *UploadTempBlobPhoto `json:"photo"`
 }
 
 type UploadTempBlobPhoto struct {
-	Height uint32 `json:"height"`
-	Width  uint32 `json:"width"`
+	Height int32 `json:"height"`
+	Width  int32 `json:"width"`
 }
 
 func newMessageUploadImageRequest(
@@ -172,7 +172,7 @@ func newMessageUploadImageRequest(
 		if err != nil {
 			return nil, nil, err
 		}
-		tempBlob.Size = uint64(n)
+		tempBlob.Size = n
 		tempBlob.Digests["md5"] = hash.Sum(nil)
 
 		hash = sha256.New()
@@ -181,12 +181,12 @@ func newMessageUploadImageRequest(
 		if err != nil {
 			return nil, nil, err
 		}
-		tempBlob.Size = uint64(n)
+		tempBlob.Size = n
 		tempBlob.Digests["sha256"] = hash.Sum(nil)
 
 		tempBlob.Photo = &UploadTempBlobPhoto{
-			Height: uint32(im.Height),
-			Width:  uint32(im.Width),
+			Height: int32(im.Height),
+			Width:  int32(im.Width),
 		}
 
 		temp, err := os.OpenFile(tempPath, os.O_CREATE|os.O_RDWR, 0644)
@@ -226,8 +226,8 @@ func newMessageUploadImageRequest(
 }
 
 func NewMessageUploadImageRequest(
-	peerUin uint64,
-	selfUin uint64,
+	peerUin int64,
+	selfUin int64,
 	fileID string,
 	cacheDir string,
 ) (*pb.TryUploadImageRequest, *UploadTempBlob, error) {
@@ -248,11 +248,11 @@ func NewMessageUploadImageRequest(
 		return nil, nil, err
 	}
 
-	buType := uint32(1)
+	buType := int32(1)
 	if req.UinType != 1 {
 		buType = 2
 	}
-	originalPicture := uint32(0)
+	originalPicture := int32(0)
 	if req.IsRaw {
 		originalPicture = 1
 	}

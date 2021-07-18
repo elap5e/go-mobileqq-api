@@ -156,6 +156,10 @@ func dialing(addr *net.TCPAddr) error {
 	return nil
 }
 
+func (e *engine) SetServers(list []string) {
+	e.tcpTesting(list)
+}
+
 func (e *engine) tcpTesting(list []string) {
 	var addrs []*net.TCPAddr
 	for _, item := range list {
@@ -173,7 +177,32 @@ func (e *engine) tcpTesting(list []string) {
 		}
 		port, _ := strconv.Atoi(uri.Port())
 		for _, ip := range ips {
-			addrs = append(addrs, &net.TCPAddr{IP: ip, Port: port})
+			skip := false
+			for _, addr := range addrs {
+				if addr.IP.String() == ip.String() && addr.Port == port {
+					skip = true
+				}
+			}
+			if !skip {
+				addrs = append(addrs, &net.TCPAddr{IP: ip, Port: port})
+			}
+		}
+	}
+	for _, item := range e.addrs {
+		skip := false
+		for _, addr := range addrs {
+			if addr.String() == item {
+				skip = true
+			}
+		}
+		if !skip {
+			tcpAddr, err := net.ResolveTCPAddr("tcp", item)
+			if err != nil {
+				log.Warn().Err(err).
+					Msgf("x—x [conn] failed to parse raw uri %s", item)
+				continue
+			}
+			addrs = append(addrs, tcpAddr)
 		}
 	}
 
@@ -195,6 +224,9 @@ func (e *engine) tcpTesting(list []string) {
 		}(addrs[i])
 	}
 	wg.Wait()
+	if len(e.addrs) > 10 {
+		e.addrs = e.addrs[:10]
+	}
 
 	if len(e.addrs) != 0 {
 		log.Info().Msg("--> [conn] tcp connections tested")

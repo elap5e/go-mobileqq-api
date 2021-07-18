@@ -62,12 +62,12 @@ func (s *Server) checkToken(ctx context.Context) gin.HandlerFunc {
 	}
 }
 
-func (s *Server) parseChatID(chatID string) (peerID, userID uint64) {
+func (s *Server) parseChatID(chatID string) (peerID, userID int64) {
 	chatID = strings.TrimPrefix(chatID, "@")
 	ids := strings.Split(chatID, "u")
-	peerID, _ = strconv.ParseUint(ids[0], 10, 64)
+	peerID, _ = strconv.ParseInt(ids[0], 10, 64)
 	if len(ids) == 2 {
-		userID, _ = strconv.ParseUint(ids[1], 10, 64)
+		userID, _ = strconv.ParseInt(ids[1], 10, 64)
 	} else {
 		userID = 0
 	}

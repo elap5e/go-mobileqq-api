@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
@@ -91,101 +90,42 @@ func (c *Client) handleMessagePushNotify(
 	if err != nil {
 		return nil, err
 	}
+	uin, _ := strconv.ParseInt(s2c.Username, 10, 64)
 
 	type Data struct {
-		PeerID uint64
-		UserID uint64
-		FromID uint64
+		PeerID int64
+		UserID int64
+		FromID int64
 		Text   []byte
 	}
 	dataList := []Data{}
 	infos := []MessageDeleteInfo{}
+
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
-			syncUinPairMessage(uinPairMessage)
-
 			for _, msg := range uinPairMessage.GetMessages() {
-				data, err := mark.Marshal(msg)
-				if err != nil {
-					return nil, err
-				}
-
-				peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
-				userID := uinPairMessage.GetPeerUin()
-				fromID := msg.GetMessageHead().GetFromUin()
-				if msg.GetMessageHead().GetC2CCmd() == 0 {
-					peerID = uinPairMessage.GetPeerUin()
-					userID = uint64(0)
-				}
-				seq := msg.GetMessageHead().GetMessageSeq()
-
-				c.PrintMessage(
-					time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
-					peerID, userID, fromID,
-					seq, string(data),
-				)
-
-				// message processed
 				switch msg.GetMessageHead().GetMessageType() {
-				case 9, 10, 31, 79, 97, 120, 132, 133, 166, 167:
+				case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
 					switch msg.GetMessageHead().GetC2CCmd() {
 					case 11, 175:
-						if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
-							// add to data list
-							toID, _ := strconv.ParseUint(s2c.Username, 10, 64)
+						if uin != msg.GetMessageHead().GetFromUin() {
+							text, err := mark.Marshal(msg)
+							if err != nil {
+								return nil, err
+							}
 							dataList = append(dataList, Data{
-								PeerID: peerID,
-								UserID: userID,
-								FromID: toID,
-								Text:   data,
+								PeerID: msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode(),
+								UserID: uinPairMessage.GetPeerUin(),
+								FromID: uin,
+								Text:   text,
 							})
 						}
 						infos = append(infos, MessageDeleteInfo{
-							FromUin:     fromID,
+							FromUin:     msg.GetMessageHead().GetFromUin(),
 							MessageTime: msg.GetMessageHead().GetMessageTime(),
-							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
-						})
-					case 129, 131, 133:
-					case 169, 241, 242, 243:
-					}
-				case 141:
-					if msg.GetMessageHead().GetC2CCmd() == 11 {
-						if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
-							// add to data list
-							toID, _ := strconv.ParseUint(s2c.Username, 10, 64)
-							dataList = append(dataList, Data{
-								PeerID: peerID,
-								UserID: userID,
-								FromID: toID,
-								Text:   data,
-							})
-						}
-						infos = append(infos, MessageDeleteInfo{
-							FromUin:     fromID,
-							MessageTime: msg.GetMessageHead().GetMessageTime(),
-							MessageSeq:  uint16(msg.GetMessageHead().GetMessageSeq()),
+							MessageSeq:  msg.GetMessageHead().GetMessageSeq(),
 						})
 					}
-				case 208:
-				case 193:
-				case 734:
-				case 0x0210:
-					// subMsg := pb.MessageType0X210{}
-					// if err = proto.Unmarshal(msg.GetMessageBody().GetMessageContent(), &subMsg); err != nil {
-					// 	log.Error().Err(err).Msg("--> [0210] unmarshal 0x0210")
-					// } else {
-					// 	switch subMsg.GetType() {
-					// 	case 138, 139:
-					// 		subSubMsg := pb.MessageSubType0X8ARequest{}
-					// 		if err = proto.Unmarshal(subMsg.GetContent(), &subSubMsg); err != nil {
-					// 			log.Error().Err(err).Msg("--> [0210] unmarshal 0x0210_0x8a")
-					// 		}
-					// 		subData, _ := json.Marshal(&subSubMsg)
-					// 		fmt.Println(string(subData))
-					// 	}
-					// }
-				case 0x0211:
-				case 0, 26, 64, 38, 48, 53, 61, 63:
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = c.MessageDeleteMessage(ctx, s2c.Username, NewMessageDeleteMessageRequest(
 						&pb.MessageDeleteMessageRequest_Item{
@@ -218,23 +158,25 @@ func (c *Client) handleMessagePushNotify(
 	// echo message
 	if l := len(dataList); l > 0 {
 		item := dataList[l-1]
-		seq := c.getNextMessageSeq(
-			fmt.Sprintf("@%d_%d", item.PeerID, item.UserID),
-		)
+
 		routingHead := &pb.RoutingHead{}
 		if item.PeerID == 0 {
 			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: item.UserID}}
+		} else if item.UserID == 0 {
+			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: item.PeerID}}
 		} else {
 			routingHead = &pb.RoutingHead{
 				GroupTemp: &pb.GroupTemp{Uin: item.PeerID, ToUin: item.UserID},
 			}
 		}
+		chatID := fmt.Sprintf("@%du%d", item.PeerID, item.UserID)
+		seq := c.getNextMessageSeq(chatID)
 
 		msg := pb.Message{}
 		if err := mark.Unmarshal(item.Text, &msg); err != nil {
 			return nil, err
 		}
-		resp, err := c.MessageSendMessage(
+		if _, err := c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
 				routingHead,
 				msg.GetContentHead(),
@@ -242,21 +184,10 @@ func (c *Client) handleMessagePushNotify(
 				seq,
 				c.syncCookie,
 			),
-		)
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
-
-		data, err := mark.Marshal(&msg)
-		if err != nil {
-			return nil, err
-		}
-		c.PrintMessage(
-			time.Unix(resp.GetSendTime(), 0),
-			item.PeerID, item.UserID, item.FromID,
-			seq, string(data),
-		)
 	}
 
-	return NewOnlinePushMessageResponse(ctx, s2c.Username, infos, req.ServerIP, s2c.Seq)
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, infos, req.ServerIP, int32(s2c.Seq))
 }

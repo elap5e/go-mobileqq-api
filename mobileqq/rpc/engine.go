@@ -53,6 +53,7 @@ type Engine interface {
 	GetUserSignature(username string) *UserSignature
 
 	SetConfig(cfg *Config)
+	SetServers(list []string)
 	SetUserSignature(username string, sig *UserSignature)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path"
 
@@ -177,6 +178,13 @@ func (c *Client) handleConfigPushRequest(
 		), append(tdata, '\n'), 0600); err != nil {
 			return nil, err
 		}
+		go func() {
+			list := []string{}
+			for _, info := range data.WiFiList {
+				list = append(list, fmt.Sprintf("socket://%s:%d#00000:0:1", info.IP, info.Port))
+			}
+			c.rpc.SetServers(list)
+		}()
 	case 0x02:
 		data := FileStorageServerConfig{}
 		if err := jce.Unmarshal(req.Buffer, &data, true); err != nil {

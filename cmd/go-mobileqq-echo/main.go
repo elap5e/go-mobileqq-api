@@ -56,7 +56,7 @@ func main() {
 		Client:   cfg,
 	})
 
-	if err := mqq.Run(ctx, func(ctx context.Context, restart chan struct{}) error {
+	if err := mqq.Run(ctx, func(ctx context.Context, once bool, restart chan struct{}) error {
 		errCh := make(chan error, 1)
 		wg := sync.WaitGroup{}
 		for _, account := range config.Accounts {
@@ -64,18 +64,20 @@ func main() {
 			go func(username, password string) {
 				defer wg.Done()
 				rpc := mqq.GetClient()
-				if err := auth.NewFlow(&auth.FlowOptions{
-					Username: username,
-					Password: password,
-					AuthAddr: cfg.AuthAddress,
-					CacheDir: cfg.CacheDir,
-				}, auth.NewHandler(&auth.HandlerOptions{
-					BaseDir: cfg.BaseDir,
-					Client:  cfg.Engine.Client,
-					Device:  cfg.Engine.Device,
-				}, rpc)).Run(ctx); err != nil {
-					errCh <- err
-					return
+				if once {
+					if err := auth.NewFlow(&auth.FlowOptions{
+						Username: username,
+						Password: password,
+						AuthAddr: config.Configs.Auth.Address,
+						CacheDir: cfg.CacheDir,
+					}, auth.NewHandler(&auth.HandlerOptions{
+						BaseDir: cfg.BaseDir,
+						Client:  cfg.Engine.Client,
+						Device:  cfg.Engine.Device,
+					}, rpc)).Run(ctx); err != nil {
+						errCh <- err
+						return
+					}
 				}
 				uin, _ := strconv.ParseInt(username, 10, 64)
 				if _, err := rpc.AccountSetStatus(ctx, client.NewAccountSetStatusRequest(

@@ -150,21 +150,19 @@ func Unmarshal(v []byte, msg *pb.Message) error {
 					size, _ := strconv.ParseUint(uri.Query().Get("size"), 10, 32)
 					h, _ := strconv.ParseUint(uri.Query().Get("h"), 10, 32)
 					w, _ := strconv.ParseUint(uri.Query().Get("w"), 10, 32)
-					path := fmt.Sprintf(
-						"/%s//%s-%d-%s",
-						uin, uin, rand.Intn(1e10), strings.ToUpper(hex.EncodeToString(md5)),
+					id := fmt.Sprintf(
+						"/%s-%d-%s",
+						uin, rand.Intn(1e10), strings.ToUpper(hex.EncodeToString(md5)),
 					)
 					elems = append(elems, &pb.Element{
 						NotOnlineImage: &pb.NotOnlineImage{
-							PicMd5:       md5,
-							BizType:      uint32(typ),
-							FileLen:      uint32(size),
-							PicHeight:    uint32(h),
-							PicWidth:     uint32(w),
-							FilePath:     []byte(body[idx[2]:idx[3]]),
-							ResourceId:   []byte(path),
-							DownloadPath: []byte(path),
-							OrigUrl:      "/offpic_new" + path + "/0?term=2",
+							PictureMd5:    md5,
+							BizType:       uint32(typ),
+							FileSize:      uint32(size),
+							PictureHeight: uint32(h),
+							PictureWidth:  uint32(w),
+							FilePath:      body[idx[2]:idx[3]],
+							ResourceId:    id,
 						},
 					})
 				}

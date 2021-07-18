@@ -45,7 +45,6 @@ func (c *Client) init() {
 	c.rpc = rpc.NewEngine(c.opt.Engine)
 	c.rpc.Ready(c.ready)
 	c.client = client.NewClient(c.opt.Client.Engine, c.rpc)
-	c.ctx = c.client.WithClient(c.ctx)
 }
 
 func (c *Client) connect(ctx context.Context) {
@@ -72,12 +71,13 @@ func (c *Client) reconnectUntilClosed(ctx context.Context) {
 
 func (c *Client) runUntilError(
 	ctx context.Context,
-	run func(ctx context.Context, restart chan struct{}) error,
+	run func(ctx context.Context, once bool, restart chan struct{}) error,
 ) {
+	once := true
 	go func() {
 		for {
 			<-c.ready
-			if err := run(ctx, c.restart); err != nil {
+			if err := run(ctx, once, c.restart); err != nil {
 				log.Error().Err(err).
 					Msg("x-x [conn] runtime error")
 				if !os.IsTimeout(err) {
@@ -85,6 +85,7 @@ func (c *Client) runUntilError(
 					return
 				}
 			}
+			once = false
 		}
 	}()
 	<-c.ctx.Done()
@@ -92,7 +93,7 @@ func (c *Client) runUntilError(
 
 func (c *Client) Run(
 	ctx context.Context,
-	run func(ctx context.Context, restart chan struct{}) error,
+	run func(ctx context.Context, once bool, restart chan struct{}) error,
 ) (err error) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)

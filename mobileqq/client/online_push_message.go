@@ -4,26 +4,27 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
+	"github.com/elap5e/go-mobileqq-api/log"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 type OnlinePushMessageResponse struct {
-	Uin      uint64              `jce:",0" json:",omitempty"`
+	Uin      int64               `jce:",0" json:",omitempty"`
 	Infos    []MessageDeleteInfo `jce:",1" json:",omitempty"`
 	ServerIP uint32              `jce:",2" json:",omitempty"`
 }
 
 type MessageDeleteInfo struct {
-	FromUin       uint64 `jce:",0" json:",omitempty"`
+	FromUin       int64  `jce:",0" json:",omitempty"`
 	MessageTime   int64  `jce:",1" json:",omitempty"`
-	MessageSeq    uint16 `jce:",2" json:",omitempty"`
+	MessageSeq    int32  `jce:",2" json:",omitempty"`
 	MessageCookie []byte `jce:",3" json:",omitempty"`
 }
 
@@ -32,7 +33,7 @@ func NewOnlinePushMessageResponse(
 	username string,
 	infos []MessageDeleteInfo,
 	serverIP uint32,
-	seq uint32,
+	seq int32,
 ) (*codec.ClientToServerMessage, error) {
 	if len(infos) == 0 {
 		return nil, fmt.Errorf("zero length")
@@ -43,7 +44,7 @@ func NewOnlinePushMessageResponse(
 		return nil, err
 	}
 	resp := OnlinePushMessageResponse{
-		Uin:      uint64(uin),
+		Uin:      uin,
 		Infos:    infos,
 		ServerIP: serverIP,
 	}
@@ -66,7 +67,7 @@ func NewOnlinePushMessageResponse(
 	}
 	return &codec.ClientToServerMessage{
 		Username:      username,
-		Seq:           seq,
+		Seq:           uint32(seq),
 		ServiceMethod: ServiceMethodOnlinePushResponse,
 		Buffer:        buf,
 		Simple:        false,
@@ -84,55 +85,55 @@ func (c *Client) handleOnlinePushMessage(
 	dumpServerToClientMessage(s2c, &push)
 
 	msg := push.GetMessage()
-	data, err := mark.Marshal(msg)
-	if err != nil {
-		return nil, err
+	mr := &db.MessageRecord{
+		Time:   msg.GetMessageHead().GetMessageTime(),
+		Seq:    msg.GetMessageHead().GetMessageSeq(),
+		Uid:    int64(msg.GetMessageBody().GetRichText().GetAttribute().GetRandom()) | 1<<56,
+		PeerID: msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode(),
+		UserID: msg.GetMessageHead().GetToUin(),
+		FromID: msg.GetMessageHead().GetFromUin(),
+		Text:   "",
+		Type:   msg.GetMessageHead().GetMessageType(),
 	}
-
-	peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
-	userID := msg.GetMessageHead().GetToUin()
-	fromID := msg.GetMessageHead().GetFromUin()
 	if msg.GetMessageHead().GetC2CCmd() == 0 {
-		peerID = msg.GetMessageHead().GetGroupInfo().GetGroupCode()
-		userID = uint64(0)
+		mr.PeerID = msg.GetMessageHead().GetGroupInfo().GetGroupCode()
+		mr.UserID = 0
+		if mr.Type == 82 {
+			c.setMessageSeq(fmt.Sprintf("@%du%d", mr.PeerID, mr.UserID), mr.Seq)
+		}
 	}
-	seq := msg.GetMessageHead().GetMessageSeq()
-	if info, ok := c.channels[peerID]; ok &&
-		msg.GetMessageHead().GetGroupInfo().GetGroupInfoSeq() > info.GroupInfoSeq {
-		uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
-		if _, err := c.FriendListGetGroupList(ctx, NewFriendListGetGroupListRequest(
-			uin, nil,
-		)); err != nil {
-			return nil, err
+	text, _ := mark.NewMarshaler(mr.PeerID, mr.UserID, mr.FromID).
+		Marshal(msg.GetMessageBody().GetRichText().GetElements())
+	mr.Text = string(text)
+
+	c.PrintMessageRecord(mr)
+	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
+	if c.db != nil {
+		err := c.dbInsertMessageRecord(uin, mr)
+		if err != nil {
+			log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
 		}
 	}
 
-	c.PrintMessage(
-		time.Unix(int64(msg.GetMessageHead().GetMessageTime()), 0),
-		peerID, userID, fromID,
-		seq, string(data),
-	)
-
-	if s2c.Username != strconv.FormatInt(int64(fromID), 10) {
-		chatID := fmt.Sprintf("@%d_%d", peerID, userID)
+	if uin != uint64(mr.FromID) {
 		routingHead := &pb.RoutingHead{}
-		if peerID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: userID}}
-		} else if userID == 0 {
-			c.setMessageSeq(chatID, msg.GetMessageHead().GetMessageSeq())
-			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
+		if mr.PeerID == 0 {
+			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: mr.UserID}}
+		} else if mr.UserID == 0 {
+			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: mr.PeerID}}
 		} else {
 			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Uin: peerID, ToUin: userID},
+				GroupTemp: &pb.GroupTemp{Uin: mr.PeerID, ToUin: mr.UserID},
 			}
 		}
-		seq = c.getNextMessageSeq(chatID)
+		chatID := fmt.Sprintf("@%du%d", mr.PeerID, mr.UserID)
+		seq := c.getNextMessageSeq(chatID)
 
 		msg := pb.Message{}
-		if err := mark.Unmarshal(data, &msg); err != nil {
+		if err := mark.Unmarshal([]byte(mr.Text), &msg); err != nil {
 			return nil, err
 		}
-		resp, err := c.MessageSendMessage(
+		if _, err := c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
 				routingHead,
 				msg.GetContentHead(),
@@ -140,26 +141,14 @@ func (c *Client) handleOnlinePushMessage(
 				seq,
 				c.syncCookie,
 			),
-		)
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
-
-		data, err := mark.Marshal(&msg)
-		if err != nil {
-			return nil, err
-		}
-		fromID, _ = strconv.ParseUint(s2c.Username, 10, 64)
-		c.PrintMessage(
-			time.Unix(resp.GetSendTime(), 0),
-			peerID, userID, fromID,
-			seq, string(data),
-		)
 	}
 
 	return NewOnlinePushMessageResponse(ctx, s2c.Username, []MessageDeleteInfo{{
-		FromUin:     fromID,
-		MessageTime: msg.GetMessageHead().GetMessageTime(),
-		MessageSeq:  uint16(seq),
-	}}, push.GetServerIp(), s2c.Seq)
+		FromUin:     mr.FromID,
+		MessageTime: mr.Time,
+		MessageSeq:  mr.Seq,
+	}}, push.GetServerIp(), int32(s2c.Seq))
 }

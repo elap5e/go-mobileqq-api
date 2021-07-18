@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/elap5e/go-mobileqq-api/crypto/ecdh"
 	"github.com/elap5e/go-mobileqq-api/log"
@@ -79,7 +80,10 @@ func (h *Handler) updateServerPublicKey() error {
 			PublicKeySign string `json:"PubKeySign"`
 		} `json:"PubKeyMeta"`
 	}
-	resp, err := http.Get(
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	resp, err := client.Get(
 		"https://keyrotate.qq.com/rotate_key?cipher_suite_ver=305&uin=10000",
 	)
 	if err != nil {

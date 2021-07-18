@@ -5,12 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
@@ -85,7 +86,23 @@ func (c *Client) GetUserSignature(username string) *rpc.UserSignature {
 			err = os.Mkdir(cacheDir, 0755)
 		}
 		if err != nil {
-			log.Fatalf("failed to mkdir %s, error %s", cacheDir, err.Error())
+			log.Fatal().Err(err).
+				Msg("failed to mkdir " + cacheDir)
+		}
+	}
+	if c.db != nil {
+		uin, _ := strconv.ParseUint(username, 10, 64)
+		if err := c.dbCreateChannelTableByUin(uin); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+		if err := c.dbCreateContactTableByUin(uin); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+		if err := c.dbCreateMessageRecordTableByUin(uin); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
 		}
 	}
 	return sig

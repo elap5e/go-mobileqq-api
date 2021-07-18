@@ -69,10 +69,10 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 			chatId := strings.TrimPrefix(config.Targets[0].ChatID, "@")
 			ids := strings.Split(chatId, "_")
 			_ = ids[1]
-			peerID, _ = strconv.ParseUint(ids[0], 10, 64)
-			userID, _ = strconv.ParseUint(ids[1], 10, 64)
+			peerID, _ = strconv.ParseInt(ids[0], 10, 64)
+			userID, _ = strconv.ParseInt(ids[1], 10, 64)
 		}
-		fromID, _ := strconv.ParseUint(account.Username, 10, 64)
+		// fromID, _ := strconv.ParseInt(account.Username, 10, 64)
 		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%d_%d", peerID, userID))
 		routingHead := &pb.RoutingHead{}
 		if userID == 0 {
@@ -101,12 +101,12 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 		if err != nil {
 			return err
 		}
-
-		rpc.PrintMessage(
-			time.Unix(resp.GetSendTime(), 0),
-			peerID, userID, fromID,
-			seq, text,
-		)
+		_ = resp
+		// rpc.PrintMessage(
+		// 	time.Unix(resp.GetSendTime(), 0),
+		// 	peerID, userID, fromID,
+		// 	seq, text,
+		// )
 	}
 	return nil
 }
@@ -119,7 +119,7 @@ func main() {
 		Client:   cfg,
 	})
 
-	if err := mqq.Run(context.Background(), func(ctx context.Context, restart chan struct{}) error {
+	if err := mqq.Run(context.Background(), func(ctx context.Context, once bool, restart chan struct{}) error {
 		errCh := make(chan error, 1)
 		wg := sync.WaitGroup{}
 		for _, account := range config.Accounts {
@@ -127,18 +127,20 @@ func main() {
 			go func(username, password string) {
 				defer wg.Done()
 				rpc := mqq.GetClient()
-				if err := auth.NewFlow(&auth.FlowOptions{
-					Username: username,
-					Password: password,
-					AuthAddr: cfg.AuthAddress,
-					CacheDir: cfg.CacheDir,
-				}, auth.NewHandler(&auth.HandlerOptions{
-					BaseDir: cfg.BaseDir,
-					Client:  cfg.Engine.Client,
-					Device:  cfg.Engine.Device,
-				}, rpc)).Run(ctx); err != nil {
-					errCh <- err
-					return
+				if once {
+					if err := auth.NewFlow(&auth.FlowOptions{
+						Username: username,
+						Password: password,
+						AuthAddr: config.Configs.Auth.Address,
+						CacheDir: cfg.CacheDir,
+					}, auth.NewHandler(&auth.HandlerOptions{
+						BaseDir: cfg.BaseDir,
+						Client:  cfg.Engine.Client,
+						Device:  cfg.Engine.Device,
+					}, rpc)).Run(ctx); err != nil {
+						errCh <- err
+						return
+					}
 				}
 				uin, _ := strconv.ParseInt(username, 10, 64)
 				if _, err := rpc.AccountSetStatus(ctx, client.NewAccountSetStatusRequest(
@@ -147,17 +149,19 @@ func main() {
 					errCh <- err
 					return
 				}
-				if _, err := rpc.FriendListGetFriendGroupList(ctx, client.NewFriendListGetFriendGroupListRequest(
-					uint64(uin), 0, 100, 0, 100,
-				)); err != nil {
-					errCh <- err
-					return
-				}
-				if _, err := rpc.FriendListGetGroupList(ctx, client.NewFriendListGetGroupListRequest(
-					uint64(uin), nil,
-				)); err != nil {
-					errCh <- err
-					return
+				if once {
+					if _, err := rpc.FriendListGetFriendGroupList(ctx, client.NewFriendListGetFriendGroupListRequest(
+						uin, 0, 100, 0, 100,
+					)); err != nil {
+						errCh <- err
+						return
+					}
+					if _, err := rpc.FriendListGetGroupList(ctx, client.NewFriendListGetGroupListRequest(
+						uin, nil,
+					)); err != nil {
+						errCh <- err
+						return
+					}
 				}
 			}(account.Username, account.Password)
 		}
