@@ -3,8 +3,6 @@ package mark
 import (
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
 	"math/rand"
 	"net/url"
 	"regexp"
@@ -172,41 +170,35 @@ func (dec decoder) decodeResourceFace(uri *url.URL, text string) []*pb.Element {
 func (dec decoder) decodeResourceImage(uri *url.URL, text string) []*pb.Element {
 	typ, _ := strconv.ParseUint(uri.Query().Get("type"), 10, 32)
 	md5, _ := base64.URLEncoding.DecodeString(uri.Query().Get("md5"))
-	uin := uri.Query().Get("uin")
 	size, _ := strconv.ParseUint(uri.Query().Get("size"), 10, 32)
 	h, _ := strconv.ParseUint(uri.Query().Get("h"), 10, 32)
 	w, _ := strconv.ParseUint(uri.Query().Get("w"), 10, 32)
-	id := fmt.Sprintf(
-		"%s-%d-%s",
-		uin, rand.Intn(1e10), strings.ToUpper(hex.EncodeToString(md5)),
-	)
 	if dec.peerID == 0 {
 		return []*pb.Element{{
 			NotOnlineImage: &pb.NotOnlineImage{
-				BizType:    uint32(typ),
-				FileMd5:    md5,
-				FileSize:   uint32(size),
-				Height:     uint32(h),
-				Width:      uint32(w),
-				FilePath:   text,
-				ResourceId: "/" + id,
+				BizType:  uint32(typ),
+				FileMd5:  md5,
+				FileSize: uint32(size),
+				Height:   uint32(h),
+				Width:    uint32(w),
+				FilePath: text,
+				FileId:   uint32(rand.Intn(1e10)),
+			},
+		}}
+	} else {
+		return []*pb.Element{{
+			CustomFace: &pb.CustomFace{
+				BizType:  uint32(typ),
+				FileMd5:  md5,
+				FileSize: uint32(size),
+				Height:   uint32(h),
+				Width:    uint32(w),
+				FilePath: text,
+				FileId:   uint32(rand.Intn(1e10)),
+				Useful:   1,
 			},
 		}}
 	}
-	return []*pb.Element{{
-		CustomFace: &pb.CustomFace{
-			BizType:  uint32(typ),
-			FileMd5:  md5,
-			FileSize: uint32(size),
-			Height:   uint32(h),
-			Width:    uint32(w),
-			FilePath: text,
-			Useful:   1,
-			OrigUrl:  "/gchatpic_new/" + uin + "/" + id + "/0?term=2",
-			ThumbUrl: "/gchatpic_new/" + uin + "/" + id + "/198?term=2",
-			Url400:   "/gchatpic_new/" + uin + "/" + id + "/400?term=2",
-		},
-	}}
 }
 
 func (dec decoder) decodeResourceMarketFace(uri *url.URL, text string) []*pb.Element {

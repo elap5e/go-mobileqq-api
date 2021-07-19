@@ -89,10 +89,9 @@ func (enc encoder) encodeCommonElement(elem *pb.CommonElement, skip *int) string
 func (enc encoder) encodeCustomFaceElement(elem *pb.CustomFace) string {
 	hash := elem.GetFileMd5()
 	return fmt.Sprintf(
-		"![%s](goqq://res/image?md5=%s&type=5&uin=%d&size=%d&h=%d&w=%d)",
+		"![%s](goqq://res/image?md5=%s&type=5&size=%d&h=%d&w=%d)",
 		util.HashToString(hash)+path.Ext(string(elem.GetFilePath())),
 		base64.URLEncoding.EncodeToString(hash),
-		enc.peerID,
 		elem.GetFileSize(),
 		elem.GetHeight(),
 		elem.GetWidth(),
@@ -142,11 +141,10 @@ func (enc encoder) encodeMarketFaceElement(elem *pb.MarketFace, text *pb.Text, s
 func (enc encoder) encodeNotOnlineImageElement(elem *pb.NotOnlineImage) string {
 	hash := elem.GetFileMd5()
 	return fmt.Sprintf(
-		"![%s](goqq://res/image?md5=%s&type=%d&uin=%d&size=%d&h=%d&w=%d)",
+		"![%s](goqq://res/image?md5=%s&type=%d&size=%d&h=%d&w=%d)",
 		util.HashToString(hash)+path.Ext(string(elem.GetFilePath())),
 		base64.URLEncoding.EncodeToString(hash),
 		elem.GetBizType(),
-		enc.fromID,
 		elem.GetFileSize(),
 		elem.GetHeight(),
 		elem.GetWidth(),
