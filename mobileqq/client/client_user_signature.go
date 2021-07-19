@@ -12,6 +12,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/log"
+	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/rpc"
 	"github.com/elap5e/go-mobileqq-api/tlv"
 )
@@ -104,6 +105,23 @@ func (c *Client) GetUserSignature(username string) *rpc.UserSignature {
 			log.Fatal().Err(err).
 				Msg("failed to operate database")
 		}
+		if err := c.dbCreateMessageSequenceTableByUin(uin); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+		if err := c.dbInsertAccount(&db.Account{
+			Uin:        int64(uin),
+			SyncCookie: c.syncCookie[int64(uin)],
+		}); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+		account, err := c.dbSelectAccount(uin)
+		if err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+		c.syncCookie[int64(uin)] = account.SyncCookie
 	}
 	return sig
 }

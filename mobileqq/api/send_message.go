@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -75,6 +76,7 @@ func (s *Server) handleSendMessageRequest(
 	c *gin.Context,
 ) (gin.H, error) {
 	peerID, userID := s.parseChatID(req.ChatID)
+	fromID, _ := strconv.ParseInt(botID, 10, 64)
 	text := req.Text
 
 	routingHead := &pb.RoutingHead{}
@@ -88,9 +90,17 @@ func (s *Server) handleSendMessageRequest(
 		}
 	}
 
-	msg := pb.Message{}
-	if err := mark.Unmarshal([]byte(text), &msg); err != nil {
+	elems, err := mark.NewDecoder(peerID, userID, fromID).
+		Decode([]byte(text))
+	if err != nil {
 		return nil, err
+	}
+	msg := pb.Message{
+		MessageBody: &pb.MessageBody{
+			RichText: &pb.RichText{
+				Elements: elems,
+			},
+		},
 	}
 	subReq := client.NewMessageSendMessageRequest(
 		routingHead,

@@ -139,12 +139,6 @@ func (d *decoder) decodeStruct(v reflect.Value) error {
 				subv = subv.Field(i)
 			}
 		} else {
-			if typ == 0x0a {
-				for d.data[d.off] != 0x0b {
-					d.off++
-				}
-				break
-			}
 			switch typ {
 			case 0x0c, 0x00, 0x01, 0x02, 0x03:
 				subv = reflect.New(reflect.TypeOf(uint64(0)))
@@ -152,6 +146,8 @@ func (d *decoder) decodeStruct(v reflect.Value) error {
 				subv = reflect.New(reflect.TypeOf(float64(0)))
 			case 0x06, 0x07:
 				subv = reflect.New(reflect.TypeOf(""))
+			case 0x0a:
+				subv = reflect.New(reflect.TypeOf(struct{}{}))
 			case 0x0d:
 				subv = reflect.New(reflect.TypeOf([]byte{}))
 			}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -14,13 +13,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 
-	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/api"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/auth"
-	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
 var (
@@ -58,50 +55,6 @@ func init() {
 	}
 }
 
-func send(ctx context.Context, rpc *client.Client, text string) error {
-	if len(config.Targets) > 0 {
-		account := config.Accounts[0]
-		peerID := config.Targets[0].PeerID
-		userID := config.Targets[0].UserID
-		if peerID == 0 && userID == 0 {
-			chatId := strings.TrimPrefix(config.Targets[0].ChatID, "@")
-			ids := strings.Split(chatId, "u")
-			_ = ids[1]
-			peerID, _ = strconv.ParseInt(ids[0], 10, 64)
-			userID, _ = strconv.ParseInt(ids[1], 10, 64)
-		}
-
-		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%du%d", peerID, userID))
-		routingHead := &pb.RoutingHead{}
-		if userID == 0 {
-			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
-		} else if peerID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: userID}}
-		} else {
-			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Uin: peerID, ToUin: userID},
-			}
-		}
-
-		msg := pb.Message{}
-		if err := mark.Unmarshal([]byte(text), &msg); err != nil {
-			return err
-		}
-		if _, err := rpc.MessageSendMessage(
-			ctx, account.Username, client.NewMessageSendMessageRequest(
-				routingHead,
-				msg.GetContentHead(),
-				msg.GetMessageBody(),
-				seq,
-				nil,
-			),
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func main() {
 	cfg := mobileqq.NewClientConfigFromViper()
 	mqq := mobileqq.NewClient(&mobileqq.Options{
@@ -134,11 +87,11 @@ func main() {
 			errCh := make(chan error, 1)
 			wg := sync.WaitGroup{}
 			for _, account := range config.Accounts {
-				wg.Add(1)
-				go func(username, password string) {
-					defer wg.Done()
-					rpc := mqq.GetClient()
-					if once {
+				if once {
+					wg.Add(1)
+					go func(username, password string) {
+						defer wg.Done()
+						rpc := mqq.GetClient()
 						if err := auth.NewFlow(&auth.FlowOptions{
 							Username: username,
 							Password: password,
@@ -152,20 +105,18 @@ func main() {
 							errCh <- err
 							return
 						}
-					}
-					uin, _ := strconv.ParseInt(username, 10, 64)
-					if _, err := rpc.AccountSetStatus(
-						ctx,
-						client.NewAccountSetStatusRequest(
-							uint64(uin),
-							client.AccountStatusOnline,
-							false,
-						),
-					); err != nil {
-						errCh <- err
-						return
-					}
-					if once {
+						uin, _ := strconv.ParseInt(username, 10, 64)
+						if _, err := rpc.AccountSetStatus(
+							ctx,
+							client.NewAccountSetStatusRequest(
+								uint64(uin),
+								client.AccountStatusOnline,
+								false,
+							),
+						); err != nil {
+							errCh <- err
+							return
+						}
 						if _, err := rpc.FriendListGetFriendGroupList(ctx,
 							client.NewFriendListGetFriendGroupListRequest(
 								uin, 0, 100, 0, 100,
@@ -182,28 +133,25 @@ func main() {
 							errCh <- err
 							return
 						}
-					}
-				}(account.Username, account.Password)
-			}
-			wg.Wait()
-			select {
-			case err := <-errCh:
-				return err
-			default:
+						if _, err := rpc.MessageGetMessage(ctx,
+							username,
+							client.NewMessageGetMessageRequest(
+								0x00000000, nil,
+							),
+						); err != nil {
+							errCh <- err
+							return
+						}
+					}(account.Username, account.Password)
+				}
+				wg.Wait()
+				select {
+				case err := <-errCh:
+					return err
+				default:
+				}
 			}
 
-			// go func() {
-			// 	for range time.NewTicker(600 * time.Second).C {
-			// 		if err := send(ctx, mqq.GetClient(), "![[困]](goqq://res/marketFace?id=ipEfT7oeSIPz3SIM7j4u5A==&tabId=204112&key=MmJjMGE1M2NmZDYyZjNkZg==)"); err != nil {
-			// 			errCh <- err
-			// 			return
-			// 		}
-			// 		if err := send(ctx, mqq.GetClient(), time.Now().Local().String()); err != nil {
-			// 			errCh <- err
-			// 			return
-			// 		}
-			// 	}
-			// }()
 			srv.ResetClient(ctx, mqq.GetClient())
 			select {
 			case err := <-errCh:

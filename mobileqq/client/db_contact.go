@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) dbInsertContact(uin uint64, v *db.Contact) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_contact"
+	table := "u" + strconv.FormatUint(uin, 10) + "_contacts"
 	tx, err := c.db.Begin()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (c *Client) dbInsertContact(uin uint64, v *db.Contact) error {
 }
 
 func (c *Client) dbUpdateContact(uin uint64, v *db.Contact) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_contact"
+	table := "u" + strconv.FormatUint(uin, 10) + "_contacts"
 	tx, err := c.db.Begin()
 	if err != nil {
 		return err

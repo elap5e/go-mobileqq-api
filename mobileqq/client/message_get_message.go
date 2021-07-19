@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
@@ -15,6 +15,7 @@ import (
 )
 
 func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessage, resp *pb.MessageGetMessageResponse) {
+	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 	dumpServerToClientMessage(s2c, resp)
 
 	for _, uinPairMessage := range resp.GetUinPairMessages() {
@@ -33,6 +34,46 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 				skip = msg.GetMessageHead().GetGroupInfo() == nil
 			case 42, 83:
 				skip = msg.GetMessageHead().GetDiscussInfo() == nil
+			case 0x02DC:
+				content := msg.GetMessageBody().GetContent()
+				if len(content) > 4 {
+					buf := bytes.NewBuffer(content)
+					_, _ = buf.ReadUint32()
+					subType, _ := buf.ReadUint8()
+					switch subType {
+					case 0x03:
+					case 0x0c, 0x0e:
+					case 0x10, 0x11, 0x14, 0x15:
+						if len(content) > 7 {
+							notify := pb.NotifyMessageBody{}
+							_ = proto.Unmarshal(content[7:], &notify)
+							dumpServerToClientMessage(s2c, &notify)
+							if v := notify.GetMessageRecall(); v != nil {
+								for _, msg := range v.GetRecalledMessageList() {
+									mr := &db.MessageRecord{
+										Time:   msg.GetTime(),
+										Seq:    msg.GetSeq(),
+										Uid:    int64(msg.GetRandom()) | 1<<56,
+										PeerID: notify.GetGroupCode(),
+										UserID: 0,
+										FromID: v.GetUin(),
+										Text:   v.GetMessageWordingInfo().GetName(),
+										Type:   0x02DC,
+									}
+									mr.Text = "messageRecall: " + v.GetMessageWordingInfo().GetName()
+
+									c.PrintMessageRecord(mr)
+									if c.db != nil {
+										err := c.dbInsertMessageRecord(uin, mr)
+										if err != nil {
+											log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 			if !skip {
 				mr := &db.MessageRecord{
@@ -49,16 +90,15 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 					mr.PeerID = uinPairMessage.GetPeerUin()
 					mr.UserID = 0
 					if mr.Type == 82 {
-						c.setMessageSeq(fmt.Sprintf("@%du%d", mr.PeerID, mr.UserID), mr.Seq)
+						c.setMessageSeq(mr.PeerID, mr.UserID, int64(uin), mr.Seq)
 					}
 				}
-				text, _ := mark.NewMarshaler(mr.PeerID, mr.UserID, mr.FromID).
-					Marshal(msg.GetMessageBody().GetRichText().GetElements())
+				text, _ := mark.NewEncoder(mr.PeerID, mr.UserID, mr.FromID).
+					Encode(msg.GetMessageBody().GetRichText().GetElements())
 				mr.Text = string(text)
 
 				c.PrintMessageRecord(mr)
 				if c.db != nil {
-					uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 					err := c.dbInsertMessageRecord(uin, mr)
 					if err != nil {
 						log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
@@ -94,8 +134,9 @@ func (c *Client) MessageGetMessage(
 	username string,
 	req *pb.MessageGetMessageRequest,
 ) (*pb.MessageGetMessageResponse, error) {
+	uin, _ := strconv.ParseInt(username, 10, 64)
 	if len(req.SyncCookie) == 0 {
-		req.SyncCookie = c.syncCookie
+		req.SyncCookie = c.syncCookie[uin]
 	}
 
 	buf, err := proto.Marshal(req)
@@ -116,7 +157,17 @@ func (c *Client) MessageGetMessage(
 		return nil, err
 	}
 
-	c.syncCookie = resp.GetSyncCookie()
+	if c.db != nil {
+		uin, _ := strconv.ParseInt(s2c.Username, 10, 64)
+		if err := c.dbUpdateAccount(&db.Account{
+			Uin:        uin,
+			SyncCookie: resp.GetSyncCookie(),
+		}); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+	}
+	c.syncCookie[uin] = resp.GetSyncCookie()
 
 	c.handleMessageGetMessageResponse(&s2c, &resp)
 	return &resp, nil

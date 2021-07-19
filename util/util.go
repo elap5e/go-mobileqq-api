@@ -54,6 +54,12 @@ func BytesToSTBytes(v []byte) (ret [16]byte) {
 	return
 }
 
+func HashToString(p []byte) string {
+	u := make([]byte, 16)
+	copy(u, p)
+	return fmt.Sprintf("%X", u)
+}
+
 func HashToBraceString(p []byte) string {
 	u := make([]byte, 16)
 	copy(u, p)

@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -65,6 +64,7 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 		account := config.Accounts[0]
 		peerID := config.Targets[0].PeerID
 		userID := config.Targets[0].UserID
+		fromID, _ := strconv.ParseInt(account.Username, 10, 64)
 		if peerID == 0 && userID == 0 {
 			chatId := strings.TrimPrefix(config.Targets[0].ChatID, "@")
 			ids := strings.Split(chatId, "u")
@@ -73,7 +73,6 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 			userID, _ = strconv.ParseInt(ids[1], 10, 64)
 		}
 
-		seq := rpc.GetNextMessageSeq(fmt.Sprintf("@%du%d", peerID, userID))
 		routingHead := &pb.RoutingHead{}
 		if userID == 0 {
 			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
@@ -85,16 +84,24 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 			}
 		}
 
-		msg := pb.Message{}
-		if err := mark.Unmarshal([]byte(text), &msg); err != nil {
+		elems, err := mark.NewDecoder(peerID, userID, fromID).
+			Decode([]byte(text))
+		if err != nil {
 			return err
+		}
+		msg := pb.Message{
+			MessageBody: &pb.MessageBody{
+				RichText: &pb.RichText{
+					Elements: elems,
+				},
+			},
 		}
 		if _, err := rpc.MessageSendMessage(
 			ctx, account.Username, client.NewMessageSendMessageRequest(
 				routingHead,
 				msg.GetContentHead(),
 				msg.GetMessageBody(),
-				seq,
+				0,
 				nil,
 			),
 		); err != nil {

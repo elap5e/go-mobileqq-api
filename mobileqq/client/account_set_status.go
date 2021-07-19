@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
@@ -101,6 +102,10 @@ type AccountSetStatusResponse struct {
 	ClientAutoStatusInterval uint64 `jce:",19" json:",omitempty"`
 }
 
+func (c *Client) initAutoStatusTimers() {
+	c.autoStatusTimers = make(map[string]*time.Timer)
+}
+
 func NewAccountSetStatusRequest(
 	uin uint64,
 	status AccountStatusType,
@@ -191,5 +196,20 @@ func (c *Client) AccountSetStatus(
 	}
 
 	dumpServerToClientMessage(&s2c, &resp)
+
+	c.autoStatusTimersMux.Lock()
+	timer, ok := c.autoStatusTimers[c2s.Username]
+	if !ok {
+		c.autoStatusTimers[c2s.Username] = time.AfterFunc(0, func() {
+			c.AccountSetStatus(ctx, req)
+		})
+		timer = c.autoStatusTimers[c2s.Username]
+	}
+	if resp.ClientAutoStatusInterval > 30 {
+		timer.Reset(time.Duration(resp.ClientAutoStatusInterval) * time.Second)
+	} else {
+		timer.Reset(30 * time.Second)
+	}
+	c.autoStatusTimersMux.Unlock()
 	return &resp, nil
 }

@@ -42,4 +42,6 @@ const (
 	ServiceMethodOnlinePushRequest          = "OnlinePush.ReqPush"
 	ServiceMethodOnlinePushResponse         = "OnlinePush.RespPush"
 	ServiceMethodOnlinePushSIDTicketExpired = "OnlinePush.SidTicketExpired"
+
+	ServiceMethodQualityTestPushList = "QualityTest.PushList"
 )

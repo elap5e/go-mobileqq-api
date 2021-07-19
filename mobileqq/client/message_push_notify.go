@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
@@ -30,21 +29,21 @@ type MessagePushNotifyRequest struct {
 }
 
 type MessageInfo struct {
-	FromUin         uint64           `jce:",0" json:",omitempty"`
-	MessageTime     uint64           `jce:",1" json:",omitempty"`
-	MessageType     uint16           `jce:",2" json:",omitempty"`
-	MessageSeq      uint16           `jce:",3" json:",omitempty"`
+	FromUin         int64            `jce:",0" json:",omitempty"`
+	MessageTime     int64            `jce:",1" json:",omitempty"`
+	MessageType     int16            `jce:",2" json:",omitempty"`
+	MessageSeq      int32            `jce:",3" json:",omitempty"`
 	Message         string           `jce:",4" json:",omitempty"`
-	RealMessageTime uint64           `jce:",5" json:",omitempty"`
+	RealMessageTime int64            `jce:",5" json:",omitempty"`
 	MessageBytes    []byte           `jce:",6" json:",omitempty"`
-	AppShareID      uint64           `jce:",7" json:",omitempty"`
+	AppShareID      int64            `jce:",7" json:",omitempty"`
 	MessageCookies  []byte           `jce:",8" json:",omitempty"`
 	AppShareCookie  []byte           `jce:",9" json:",omitempty"`
-	MessageUid      uint64           `jce:",10" json:",omitempty"`
-	LastChangeTime  uint64           `jce:",11" json:",omitempty"`
+	MessageUid      int64            `jce:",10" json:",omitempty"`
+	LastChangeTime  int64            `jce:",11" json:",omitempty"`
 	CPicInfo        []CPicInfo       `jce:",12" json:",omitempty"`
 	ShareData       *ShareData       `jce:",13" json:",omitempty"`
-	FromInstID      uint64           `jce:",14" json:",omitempty"`
+	FromInstID      int64            `jce:",14" json:",omitempty"`
 	RemarkOfSender  []byte           `jce:",15" json:",omitempty"`
 	FromMobile      string           `jce:",16" json:",omitempty"`
 	FromName        string           `jce:",17" json:",omitempty"`
@@ -82,15 +81,15 @@ func (c *Client) handleMessagePushNotify(
 	}
 	dumpServerToClientMessage(s2c, &req)
 
+	uin, _ := strconv.ParseInt(s2c.Username, 10, 64)
 	resp, err := c.MessageGetMessage(
 		ctx, s2c.Username, NewMessageGetMessageRequest(
-			0x00000000, c.syncCookie,
+			0x00000000, c.syncCookie[uin],
 		),
 	)
 	if err != nil {
 		return nil, err
 	}
-	uin, _ := strconv.ParseInt(s2c.Username, 10, 64)
 
 	type Data struct {
 		PeerID int64
@@ -109,7 +108,11 @@ func (c *Client) handleMessagePushNotify(
 					switch msg.GetMessageHead().GetC2CCmd() {
 					case 11, 175:
 						if uin != msg.GetMessageHead().GetFromUin() {
-							text, err := mark.Marshal(msg)
+							peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
+							userID := uinPairMessage.GetPeerUin()
+							fromID := msg.GetMessageHead().GetFromUin()
+							text, err := mark.NewEncoder(peerID, userID, fromID).
+								Encode(msg.GetMessageBody().GetRichText().GetElements())
 							if err != nil {
 								return nil, err
 							}
@@ -143,13 +146,13 @@ func (c *Client) handleMessagePushNotify(
 			dumpServerToClientMessage(s2c, &req)
 			resp, err := c.MessageGetMessage(
 				ctx, s2c.Username, NewMessageGetMessageRequest(
-					resp.GetSyncFlag(), c.syncCookie,
+					resp.GetSyncFlag(), c.syncCookie[uin],
 				),
 			)
 			if err != nil {
 				return nil, err
 			}
-			c.syncCookie = resp.GetSyncCookie()
+			c.syncCookie[uin] = resp.GetSyncCookie()
 		} else {
 			break
 		}
@@ -169,20 +172,26 @@ func (c *Client) handleMessagePushNotify(
 				GroupTemp: &pb.GroupTemp{Uin: item.PeerID, ToUin: item.UserID},
 			}
 		}
-		chatID := fmt.Sprintf("@%du%d", item.PeerID, item.UserID)
-		seq := c.getNextMessageSeq(chatID)
 
-		msg := pb.Message{}
-		if err := mark.Unmarshal(item.Text, &msg); err != nil {
+		elems, err := mark.NewDecoder(item.PeerID, item.UserID, item.FromID).
+			Decode(item.Text)
+		if err != nil {
 			return nil, err
+		}
+		msg := pb.Message{
+			MessageBody: &pb.MessageBody{
+				RichText: &pb.RichText{
+					Elements: elems,
+				},
+			},
 		}
 		if _, err := c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
 				routingHead,
 				msg.GetContentHead(),
 				msg.GetMessageBody(),
-				seq,
-				c.syncCookie,
+				0,
+				c.syncCookie[uin],
 			),
 		); err != nil {
 			return nil, err

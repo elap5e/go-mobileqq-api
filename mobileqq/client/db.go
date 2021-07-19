@@ -4,8 +4,46 @@ import (
 	"strconv"
 )
 
+func (c *Client) dbCreateAccountTable() error {
+	queries := []string{`CREATE TABLE IF NOT EXISTS "accounts" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "uin" INTEGER NOT NULL,
+  "sync_cookie" BLOB NULL,
+  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "deleted_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (
+    "uin" ASC,
+    "updated_at" ASC
+  )
+);`,
+		`CREATE INDEX IF NOT EXISTS "accounts_idx"
+ON "accounts" (
+  "id" ASC,
+  "uin" ASC
+);`,
+		`CREATE TRIGGER IF NOT EXISTS "accounts_updated_at"
+AFTER UPDATE
+ON "accounts"
+FOR EACH ROW
+BEGIN
+UPDATE "accounts" SET "updated_at" = CURRENT_TIMESTAMP WHERE id = old.id;
+END;`}
+	for _, query := range queries {
+		stmt, err := c.db.Prepare(query)
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *Client) dbCreateChannelTableByUin(uin uint64) error {
-	channelMemberTable := "u" + strconv.FormatUint(uin, 10) + "_channel_member"
+	channelMemberTable := "u" + strconv.FormatUint(uin, 10) + "_channel_members"
 	queries := []string{`CREATE TABLE IF NOT EXISTS "` + channelMemberTable + `" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "time" INTEGER NOT NULL,
@@ -17,7 +55,7 @@ func (c *Client) dbCreateChannelTableByUin(uin uint64) error {
   "channel_id" INTEGER NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "deleted_at" TIMESTAMP NULL,
-  "updated_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (
     "time" ASC,
     "uin" ASC,
@@ -49,7 +87,7 @@ FOR EACH ROW
 BEGIN
 UPDATE "` + channelMemberTable + `" SET "updated_at" = CURRENT_TIMESTAMP WHERE id = old.id;
 END;`}
-	channelTable := "u" + strconv.FormatUint(uin, 10) + "_channel"
+	channelTable := "u" + strconv.FormatUint(uin, 10) + "_channels"
 	queries = append(queries, []string{`CREATE TABLE IF NOT EXISTS "` + channelTable + `" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "uin" INTEGER NOT NULL,
@@ -60,7 +98,7 @@ END;`}
   "member_seq" INTEGER NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "deleted_at" TIMESTAMP NULL,
-  "updated_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (
     "uin" ASC
   )
@@ -91,7 +129,7 @@ END;`}...)
 }
 
 func (c *Client) dbCreateContactTableByUin(uin uint64) error {
-	contactGroupTable := "u" + strconv.FormatUint(uin, 10) + "_contact_group"
+	contactGroupTable := "u" + strconv.FormatUint(uin, 10) + "_contact_groups"
 	queries := []string{`CREATE TABLE IF NOT EXISTS "` + contactGroupTable + `" (
   "id" INTEGER NOT NULL PRIMARY KEY,
   "name" TEXT NOT NULL,
@@ -104,7 +142,7 @@ FOR EACH ROW
 BEGIN
 UPDATE "` + contactGroupTable + `" SET "updated_at" = CURRENT_TIMESTAMP WHERE id = old.id;
 END;`}
-	contactTable := "u" + strconv.FormatUint(uin, 10) + "_contact"
+	contactTable := "u" + strconv.FormatUint(uin, 10) + "_contacts"
 	queries = append(queries, []string{`CREATE TABLE IF NOT EXISTS "` + contactTable + `" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "uin" INTEGER NOT NULL,
@@ -115,7 +153,7 @@ END;`}
   "group_id" INTEGER NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "deleted_at" TIMESTAMP NULL,
-  "updated_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (
     "uin" ASC
   ),
@@ -155,7 +193,7 @@ END;`}...)
 }
 
 func (c *Client) dbCreateMessageRecordTableByUin(uin uint64) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_message_record"
+	table := "u" + strconv.FormatUint(uin, 10) + "_message_records"
 	queries := []string{`CREATE TABLE IF NOT EXISTS "` + table + `" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "time" INTEGER NOT NULL,
@@ -168,7 +206,7 @@ func (c *Client) dbCreateMessageRecordTableByUin(uin uint64) error {
   "type" INTEGER NOT NULL,
   "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "deleted_at" TIMESTAMP NULL,
-  "updated_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (
     "time" ASC,
     "seq" ASC,
@@ -201,6 +239,43 @@ ON "` + table + `" (
 		`CREATE INDEX IF NOT EXISTS "` + table + `_user_id_idx"
 ON "` + table + `" (
   "user_id" ASC
+);`,
+		`CREATE TRIGGER IF NOT EXISTS "` + table + `_updated_at"
+AFTER UPDATE
+ON "` + table + `"
+FOR EACH ROW
+BEGIN
+UPDATE "` + table + `" SET "updated_at" = CURRENT_TIMESTAMP WHERE id = old.id;
+END;`}
+	for _, query := range queries {
+		stmt, err := c.db.Prepare(query)
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Client) dbCreateMessageSequenceTableByUin(uin uint64) error {
+	table := "u" + strconv.FormatUint(uin, 10) + "_message_sequences"
+	queries := []string{`CREATE TABLE IF NOT EXISTS "` + table + `" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "peer_id" INTEGER NOT NULL,
+  "user_id" INTEGER NOT NULL,
+  "type" INTEGER NOT NULL,
+  "max_seq" INTEGER NOT NULL,
+  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "deleted_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (
+    "peer_id" ASC,
+    "user_id" ASC,
+    "type" ASC
+  )
 );`,
 		`CREATE TRIGGER IF NOT EXISTS "` + table + `_updated_at"
 AFTER UPDATE

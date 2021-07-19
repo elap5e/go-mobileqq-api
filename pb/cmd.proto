@@ -2,6 +2,10 @@ syntax = "proto3";
 
 option go_package = "./;pb";
 
+import "message.proto";
+
+/* Cmd0x388 */
+
 message Cmd0x0388Request {
   int32 net_type = 1;
   int32 sub_cmd = 2;
@@ -100,3 +104,105 @@ message TryUploadImageResponse {
 message TryUploadPTTRequest {}
 
 message TryUploadPTTResponse {}
+
+/* TroopTips0x857 */
+
+message NotifyMessageBody {
+  optional uint32 type = 1; // Enum
+  optional int64 message_time = 2;
+  optional int64 message_expires = 3;
+  optional int64 group_code = 4;
+  optional NotifyMessageGrayTips message_gray_tips = 5;
+  // optional message_messagebox = 6;
+  // optional message_floatedtips = 7;
+  optional NotifyMessageTopTips message_top_tips = 8;
+  // optional message_red_tips = 9;
+  // optional message_group_notify = 10;
+  optional NotifyMessageRecall message_recall = 11;
+  // optional message_theme_notify = 12;
+  // uint32 service_type = 13;
+  // optional message_objmessage_update = 14;
+  // optional message_werewolf_push = 15;
+  // optional stcm_game_state = 16;
+  // STPushMessageElement apllo_message_push = 17;
+  // optional message_gold_tips = 18;
+  // optional message_miniapp_notify = 20;
+  optional int64 sender_uin = 21;
+  // optional message_luckybag_notify = 22;
+  // optional message_troopformtips_push = 23;
+  // optional message_media_push = 24;
+  optional NotifyMessageGeneralGrayTips general_gray_tip = 26;
+  // optional message_video_push = 27;
+  // optional lbs_share_change_plus_info = 28;
+  // optional message_sing_push = 29;
+  // optional message_group_info_change = 30;
+  // optional group_announce_tbc_info = 31;
+  // optional qq_vedio_game_push_info = 32;
+  // optional qq_group_digest_msg = 33;
+  // optional study_room_member_msg = 34;
+  // optional qq_live_notify = 35;
+  // optional group_async_notidy = 36;
+  optional int64 group_cur_message_seq = 37;
+  // optional group_digest_message_summary = 38;
+  optional int64 sysdb_message_id = 39;
+  // optional revert_graytips_traceless = 40;
+}
+
+message NotifyMessageGeneralGrayTips {
+  uint64 busi_type = 1;
+  uint64 busi_id = 2;
+  uint32 ctrl_flag = 3;
+  uint32 c2c_type = 4;
+  uint32 service_type = 5;
+  uint64 template_id = 6;
+  repeated Item template_parameter = 7;
+  string content = 8;
+  uint64 tips_seq_id = 9;
+  bytes pb_reserve = 10;
+  message Item {
+    string name = 1;
+    string value = 2;
+  }
+} // GeneralGrayTipInfo
+
+message NotifyMessageGrayTips {
+  optional uint32 show_lastest = 1;
+  optional bytes content = 2;
+  optional uint32 remind = 3;
+  optional bytes brief = 4;
+  uint64 receiver_uin = 5;
+  uint32 reliao_admin_option = 6;
+  uint32 robot_group_option = 7;
+} // AIOGrayTipsInfo
+
+message NotifyMessageRecall {
+  int64 uin = 1;
+  bytes nickname = 2;
+  repeated Item recalled_message_list = 3;
+  string reminder_content = 4;
+  bytes user_define = 5;
+  int32 group_type = 6;
+  int32 op_type = 7;
+  int64 admin_uin = 8;
+  WithdrawWordingInfo message_wording_info = 9;
+  message Item {
+    int32 seq = 1;
+    int64 time = 2;
+    int32 random = 3;
+    int32 type = 4;
+    int32 flag = 5;
+    int64 from_uin = 6;
+    int32 is_anno = 7;
+  }
+} // MessageRecallReminder
+
+message NotifyMessageTopTips {
+  optional bytes content = 1;
+  optional uint32 icon = 2;
+  optional uint32 action = 3; // Enum
+  optional bytes url = 4;
+  optional bytes data = 5;
+  optional bytes data_i = 6;
+  optional bytes data_a = 7;
+  optional bytes data_p = 8;
+} // AIOTopTipsInfo

@@ -7,6 +7,7 @@
 //go:generate protoc --go_out=. message_head.proto
 //go:generate protoc --go_out=. message_hummer.proto
 //go:generate protoc --go_out=. message_service.proto
+//go:generate protoc --go_out=. message_type.proto
 //go:generate protoc --go_out=. oidb.proto
 //go:generate protoc --go_out=. online_push.proto
 

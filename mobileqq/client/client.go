@@ -3,12 +3,14 @@ package client
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"math/rand"
 	"path"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/config"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
@@ -23,8 +25,13 @@ type Client struct {
 	db  *sql.DB
 	rpc rpc.Engine
 
+	// user signature
 	userSignatures    map[string]*rpc.UserSignature
 	userSignaturesMux sync.RWMutex
+
+	// auto status
+	autoStatusTimers    map[string]*time.Timer
+	autoStatusTimersMux sync.Mutex
 
 	channels map[int64]*db.Channel
 	cmembers map[int64]map[int64]*db.ChannelMember
@@ -33,8 +40,8 @@ type Client struct {
 	requestSeq int32
 
 	// message
-	messageSeq map[string]*int32
-	syncCookie []byte
+	messageSeq map[int64]map[string]*int32
+	syncCookie map[int64][]byte
 }
 
 func NewClient(cfg *config.Config, rpc rpc.Engine) *Client {
@@ -51,9 +58,10 @@ func NewClient(cfg *config.Config, rpc rpc.Engine) *Client {
 
 func (c *Client) init() {
 	c.initUserSignatures()
+	c.initAutoStatusTimers()
 
 	c.initHandlers()
-	c.initSync()
+	c.initMessageSeq()
 }
 
 func (c *Client) initHandlers() {
@@ -64,33 +72,80 @@ func (c *Client) initHandlers() {
 	c.rpc.Register(ServiceMethodOnlinePushMessageSyncC2C, c.handleOnlinePushMessage)
 	c.rpc.Register(ServiceMethodOnlinePushMessageSyncGroup, c.handleOnlinePushMessage)
 	c.rpc.Register(ServiceMethodOnlinePushSIDTicketExpired, c.handleOnlinePushSIDTicketExpired)
+	c.rpc.Register(ServiceMethodOnlinePushRequest, c.handleOnlinePushRequest)
+	c.rpc.Register(ServiceMethodQualityTestPushList, c.handleQualityTestPushList)
 }
 
-func (c *Client) initSync() {
-	c.messageSeq = make(map[string]*int32)
+func (c *Client) initMessageSeq() {
+	c.messageSeq = make(map[int64]map[string]*int32)
+	c.syncCookie = make(map[int64][]byte)
 }
 
-func (c *Client) setMessageSeq(id string, seq int32) bool {
-	if _, ok := c.messageSeq[id]; !ok {
-		c.messageSeq[id] = &[]int32{seq}[0]
+func (c *Client) setMessageSeq(peerID, userID, fromID int64, maxSeq int32) bool {
+	if _, ok := c.messageSeq[fromID]; !ok {
+		c.messageSeq[fromID] = make(map[string]*int32)
 	}
-	if *c.messageSeq[id] < seq {
-		atomic.StoreInt32(c.messageSeq[id], seq)
+	chatID := fmt.Sprintf("@%du%d", peerID, userID)
+	if _, ok := c.messageSeq[fromID][chatID]; !ok {
+		c.messageSeq[fromID][chatID] = &[]int32{maxSeq}[0]
+	}
+	if *c.messageSeq[fromID][chatID] < maxSeq {
+		atomic.StoreInt32(c.messageSeq[fromID][chatID], maxSeq)
+		if c.db != nil {
+			err := c.dbInsertMessageSequence(uint64(fromID), &db.MessageSequence{
+				PeerID: peerID,
+				UserID: userID,
+				Type:   0,
+				MaxSeq: maxSeq,
+			})
+			if err != nil {
+				log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageSequence")
+			}
+		}
 		return true
 	}
 	return false
 }
 
-func (c *Client) getNextMessageSeq(id string) int32 {
+func (c *Client) getNextMessageSeq(peerID, userID, fromID int64) int32 {
+	if _, ok := c.messageSeq[fromID]; !ok {
+		c.messageSeq[fromID] = make(map[string]*int32)
+	}
+	chatID := fmt.Sprintf("@%du%d", peerID, userID)
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	if _, ok := c.messageSeq[id]; !ok {
-		c.messageSeq[id] = &[]int32{r.Int31n(1000) + 600}[0]
+	ms := db.MessageSequence{
+		PeerID: peerID,
+		UserID: userID,
+		Type:   0,
+		MaxSeq: 0,
 	}
-	seq := atomic.AddInt32(c.messageSeq[id], 1)
-	if seq > 60000 {
-		c.messageSeq[id] = &[]int32{r.Int31n(1000) + 600}[0]
+	if c.db != nil {
+		err := c.dbSelectMessageSequence(uint64(fromID), &ms)
+		if err != nil {
+			log.Error().Err(err).Msg(">>> [db  ] dbSelectMessageSequence")
+		} else {
+			c.messageSeq[fromID][chatID] = &ms.MaxSeq
+		}
 	}
-	return seq
+	if _, ok := c.messageSeq[fromID][chatID]; !ok {
+		c.messageSeq[fromID][chatID] = &[]int32{r.Int31n(1000) + 600}[0]
+	}
+	maxSeq := atomic.AddInt32(c.messageSeq[fromID][chatID], 1)
+	if maxSeq >= 60000 {
+		c.messageSeq[fromID][chatID] = &[]int32{r.Int31n(1000) + 600}[0]
+	}
+	if c.db != nil {
+		err := c.dbInsertMessageSequence(uint64(fromID), &db.MessageSequence{
+			PeerID: peerID,
+			UserID: userID,
+			Type:   0,
+			MaxSeq: maxSeq,
+		})
+		if err != nil {
+			log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageSequence")
+		}
+	}
+	return maxSeq
 }
 
 func (c *Client) getNextRequestSeq() int32 {
@@ -130,13 +185,17 @@ func (c *Client) GetNextSeq() uint32 {
 	return c.rpc.GetNextSeq()
 }
 
-func (c *Client) GetNextMessageSeq(id string) int32 {
-	return c.getNextMessageSeq(id)
+func (c *Client) GetNextMessageSeq(peerID, userID, fromID int64) int32 {
+	return c.getNextMessageSeq(peerID, userID, fromID)
 }
 
 func (c *Client) SetDB(db *sql.DB) {
 	c.mux.Lock()
 	c.db = db
+	if err := c.dbCreateAccountTable(); err != nil {
+		log.Fatal().Err(err).
+			Msg("failed to operate database")
+	}
 	c.mux.Unlock()
 }
 

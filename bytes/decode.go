@@ -4,6 +4,15 @@ import (
 	"io"
 )
 
+func (b *Buffer) ReadUint8() (uint8, error) {
+	v := b.buf[b.idx:]
+	if len(v) < 1 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	b.idx += 1
+	return v[0], nil
+}
+
 func (b *Buffer) ReadUint32() (uint32, error) {
 	v := b.buf[b.idx:]
 	if len(v) < 4 {
@@ -29,6 +38,20 @@ func (b *Buffer) ReadUint32Bytes() ([]byte, error) {
 func (b *Buffer) ReadUint32String() (string, error) {
 	p, err := b.ReadUint32Bytes()
 	return string(p), err
+}
+
+func (b *Buffer) ReadUint64() (uint64, error) {
+	v := b.buf[b.idx:]
+	if len(v) < 8 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	b.idx += 8
+	return uint64(v[0])<<56 | uint64(v[1])<<48 | uint64(v[2])<<40 | uint64(v[3])<<32 | uint64(v[4])<<24 | uint64(v[5])<<16 | uint64(v[6])<<8 | uint64(v[7])<<0, nil
+}
+
+func (b *Buffer) ReadInt64() (int64, error) {
+	v, err := b.ReadUint64()
+	return int64(v), err
 }
 
 // DecodeUint8 consumes an encoded unsigned 8-bit integer from the buffer.

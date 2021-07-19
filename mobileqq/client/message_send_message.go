@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"strconv"
 
@@ -39,8 +38,8 @@ func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessa
 			mr.UserID = req.GetRoutingHead().GetGroupTemp().GetToUin()
 			mr.Type = 141
 		}
-		text, _ := mark.NewMarshaler(mr.PeerID, mr.UserID, mr.FromID).
-			Marshal(req.GetMessageBody().GetRichText().GetElements())
+		text, _ := mark.NewEncoder(mr.PeerID, mr.UserID, mr.FromID).
+			Encode(req.GetMessageBody().GetRichText().GetElements())
 		mr.Text = string(text)
 
 		c.PrintMessageRecord(mr)
@@ -75,17 +74,24 @@ func (c *Client) MessageSendMessage(
 	username string,
 	req *pb.MessageSendMessageRequest,
 ) (*pb.MessageSendMessageResponse, error) {
+	uin, _ := strconv.ParseInt(username, 10, 64)
 	if req.GetMessageSeq() == 0 {
-		peerID := req.GetRoutingHead().GetGroup().GetCode()
-		userID := req.GetRoutingHead().GetC2C().GetToUin()
-		chatID := fmt.Sprintf("@%du%d", peerID, userID)
-		req.MessageSeq = c.getNextMessageSeq(chatID)
+		var peerID, userID int64
+		if req.GetRoutingHead().GetC2C() != nil {
+			userID = req.GetRoutingHead().GetC2C().GetToUin()
+		} else if req.GetRoutingHead().GetGroup() != nil {
+			peerID = req.GetRoutingHead().GetGroup().GetCode()
+		} else if req.GetRoutingHead().GetC2C() != nil {
+			peerID = req.GetRoutingHead().GetGroupTemp().GetUin()
+			userID = req.GetRoutingHead().GetGroupTemp().GetToUin()
+		}
+		req.MessageSeq = c.getNextMessageSeq(peerID, userID, uin)
 	}
 	if req.GetMessageRand() == 0 {
 		req.MessageRand = rand.Int31()
 	}
 	if len(req.GetSyncCookie()) == 0 {
-		req.SyncCookie = c.syncCookie
+		req.SyncCookie = c.syncCookie[uin]
 	}
 
 	buf, err := proto.Marshal(req)

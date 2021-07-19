@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) dbInsertMessageRecord(uin uint64, v *db.MessageRecord) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_message_record"
+	table := "u" + strconv.FormatUint(uin, 10) + "_message_records"
 	tx, err := c.db.Begin()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (c *Client) dbInsertMessageRecord(uin uint64, v *db.MessageRecord) error {
 }
 
 func (c *Client) dbUpdateMessageRecord(uin uint64, v *db.MessageRecord) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_channel_member"
+	table := "u" + strconv.FormatUint(uin, 10) + "_message_records"
 	tx, err := c.db.Begin()
 	if err != nil {
 		return err

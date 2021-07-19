@@ -6,6 +6,15 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
+type Account struct {
+	ID         int64
+	Uin        int64
+	SyncCookie []byte
+	CreatedAt  time.Time
+	DeletedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 type Channel struct {
 	ID        int64
 	Uin       int64
@@ -63,6 +72,17 @@ type MessageRecord struct {
 	Text      string
 	Elements  []*pb.Element
 	Type      int32
+	CreatedAt time.Time
+	DeletedAt time.Time
+	UpdatedAt time.Time
+}
+
+type MessageSequence struct {
+	ID        int64
+	PeerID    int64
+	UserID    int64
+	Type      int32
+	MaxSeq    int32
 	CreatedAt time.Time
 	DeletedAt time.Time
 	UpdatedAt time.Time

@@ -8,16 +8,16 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 )
 
-func (c *Client) handleOnlinePushSIDTicketExpired(
+func (c *Client) handleQualityTestPushList(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
-	log.Warn().Msg("<-> [todo] OnlinePushSIDTicketExpired, user SID ticket needs to be update")
+	log.Warn().Msg("<-> [todo] QualityTestPushList, connection quality needs to be tested")
 	log.Debug().Msg(">>> [dump]\n" + hex.Dump(s2c.Buffer))
 	return &codec.ClientToServerMessage{
 		Username:      s2c.Username,
 		Seq:           s2c.Seq,
-		ServiceMethod: ServiceMethodOnlinePushSIDTicketExpired,
+		ServiceMethod: ServiceMethodQualityTestPushList,
 		Buffer:        nil,
 		Simple:        true,
 	}, nil

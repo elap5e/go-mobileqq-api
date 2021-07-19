@@ -211,7 +211,7 @@ func newMessageUploadImageRequest(
 	return &UploadImageRequest{
 		UploadRequest:  req,
 		BusinessType:   0x000003ee, // 1006
-		Filename:       util.HashToBraceString(tempBlob.Digests["md5"]) + ext,
+		Filename:       util.HashToString(tempBlob.Digests["md5"]) + ext,
 		FileSize:       tempBlob.Size,
 		Height:         photo.Height,
 		Width:          photo.Width,

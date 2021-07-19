@@ -54,7 +54,7 @@ message CustomFace {
   uint32 file_type = 10;
   bytes signature = 11;
   uint32 useful = 12;
-  bytes md5 = 13;
+  bytes file_md5 = 13;
   string thumb_url = 14;
   string big_url = 15;
   string orig_url = 16;
@@ -66,7 +66,7 @@ message CustomFace {
   uint32 width = 22;
   uint32 height = 23;
   uint32 source = 24;
-  uint32 size = 25;
+  uint32 file_size = 25;
   uint32 origin = 26;
   uint32 thumb_width = 27;
   uint32 thumb_height = 28;
@@ -320,9 +320,9 @@ message NotOnlineImage {
   bytes send_file = 4;
   uint32 img_type = 5;
   bytes previews_image = 6;
-  bytes picture_md5 = 7;
-  uint32 picture_height = 8;
-  uint32 picture_width = 9;
+  bytes file_md5 = 7;
+  uint32 height = 8;
+  uint32 width = 9;
   string resource_id = 10;
   bytes flag = 11;
   string thumb_url = 12;
@@ -333,7 +333,7 @@ message NotOnlineImage {
   uint32 result = 17;
   uint32 index = 18;
   bytes op_ace_buffer = 19;
-  bool old_picture_md5 = 20;
+  bool old_file_md5 = 20;
   uint32 thumb_width = 21;
   uint32 thumb_height = 22;
   uint32 file_id = 23;
@@ -468,9 +468,9 @@ message RichMessage {
 message RichText {
   Attribute attribute = 1;
   repeated Element elements = 2;
-  NotOnlineFile notOnlineAile = 3;
+  NotOnlineFile not_online_file = 3;
   PTT ptt = 4;
-  TempPTT tmpPtt = 5;
+  TempPTT tmp_ptt = 5;
   Trans211TempMessage trans_211TmpMessage = 6;
 }
 
@@ -493,9 +493,9 @@ message SecretFileMessage {
 }
 
 message ShakeWindow {
-  uint32 type = 1;
-  uint32 reserve = 2;
-  uint64 uin = 3;
+  int32 type = 1;
+  int32 reserve = 2;
+  int64 uin = 3;
 }
 
 message SmallEmoji {

@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) dbInsertChannelMember(uin uint64, v *db.ChannelMember) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_channel_member"
+	table := "u" + strconv.FormatUint(uin, 10) + "_channel_members"
 	tx, err := c.db.Begin()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (c *Client) dbInsertChannelMember(uin uint64, v *db.ChannelMember) error {
 }
 
 func (c *Client) dbUpdateChannelMember(uin uint64, v *db.ChannelMember) error {
-	table := "u" + strconv.FormatUint(uin, 10) + "_channel_member"
+	table := "u" + strconv.FormatUint(uin, 10) + "_channel_members"
 	tx, err := c.db.Begin()
 	if err != nil {
 		return err

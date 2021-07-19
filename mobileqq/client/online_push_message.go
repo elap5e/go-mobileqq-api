@@ -2,13 +2,11 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
-	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
@@ -28,52 +26,6 @@ type MessageDeleteInfo struct {
 	MessageCookie []byte `jce:",3" json:",omitempty"`
 }
 
-func NewOnlinePushMessageResponse(
-	ctx context.Context,
-	username string,
-	infos []MessageDeleteInfo,
-	serverIP uint32,
-	seq int32,
-) (*codec.ClientToServerMessage, error) {
-	if len(infos) == 0 {
-		return nil, fmt.Errorf("zero length")
-	}
-
-	uin, err := strconv.ParseInt(username, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	resp := OnlinePushMessageResponse{
-		Uin:      uin,
-		Infos:    infos,
-		ServerIP: serverIP,
-	}
-	buf, err := uni.Marshal(ctx, &uni.Message{
-		Version:     0x0003,
-		PacketType:  0x00,
-		MessageType: 0x00000000,
-		RequestID:   seq,
-		ServantName: "OnlinePush",
-		FuncName:    "SvcRespPushMsg",
-		Buffer:      []byte{},
-		Timeout:     0x00000000,
-		Context:     map[string]string{},
-		Status:      map[string]string{},
-	}, map[string]interface{}{
-		"resp": resp,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &codec.ClientToServerMessage{
-		Username:      username,
-		Seq:           uint32(seq),
-		ServiceMethod: ServiceMethodOnlinePushResponse,
-		Buffer:        buf,
-		Simple:        false,
-	}, nil
-}
-
 func (c *Client) handleOnlinePushMessage(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
@@ -84,6 +36,7 @@ func (c *Client) handleOnlinePushMessage(
 	}
 	dumpServerToClientMessage(s2c, &push)
 
+	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 	msg := push.GetMessage()
 	mr := &db.MessageRecord{
 		Time:   msg.GetMessageHead().GetMessageTime(),
@@ -99,15 +52,14 @@ func (c *Client) handleOnlinePushMessage(
 		mr.PeerID = msg.GetMessageHead().GetGroupInfo().GetGroupCode()
 		mr.UserID = 0
 		if mr.Type == 82 {
-			c.setMessageSeq(fmt.Sprintf("@%du%d", mr.PeerID, mr.UserID), mr.Seq)
+			c.setMessageSeq(mr.PeerID, mr.UserID, int64(uin), mr.Seq)
 		}
 	}
-	text, _ := mark.NewMarshaler(mr.PeerID, mr.UserID, mr.FromID).
-		Marshal(msg.GetMessageBody().GetRichText().GetElements())
+	text, _ := mark.NewEncoder(mr.PeerID, mr.UserID, mr.FromID).
+		Encode(msg.GetMessageBody().GetRichText().GetElements())
 	mr.Text = string(text)
 
 	c.PrintMessageRecord(mr)
-	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 	if c.db != nil {
 		err := c.dbInsertMessageRecord(uin, mr)
 		if err != nil {
@@ -126,20 +78,26 @@ func (c *Client) handleOnlinePushMessage(
 				GroupTemp: &pb.GroupTemp{Uin: mr.PeerID, ToUin: mr.UserID},
 			}
 		}
-		chatID := fmt.Sprintf("@%du%d", mr.PeerID, mr.UserID)
-		seq := c.getNextMessageSeq(chatID)
 
-		msg := pb.Message{}
-		if err := mark.Unmarshal([]byte(mr.Text), &msg); err != nil {
+		elems, err := mark.NewDecoder(mr.PeerID, mr.UserID, mr.FromID).
+			Decode([]byte(mr.Text))
+		if err != nil {
 			return nil, err
+		}
+		msg := pb.Message{
+			MessageBody: &pb.MessageBody{
+				RichText: &pb.RichText{
+					Elements: elems,
+				},
+			},
 		}
 		if _, err := c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
 				routingHead,
 				msg.GetContentHead(),
 				msg.GetMessageBody(),
-				seq,
-				c.syncCookie,
+				0,
+				c.syncCookie[int64(uin)],
 			),
 		); err != nil {
 			return nil, err
