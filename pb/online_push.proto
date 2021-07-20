@@ -4,31 +4,30 @@ option go_package = "./;pb";
 
 import "message.proto";
 
-/* online push message */
-
 message OnlinePush {
-  Message message = 1;
-  uint32 server_ip = 2;
-  bytes push_token = 3;
-  uint32 ping_flag = 4;
-  uint32 general_flag = 5;
-  uint64 bind_uin = 6;
-} // PbPushMsg
-
-/* online push transfer message */
-
-message OnlinePushTrans {
-  uint64 from_uin = 1;
-  uint64 to_uin = 2;
-  uint32 message_type = 3;
-  uint32 message_sub_type = 4;
-  uint32 message_seq = 5;
-  uint64 message_uid = 6;
-  uint32 message_time = 7;
-  uint32 real_message_time = 8;
-  string nickname = 9;
-  bytes message_data = 10;
-  uint32 server_ip = 11;
-  ExtraGroupKeyInfo extra_group_key_info = 12;
-  uint32 general_flag = 13;
-} // PbMsgInfo
+  // msg_onlinepush
+  message Message {
+    MessageCommon.Message message = 1; // "msg"
+    uint32 server_ip = 2; // "svrip"
+    bytes push_token = 3; // "bytes_push_token"
+    uint32 ping_flag = 4; // "ping_flag"
+    uint32 general_flag = 9; // "uint32_general_flag"
+    uint64 bind_uin = 10; // "uint64_bind_uin"
+  }
+  // OnlinePushTrans
+  message Transport {
+    uint64 from_uin = 1; // "from_uin"
+    uint64 to_uin = 2; // "to_uin"
+    uint32 message_type = 3; // "msg_type"
+    uint32 message_subtype = 4; // "msg_subtype"
+    uint32 message_seq = 5; // "msg_seq"
+    uint64 message_uid = 6; // "msg_uid"
+    uint32 message_time = 7; // "msg_time"
+    uint32 real_message_time = 8; // "real_msg_time"
+    string nick_name = 9; // "nick_name"
+    bytes message_data = 10; // "msg_data"
+    uint32 server_ip = 11; // "svr_ip"
+    MessageCommon.ExtraGroupKeyInfo extra_group_key_info = 12; // "ext_group_key_info"
+    uint32 general_flag = 17; // "uint32_general_flag"
+  }
+}

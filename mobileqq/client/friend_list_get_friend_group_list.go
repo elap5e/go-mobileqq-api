@@ -160,7 +160,7 @@ func NewFriendListGetFriendGroupListRequest(
 	startIndex, friendCount int16,
 	groupStartIndex, groupCount int8,
 ) *FriendListGetFriendGroupListRequest {
-	oidb0x0D50, _ := proto.Marshal(&pb.OIDB0X0D50Request{
+	oidb0D50, _ := proto.Marshal(&pb.OIDB_Type0D50_Request{
 		AppId:                   0x000000000002712,
 		ReqMusicSwitch:          0x00000001,
 		ReqKsingSwitch:          0x00000001,
@@ -168,7 +168,7 @@ func NewFriendListGetFriendGroupListRequest(
 		ReqMutualmarkAlienation: 0x00000001,
 		ReqAioQuickApp:          0x00000001,
 	})
-	oidb0x0D6B, _ := proto.Marshal(&pb.OIDB0X0D6BRequest{})
+	oidb0D6B, _ := proto.Marshal(&pb.OIDB_Type0D6B_Request{})
 	return &FriendListGetFriendGroupListRequest{
 		RequestType:     0x00000003,
 		IsReflush:       startIndex == 0,
@@ -186,8 +186,8 @@ func NewFriendListGetFriendGroupListRequest(
 		AppType:         0x00000000,
 		IsGetDOVID:      false,
 		IsGetBothFlag:   false,
-		OIDB0x0D50:      oidb0x0D50,
-		OIDB0x0D6B:      oidb0x0D6B,
+		OIDB0x0D50:      oidb0D50,
+		OIDB0x0D6B:      oidb0D6B,
 		SNSTypeList: []int64{
 			0x000000000000350c,
 			0x000000000000350d,

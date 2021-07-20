@@ -14,7 +14,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessage, req *pb.MessageSendMessageRequest, resp *pb.MessageSendMessageResponse) {
+func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessage, req *pb.MessageService_SendRequest, resp *pb.MessageService_SendResponse) {
 	dumpServerToClientMessage(s2c, resp)
 
 	if resp.Result == 0 && c.db != nil {
@@ -23,7 +23,7 @@ func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessa
 			Time:   resp.GetSendTime(),
 			Seq:    req.GetMessageSeq(),
 			Uid:    int64(req.GetMessageRand()) | 1<<56,
-			PeerID: req.GetRoutingHead().GetGroup().GetCode(),
+			PeerID: req.GetRoutingHead().GetGroup().GetGroupCode(),
 			UserID: req.GetRoutingHead().GetC2C().GetToUin(),
 			FromID: int64(uin),
 			Text:   string(""),
@@ -34,7 +34,7 @@ func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessa
 		} else if mr.PeerID != 0 {
 			mr.Type = 82
 		} else {
-			mr.PeerID = req.GetRoutingHead().GetGroupTemp().GetUin()
+			mr.PeerID = req.GetRoutingHead().GetGroupTemp().GetGroupUin()
 			mr.UserID = req.GetRoutingHead().GetGroupTemp().GetToUin()
 			mr.Type = 141
 		}
@@ -53,13 +53,13 @@ func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessa
 }
 
 func NewMessageSendMessageRequest(
-	routingHead *pb.RoutingHead,
-	contentHead *pb.ContentHead,
-	messageBody *pb.MessageBody,
+	routingHead *pb.MessageService_RoutingHead,
+	contentHead *pb.MessageCommon_ContentHead,
+	messageBody *pb.IMMessageBody_MessageBody,
 	seq int32,
 	cookie []byte,
-) *pb.MessageSendMessageRequest {
-	return &pb.MessageSendMessageRequest{
+) *pb.MessageService_SendRequest {
+	return &pb.MessageService_SendRequest{
 		RoutingHead: routingHead,
 		ContentHead: contentHead,
 		MessageBody: messageBody,
@@ -72,17 +72,17 @@ func NewMessageSendMessageRequest(
 func (c *Client) MessageSendMessage(
 	ctx context.Context,
 	username string,
-	req *pb.MessageSendMessageRequest,
-) (*pb.MessageSendMessageResponse, error) {
+	req *pb.MessageService_SendRequest,
+) (*pb.MessageService_SendResponse, error) {
 	uin, _ := strconv.ParseInt(username, 10, 64)
 	if req.GetMessageSeq() == 0 {
 		var peerID, userID int64
 		if req.GetRoutingHead().GetC2C() != nil {
 			userID = req.GetRoutingHead().GetC2C().GetToUin()
 		} else if req.GetRoutingHead().GetGroup() != nil {
-			peerID = req.GetRoutingHead().GetGroup().GetCode()
+			peerID = req.GetRoutingHead().GetGroup().GetGroupCode()
 		} else if req.GetRoutingHead().GetC2C() != nil {
-			peerID = req.GetRoutingHead().GetGroupTemp().GetUin()
+			peerID = req.GetRoutingHead().GetGroupTemp().GetGroupUin()
 			userID = req.GetRoutingHead().GetGroupTemp().GetToUin()
 		}
 		req.MessageSeq = c.getNextMessageSeq(peerID, userID, uin)
@@ -107,7 +107,7 @@ func (c *Client) MessageSendMessage(
 	if err != nil {
 		return nil, err
 	}
-	resp := pb.MessageSendMessageResponse{}
+	resp := pb.MessageService_SendResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}

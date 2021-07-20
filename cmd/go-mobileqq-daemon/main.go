@@ -73,32 +73,21 @@ func send(ctx context.Context, rpc *client.Client, text string) error {
 			userID, _ = strconv.ParseInt(ids[1], 10, 64)
 		}
 
-		routingHead := &pb.RoutingHead{}
-		if userID == 0 {
-			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
-		} else if peerID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: userID}}
-		} else {
-			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Uin: peerID, ToUin: userID},
-			}
-		}
-
 		elems, err := mark.NewDecoder(peerID, userID, fromID).
 			Decode([]byte(text))
 		if err != nil {
 			return err
 		}
-		msg := pb.Message{
-			MessageBody: &pb.MessageBody{
-				RichText: &pb.RichText{
+		msg := pb.MessageCommon_Message{
+			MessageBody: &pb.IMMessageBody_MessageBody{
+				RichText: &pb.IMMessageBody_RichText{
 					Elements: elems,
 				},
 			},
 		}
 		if _, err := rpc.MessageSendMessage(
 			ctx, account.Username, client.NewMessageSendMessageRequest(
-				routingHead,
+				rpc.GetRoutingHead(peerID, userID),
 				msg.GetContentHead(),
 				msg.GetMessageBody(),
 				0,

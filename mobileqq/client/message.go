@@ -11,6 +11,20 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
+func (c *Client) GetRoutingHead(peerID, userID int64) *pb.MessageService_RoutingHead {
+	routingHead := pb.MessageService_RoutingHead{}
+	if peerID == 0 {
+		routingHead.C2C = &pb.MessageService_C2C{ToUin: userID}
+	} else if userID == 0 {
+		routingHead.Group = &pb.MessageService_Group{GroupCode: peerID}
+	} else {
+		routingHead.GroupTemp = &pb.MessageService_GroupTemp{
+			GroupUin: peerID, ToUin: userID,
+		}
+	}
+	return &routingHead
+}
+
 func (c *Client) PrintMessageRecord(mr *db.MessageRecord) {
 	peerName := strconv.FormatInt(mr.PeerID, 10)
 	userName := strconv.FormatInt(mr.UserID, 10)
@@ -52,13 +66,13 @@ func (c *Client) PrintMessageRecord(mr *db.MessageRecord) {
 	}
 }
 
-func syncUinPairMessage(uinPairMessage *pb.UinPairMessage) {
+func syncUinPairMessage(uinPairMessage *pb.MessageCommon_UinPairMessage) {
 	log.Info().
 		Int64("@peer", uinPairMessage.GetPeerUin()).
 		Int64("readAt", uinPairMessage.GetLastReadTime()).
-		Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetMessages()))
+		Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetItems()))
 
-	for _, msg := range uinPairMessage.GetMessages() {
+	for _, msg := range uinPairMessage.GetItems() {
 		peerID := msg.GetMessageHead().GetC2CTempMessageHead().GetGroupCode()
 		userID := uinPairMessage.GetPeerUin()
 		if msg.GetMessageHead().GetC2CCmd() == 0 {

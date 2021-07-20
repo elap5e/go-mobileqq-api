@@ -56,8 +56,8 @@ func (hw *Highway) Upload(name string, ukey []byte) error {
 
 func (hw *Highway) uploadChunk(cmd uint32, size int64, offset int, body, hash, ukey []byte) error {
 	sum := md5.Sum(body)
-	return hw.Call(&pb.HighwayRequestHead{
-		BaseHead: &pb.HighwayBaseHead{
+	return hw.Call(&pb.Highway_RequestHead{
+		BaseHead: &pb.Highway_BaseHead{
 			Version:      0x00000001,
 			Uin:          hw.uin,
 			Command:      "PicUp.DataUp",
@@ -70,7 +70,7 @@ func (hw *Highway) uploadChunk(cmd uint32, size int64, offset int, body, hash, u
 			LocaleId:     0x00000804,
 			EnvId:        0x00000000, // nil
 		},
-		SegmentHead: &pb.HighwaySegmentHead{
+		SegmentHead: &pb.Highway_SegmentHead{
 			ServiceId:     0x00000000, // nil
 			FileSize:      uint64(size),
 			DataOffset:    uint64(offset),

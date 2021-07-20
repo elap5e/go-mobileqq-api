@@ -230,7 +230,7 @@ func NewMessageUploadImageRequest(
 	selfUin int64,
 	fileID string,
 	cacheDir string,
-) (*pb.TryUploadImageRequest, *UploadTempBlob, error) {
+) (*pb.Cmd0388_TryUploadImageRequest, *UploadTempBlob, error) {
 	uri, err := url.Parse(fileID)
 	if err != nil {
 		return nil, nil, err
@@ -257,7 +257,7 @@ func NewMessageUploadImageRequest(
 		originalPicture = 1
 	}
 
-	return &pb.TryUploadImageRequest{
+	return &pb.Cmd0388_TryUploadImageRequest{
 		GroupCode:       req.PeerUin,
 		SrcUin:          req.SelfUin,
 		FileId:          0x0000000000000000, // nil
@@ -284,13 +284,13 @@ func NewMessageUploadImageRequest(
 func (c *Client) MessageUploadImage(
 	ctx context.Context,
 	username string,
-	reqs ...*pb.TryUploadImageRequest,
-) ([]*pb.TryUploadImageResponse, error) {
+	reqs ...*pb.Cmd0388_TryUploadImageRequest,
+) ([]*pb.Cmd0388_TryUploadImageResponse, error) {
 	for _, req := range reqs {
 		req.BuildVersion = c.cfg.Client.Revision
 	}
 
-	buf, err := proto.Marshal(&pb.Cmd0X0388Request{
+	buf, err := proto.Marshal(&pb.Cmd0388_Request{
 		NetType:        0x00000003,
 		SubCmd:         0x00000001,
 		TryUploadImage: reqs,
@@ -307,7 +307,7 @@ func (c *Client) MessageUploadImage(
 	if err != nil {
 		return nil, err
 	}
-	resp := pb.Cmd0X0388Response{}
+	resp := pb.Cmd0388_Response{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}

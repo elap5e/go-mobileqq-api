@@ -102,7 +102,7 @@ func (c *Client) handleMessagePushNotify(
 
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
-			for _, msg := range uinPairMessage.GetMessages() {
+			for _, msg := range uinPairMessage.GetItems() {
 				switch msg.GetMessageHead().GetMessageType() {
 				case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
 					switch msg.GetMessageHead().GetC2CCmd() {
@@ -131,7 +131,7 @@ func (c *Client) handleMessagePushNotify(
 					}
 				case 78, 81, 103, 107, 110, 111, 114, 118:
 					_, _ = c.MessageDeleteMessage(ctx, s2c.Username, NewMessageDeleteMessageRequest(
-						&pb.MessageDeleteMessageRequest_Item{
+						&pb.MessageService_DeleteRequest_MessageItem{
 							FromUin:     msg.GetMessageHead().GetFromUin(),
 							ToUin:       msg.GetMessageHead().GetToUin(),
 							MessageType: msg.GetMessageHead().GetMessageType(),
@@ -162,32 +162,21 @@ func (c *Client) handleMessagePushNotify(
 	if l := len(dataList); l > 0 {
 		item := dataList[l-1]
 
-		routingHead := &pb.RoutingHead{}
-		if item.PeerID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: item.UserID}}
-		} else if item.UserID == 0 {
-			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: item.PeerID}}
-		} else {
-			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Uin: item.PeerID, ToUin: item.UserID},
-			}
-		}
-
 		elems, err := mark.NewDecoder(item.PeerID, item.UserID, item.FromID).
 			Decode(item.Text)
 		if err != nil {
 			return nil, err
 		}
-		msg := pb.Message{
-			MessageBody: &pb.MessageBody{
-				RichText: &pb.RichText{
+		msg := pb.MessageCommon_Message{
+			MessageBody: &pb.IMMessageBody_MessageBody{
+				RichText: &pb.IMMessageBody_RichText{
 					Elements: elems,
 				},
 			},
 		}
 		if _, err := c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
-				routingHead,
+				c.GetRoutingHead(item.PeerID, item.UserID),
 				msg.GetContentHead(),
 				msg.GetMessageBody(),
 				0,

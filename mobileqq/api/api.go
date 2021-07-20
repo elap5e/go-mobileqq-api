@@ -16,9 +16,10 @@ import (
 type Client interface {
 	GetCacheDownloadsDir() string
 	GetHighway(addr, username string) *highway.Highway
+	GetRoutingHead(peerID, userID int64) *pb.MessageService_RoutingHead
 
-	MessageSendMessage(ctx context.Context, username string, req *pb.MessageSendMessageRequest) (*pb.MessageSendMessageResponse, error)
-	MessageUploadImage(ctx context.Context, username string, reqs ...*pb.TryUploadImageRequest) ([]*pb.TryUploadImageResponse, error)
+	MessageSendMessage(ctx context.Context, username string, req *pb.MessageService_SendRequest) (*pb.MessageService_SendResponse, error)
+	MessageUploadImage(ctx context.Context, username string, reqs ...*pb.Cmd0388_TryUploadImageRequest) ([]*pb.Cmd0388_TryUploadImageResponse, error)
 }
 
 type Server struct {

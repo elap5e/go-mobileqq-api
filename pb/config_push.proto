@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option go_package = "./;pb";
+
+// DomainIp
+message DomainIP {
+  // NameReqBody
+  message Request {
+    RequestBody body = 1; // "SubCmd_name_Req"
+  }
+  // NameRspBody
+  message Response {
+    ResponseBody body = 1; // "SubCmd_name_Rsp"
+  }
+  // ServerList
+  message ServerList {
+    string ip = 1; // "string_IP"
+    int32 port = 2; // "uint32_Port"
+  }
+  // SubCmd_name_Req
+  message RequestBody {
+    uint32 uip = 1; // "uint32_uip"
+    int64 uin = 2; // "uint32_qq"
+    repeated DomainInfo domain_list = 3; // "dnameInfo"
+  }
+  // SubCmd_name_Rsp
+  message ResponseBody {
+    uint32 uip = 1; // "uint32_uip"
+    int64 uin = 2; // "uint32_qq"
+    repeated IPInfo ip_list = 3; // "iplistInfo"
+    repeated IPInfo ipv6_list = 4; // "iplistInfoV6"
+  }
+  // dnameInfo
+  message DomainInfo {
+    string domain = 2; // "string_dname"
+    uint32 type = 3; // "uint32_type"
+  }
+  // iplistInfo
+  message IPInfo {
+    int32 result = 1; // "int32_result"
+    string domain = 2; // "string_dname"
+    int32 type = 3; // "uint32_type"
+    int32 ttl = 4; // "uint32_ttl"
+    repeated ServerList items = 5; // "ServerList_data"
+  }
+}

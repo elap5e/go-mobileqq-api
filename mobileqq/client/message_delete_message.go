@@ -11,9 +11,9 @@ import (
 )
 
 func NewMessageDeleteMessageRequest(
-	items ...*pb.MessageDeleteMessageRequest_Item,
-) *pb.MessageDeleteMessageRequest {
-	return &pb.MessageDeleteMessageRequest{
+	items ...*pb.MessageService_DeleteRequest_MessageItem,
+) *pb.MessageService_DeleteRequest {
+	return &pb.MessageService_DeleteRequest{
 		Items: items,
 	}
 }
@@ -21,8 +21,8 @@ func NewMessageDeleteMessageRequest(
 func (c *Client) MessageDeleteMessage(
 	ctx context.Context,
 	username string,
-	req *pb.MessageDeleteMessageRequest,
-) (*pb.MessageDeleteMessageResponse, error) {
+	req *pb.MessageService_DeleteRequest,
+) (*pb.MessageService_DeleteResponse, error) {
 	if len(req.GetItems()) == 0 {
 		return nil, fmt.Errorf("zero length")
 	}
@@ -40,7 +40,7 @@ func (c *Client) MessageDeleteMessage(
 	if err != nil {
 		return nil, err
 	}
-	resp := pb.MessageDeleteMessageResponse{}
+	resp := pb.MessageService_DeleteResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
 		return nil, err
 	}

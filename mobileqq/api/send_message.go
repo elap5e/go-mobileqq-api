@@ -79,31 +79,20 @@ func (s *Server) handleSendMessageRequest(
 	fromID, _ := strconv.ParseInt(botID, 10, 64)
 	text := req.Text
 
-	routingHead := &pb.RoutingHead{}
-	if peerID == 0 {
-		routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: userID}}
-	} else if userID == 0 {
-		routingHead = &pb.RoutingHead{Group: &pb.Group{Code: peerID}}
-	} else {
-		routingHead = &pb.RoutingHead{
-			GroupTemp: &pb.GroupTemp{Uin: peerID, ToUin: userID},
-		}
-	}
-
 	elems, err := mark.NewDecoder(peerID, userID, fromID).
 		Decode([]byte(text))
 	if err != nil {
 		return nil, err
 	}
-	msg := pb.Message{
-		MessageBody: &pb.MessageBody{
-			RichText: &pb.RichText{
+	msg := pb.MessageCommon_Message{
+		MessageBody: &pb.IMMessageBody_MessageBody{
+			RichText: &pb.IMMessageBody_RichText{
 				Elements: elems,
 			},
 		},
 	}
 	subReq := client.NewMessageSendMessageRequest(
-		routingHead,
+		s.client.GetRoutingHead(peerID, userID),
 		msg.GetContentHead(),
 		msg.GetMessageBody(),
 		0,

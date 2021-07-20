@@ -20,20 +20,21 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// device_report
 type DeviceReport struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Bootloader   []byte `protobuf:"bytes,1,opt,name=bootloader,proto3" json:"bootloader,omitempty"`
-	ProcVersion  []byte `protobuf:"bytes,2,opt,name=proc_version,json=procVersion,proto3" json:"proc_version,omitempty"`
-	Codename     []byte `protobuf:"bytes,3,opt,name=codename,proto3" json:"codename,omitempty"`
-	Incremental  []byte `protobuf:"bytes,4,opt,name=incremental,proto3" json:"incremental,omitempty"`
-	Fingerprint  []byte `protobuf:"bytes,5,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
-	BootId       []byte `protobuf:"bytes,6,opt,name=boot_id,json=bootId,proto3" json:"boot_id,omitempty"`
-	AndroidId    []byte `protobuf:"bytes,7,opt,name=android_id,json=androidId,proto3" json:"android_id,omitempty"`
-	Baseband     []byte `protobuf:"bytes,8,opt,name=baseband,proto3" json:"baseband,omitempty"`
-	InnerVersion []byte `protobuf:"bytes,9,opt,name=inner_version,json=innerVersion,proto3" json:"inner_version,omitempty"`
+	Bootloader   []byte `protobuf:"bytes,1,opt,name=bootloader,proto3" json:"bootloader,omitempty"`                         // "bytes_bootloader"
+	ProcVersion  []byte `protobuf:"bytes,2,opt,name=proc_version,json=procVersion,proto3" json:"proc_version,omitempty"`    // "bytes_version"
+	Codename     []byte `protobuf:"bytes,3,opt,name=codename,proto3" json:"codename,omitempty"`                             // "bytes_codename"
+	Incremental  []byte `protobuf:"bytes,4,opt,name=incremental,proto3" json:"incremental,omitempty"`                       // "bytes_incremental"
+	Fingerprint  []byte `protobuf:"bytes,5,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`                       // "bytes_fingerprint"
+	BootId       []byte `protobuf:"bytes,6,opt,name=boot_id,json=bootId,proto3" json:"boot_id,omitempty"`                   // "bytes_boot_id"
+	AndroidId    []byte `protobuf:"bytes,7,opt,name=android_id,json=androidId,proto3" json:"android_id,omitempty"`          // "bytes_android_id"
+	Baseband     []byte `protobuf:"bytes,8,opt,name=baseband,proto3" json:"baseband,omitempty"`                             // "bytes_baseband"
+	InnerVersion []byte `protobuf:"bytes,9,opt,name=inner_version,json=innerVersion,proto3" json:"inner_version,omitempty"` // "bytes_inner_ver"
 }
 
 func (x *DeviceReport) Reset() {

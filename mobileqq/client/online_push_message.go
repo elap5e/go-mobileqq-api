@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/hex"
 	"strconv"
 
 	"google.golang.org/protobuf/proto"
@@ -30,8 +31,9 @@ func (c *Client) handleOnlinePushMessage(
 	ctx context.Context,
 	s2c *codec.ServerToClientMessage,
 ) (*codec.ClientToServerMessage, error) {
-	push := pb.OnlinePush{}
+	push := pb.OnlinePush_Message{}
 	if err := proto.Unmarshal(s2c.Buffer, &push); err != nil {
+		log.Debug().Msg(">>> [dump]\n" + hex.Dump(s2c.Buffer))
 		return nil, err
 	}
 	dumpServerToClientMessage(s2c, &push)
@@ -68,32 +70,21 @@ func (c *Client) handleOnlinePushMessage(
 	}
 
 	if uin != uint64(mr.FromID) {
-		routingHead := &pb.RoutingHead{}
-		if mr.PeerID == 0 {
-			routingHead = &pb.RoutingHead{C2C: &pb.C2C{ToUin: mr.UserID}}
-		} else if mr.UserID == 0 {
-			routingHead = &pb.RoutingHead{Group: &pb.Group{Code: mr.PeerID}}
-		} else {
-			routingHead = &pb.RoutingHead{
-				GroupTemp: &pb.GroupTemp{Uin: mr.PeerID, ToUin: mr.UserID},
-			}
-		}
-
 		elems, err := mark.NewDecoder(mr.PeerID, mr.UserID, mr.FromID).
 			Decode([]byte(mr.Text))
 		if err != nil {
 			return nil, err
 		}
-		msg := pb.Message{
-			MessageBody: &pb.MessageBody{
-				RichText: &pb.RichText{
+		msg := pb.MessageCommon_Message{
+			MessageBody: &pb.IMMessageBody_MessageBody{
+				RichText: &pb.IMMessageBody_RichText{
 					Elements: elems,
 				},
 			},
 		}
 		if _, err := c.MessageSendMessage(
 			ctx, s2c.Username, NewMessageSendMessageRequest(
-				routingHead,
+				c.GetRoutingHead(mr.PeerID, mr.UserID),
 				msg.GetContentHead(),
 				msg.GetMessageBody(),
 				0,

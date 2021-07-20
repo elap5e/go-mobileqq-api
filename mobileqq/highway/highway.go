@@ -19,7 +19,7 @@ type Highway struct {
 	addr string
 	conn net.Conn
 
-	req    *pb.HighwayRequestHead
+	req    *pb.Highway_RequestHead
 	reqMux sync.Mutex
 
 	seq     uint32
@@ -30,9 +30,9 @@ type Highway struct {
 }
 
 type Call struct {
-	ReqHead *pb.HighwayRequestHead
+	ReqHead *pb.Highway_RequestHead
 	ReqBody []byte
-	Resp    *pb.HighwayResponseHead
+	Resp    *pb.Highway_ResponseHead
 	Error   error
 	Done    chan *Call
 }
@@ -68,9 +68,9 @@ func (hw *Highway) getNextSeq() uint32 {
 }
 
 func (hw *Highway) Go(
-	reqHead *pb.HighwayRequestHead,
+	reqHead *pb.Highway_RequestHead,
 	reqBody []byte,
-	resp *pb.HighwayResponseHead,
+	resp *pb.Highway_ResponseHead,
 	done chan *Call,
 ) *Call {
 	call := Call{}
@@ -88,9 +88,9 @@ func (hw *Highway) Go(
 }
 
 func (hw *Highway) Call(
-	reqHead *pb.HighwayRequestHead,
+	reqHead *pb.Highway_RequestHead,
 	reqBody []byte,
-	resp *pb.HighwayResponseHead,
+	resp *pb.Highway_ResponseHead,
 ) error {
 	call := <-hw.Go(reqHead, reqBody, resp, make(chan *Call, 1)).Done
 	return call.Error

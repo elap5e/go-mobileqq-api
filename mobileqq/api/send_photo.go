@@ -122,7 +122,7 @@ func (s *Server) handleSendPhotoRequest(
 	fromID, _ := strconv.ParseInt(botID, 10, 64)
 
 	fileID := ""
-	subReqs, tempBlobs := []*pb.TryUploadImageRequest{}, []*client.UploadTempBlob{}
+	subReqs, tempBlobs := []*pb.Cmd0388_TryUploadImageRequest{}, []*client.UploadTempBlob{}
 	switch photos := req.Photo.(type) {
 	default:
 		return nil, fmt.Errorf("Not Support")
@@ -207,7 +207,7 @@ func (s *Server) handleSendPhotoRequest(
 			FileSize:     int64(subReqs[i].GetFileSize()),
 		})
 		for _, photoSize := range photoSizes {
-			if photoSize.FileUniqueID == hex.EncodeToString(item.GetImgInfo().GetFileMd5()) {
+			if photoSize.FileUniqueID == hex.EncodeToString(item.GetImageInfo().GetFileMd5()) {
 				continue
 			}
 		}

@@ -2,142 +2,2438 @@ syntax = "proto3";
 
 option go_package = "./;pb";
 
-import "message_body.proto";
-
-/* message common */
-
-message AppShareInfo {
-  uint32 id = 1;
-  bytes cookie = 2;
-  PluginInfo resource = 3;
-}
-
-message C2CTempMessageHead {
-  uint32 c2c_type = 1;
-  uint32 service_type = 2;
-  int64 group_uin = 3;
-  int64 group_code = 4;
-  bytes sig = 5;
-  uint32 sig_type = 6;
-  string from_phone = 7;
-  string to_phone = 8;
-  uint32 lock_display = 9;
-  uint32 direction_flag = 10;
-}
-
-message ContentHead {
-  int32 package_number = 1;
-  int32 package_index = 2;
-  int32 div_seq = 3;
-  int32 auto_reply = 4;
-}
-
-message DiscussInfo {
-  int64 discuss_uin = 1;
-  int32 discuss_type = 2;
-  int64 discuss_info_seq = 3;
-  bytes discuss_remark = 4;
-}
-
-message ExtraGroupKeyInfo {
-  int32 current_max_seq = 1;
-  int64 current_time = 2;
-  int32 operate_by_parents = 3;
-  bytes extra_group_info = 4;
-}
-
-message GroupInfo {
-  int64 group_code = 1;
-  int32 group_type = 2;
-  int64 group_info_seq = 3;
-  bytes group_card = 4;
-  bytes group_rank = 5;
-  int32 group_level = 6;
-}
-
-message Message {
-  MessageHead message_head = 1;
-  ContentHead content_head = 2;
-  MessageBody message_body = 3;
-  AppShareInfo app_share_info = 4;
-}
-
-message MessageHead {
-  int64 from_uin = 1;
-  int64 to_uin = 2;
-  int32 message_type = 3;
-  int32 c2c_cmd = 4;
-  int32 message_seq = 5;
-  int64 message_time = 6;
-  int64 message_uid = 7;
-  C2CTempMessageHead c2c_temp_message_head = 8;
-  GroupInfo group_info = 9;
-  int32 from_app_id = 10;
-  int32 from_instant_id = 11;
-  int32 user_active = 12;
-  DiscussInfo discuss_info = 13;
-  string from_nick = 14;
-  uint64 auth_uin = 15;
-  string auth_nick = 16;
-  int32 message_flag = 17;
-  string auth_remark = 18;
-  string group_name = 19;
-  MutilTransferHead mutil_transfer_head = 20;
-}
-
-message MessageType0x210 {
-  uint32 type = 1;
-  bytes content = 2;
-}
-
-message MessageSubType0x8aRequest {
-  repeated Item items = 1;
-  uint32 app_id = 2;
-  uint32 instant_id = 3;
-  uint32 flag = 4;
-  bytes reserved = 5;
-  message Item {
-    uint64 from_uin = 1;
-    uint64 to_uin = 2;
-    uint32 message_seq = 3;
-    uint64 message_uid = 4;
-    uint64 message_time = 5;
-    uint32 message_random = 6;
-    uint32 package_number = 7;
-    uint32 package_index = 8;
-    uint32 div_seq = 9;
-    uint32 flag = 10;
-    WithdrawWordingInfo withdrawWordingInfo = 11;
+// hummer_commelem
+message CommonElement {
+  // MsgElemInfo_servtype1
+  message ServiceType1 {
+    bytes reward_id = 1; // "bytes_reward_id"
+    uint64 sender_uin = 2; // "uint64_sender_uin"
+    uint32 pic_type = 3; // "uint32_pic_type"
+    uint32 reward_money = 4; // "uint32_reward_money"
+    bytes url = 5; // "bytes_url"
+    bytes content = 6; // "bytes_content"
+    uint32 create_timestamp = 7; // "uint32_create_timestamp"
+    uint32 status = 8; // "uint32_status"
+    uint32 size = 9; // "uint32_size"
+    uint32 video_duration = 10; // "uint32_video_duration"
+    uint64 seq = 11; // "uint64_seq"
+    uint32 reward_type_ext = 12; // "uint32_reward_type_ext"
+  }
+  // MsgElemInfo_servtype11
+  message ServiceType11 {
+    bytes resID = 1; // "bytes_resID"
+    bytes resMD5 = 2; // "bytes_resMD5"
+    bytes reserve_Info1 = 3; // "reserve_Info1"
+    bytes reserve_Info2 = 4; // "reserve_Info2"
+    uint32 doodleData_offset = 5; // "uint32_doodleData_offset"
+    uint32 doodle_gif_id = 6; // "uint32_doodle_gif_id"
+    bytes Doodle_url = 7; // "bytes_Doodle_url"
+    bytes Doodle_md5 = 8; // "bytes_Doodle_md5"
+  }
+  // MsgElemInfo_servtype13
+  message ServiceType13 {
+    uint32 sys_head_id = 1; // "uint32_sys_head_id"
+    uint32 head_flag = 2; // "uint32_head_flag"
+  }
+  // MsgElemInfo_servtype14
+  message ServiceType14 {
+    uint32 id = 1; // "uint32_id"
+    bytes reserve_Info = 2; // "reserve_Info"
+  }
+  // MsgElemInfo_servtype15
+  message ServiceType15 {
+    bytes vid = 1; // "vid"
+    bytes cover = 2; // "cover"
+    bytes title = 3; // "title"
+    bytes summary = 4; // "summary"
+    uint64 createTime = 5; // "createTime"
+    bytes comment_content = 6; // "comment_content"
+    uint64 author = 7; // "author"
+    uint32 ctr_version = 8; // "ctr_version"
+  }
+  // MsgElemInfo_servtype16
+  message ServiceType16 {
+    uint64 uid = 1; // "uid"
+    bytes unionID = 2; // "unionID"
+    bytes storyID = 3; // "storyID"
+    bytes md5 = 4; // "md5"
+    bytes thumbUrl = 5; // "thumbUrl"
+    bytes doodleUrl = 6; // "doodleUrl"
+    uint32 videoWidth = 7; // "videoWidth"
+    uint32 videoHeight = 8; // "videoHeight"
+    bytes sourceName = 9; // "sourceName"
+    bytes sourceActionType = 10; // "sourceActionType"
+    bytes sourceActionData = 11; // "sourceActionData"
+    uint32 ctr_version = 12; // "ctr_version"
+  }
+  // MsgElemInfo_servtype18
+  message ServiceType18 {
+    uint64 current_amount = 1; // "uint64_current_amount"
+    uint64 total_amount = 2; // "uint64_total_amount"
+    bytes listid = 3; // "bytes_listid"
+    bytes auth_key = 4; // "bytes_auth_key"
+    uint32 number = 5; // "uint32_number"
+  }
+  // MsgElemInfo_servtype19
+  message ServiceType19 {
+    bytes data = 1; // "bytes_data"
+  }
+  // MsgElemInfo_servtype2
+  message ServiceType2 {
+    uint32 poke_type = 1; // "uint32_poke_type"
+    bytes poke_summary = 2; // "bytes_poke_summary"
+    uint32 double_hit = 3; // "uint32_double_hit"
+    uint32 vaspoke_id = 4; // "uint32_vaspoke_id"
+    bytes vaspoke_name = 5; // "bytes_vaspoke_name"
+    bytes vaspoke_minver = 6; // "bytes_vaspoke_minver"
+    uint32 poke_strength = 7; // "uint32_poke_strength"
+    uint32 message_type = 8; // "uint32_msg_type"
+    uint32 face_bubble_count = 9; // "uint32_face_bubble_count"
+    uint32 poke_flag = 10; // "uint32_poke_flag"
+  }
+  // MsgElemInfo_servtype20
+  message ServiceType20 {
+    bytes data = 1; // "bytes_data"
+  }
+  // MsgElemInfo_servtype21
+  message ServiceType21 {
+    uint32 topic_id = 1; // "uint32_topic_id"
+    uint64 confessor_uin = 2; // "uint64_confessor_uin"
+    bytes confessor_nick = 3; // "bytes_confessor_nick"
+    uint32 confessor_sex = 4; // "uint32_confessor_sex"
+    uint32 sysmsg_flag = 5; // "uint32_sysmsg_flag"
+    C2CConfessContext c2c_confess_ctx = 6; // "c2c_confess_ctx"
+    bytes topic = 7; // "bytes_topic"
+    uint64 confess_time = 8; // "uint64_confess_time"
+    GroupConfessMessage group_confess_message = 9; // "group_confess_msg"
+    GroupConfessContext group_confess_ctx = 10; // "group_confess_ctx"
+    // C2CConfessContext
+    message C2CConfessContext {
+      uint64 confessor_uin = 1; // "uint64_confessor_uin"
+      uint64 confess_to_uin = 2; // "uint64_confess_to_uin"
+      uint64 send_uin = 3; // "uint64_send_uin"
+      bytes confessor_nick = 4; // "bytes_confessor_nick"
+      bytes confess = 5; // "bytes_confess"
+      uint32 bg_type = 6; // "uint32_bg_type"
+      uint32 topic_id = 7; // "uint32_topic_id"
+      uint64 confess_time = 8; // "uint64_confess_time"
+      uint32 confessor_sex = 9; // "uint32_confessor_sex"
+      uint32 biz_type = 10; // "uint32_biz_type"
+      uint32 confess_num = 11; // "uint32_confess_num"
+      uint32 confess_to_sex = 12; // "uint32_confess_to_sex"
+    }
+    // GroupConfessContext
+    message GroupConfessContext {
+      uint64 confessor_uin = 1; // "uint64_confessor_uin"
+      uint64 confess_to_uin = 2; // "uint64_confess_to_uin"
+      uint64 send_uin = 3; // "uint64_send_uin"
+      uint32 confessor_sex = 4; // "uint32_confessor_sex"
+      bytes confess_to_nick = 5; // "bytes_confess_to_nick"
+      bytes topic = 6; // "bytes_topic"
+      uint32 topic_id = 7; // "uint32_topic_id"
+      uint64 confess_time = 8; // "uint64_confess_time"
+      uint32 confess_to_nick_type = 9; // "uint32_confess_to_nick_type"
+      bytes confessor_nick = 10; // "bytes_confessor_nick"
+    }
+    // GroupConfessItem
+    message GroupConfessItem {
+      uint32 topic_id = 1; // "uint32_topic_id"
+      uint64 confess_to_uin = 2; // "uint64_confess_to_uin"
+      bytes confess_to_nick = 3; // "bytes_confess_to_nick"
+      bytes topic = 4; // "bytes_topic"
+      uint32 confess_to_nick_type = 5; // "uint32_confess_to_nick_type"
+    }
+    // GroupConfessMsg
+    message GroupConfessMessage {
+      uint64 confess_time = 1; // "uint64_confess_time"
+      uint64 confessor_uin = 2; // "uint64_confessor_uin"
+      uint32 confessor_sex = 3; // "uint32_confessor_sex"
+      uint32 sysmsg_flag = 4; // "uint32_sysmsg_flag"
+      repeated GroupConfessItem confess_items = 5; // "confess_items"
+      uint32 total_topic_count = 6; // "uint32_total_topic_count"
+    }
+  }
+  // MsgElemInfo_servtype23
+  message ServiceType23 {
+    uint32 face_type = 1; // "uint32_face_type"
+    uint32 face_bubble_count = 2; // "uint32_face_bubble_count"
+    bytes face_summary = 3; // "bytes_face_summary"
+    uint32 flag = 4; // "uint32_flag"
+    bytes others = 5; // "bytes_others"
+    ServiceType33 message_yellow_face = 6; // "msg_yellow_face"
+  }
+  // MsgElemInfo_servtype24
+  message ServiceType24 {
+    LimitChatEnter limit_chat_enter = 1; // "limit_chat_enter"
+    LimitChatExit limit_chat_exit = 2; // "limit_chat_exit"
+    // LimitChatEnter
+    message LimitChatEnter {
+      bytes tips_wording = 1; // "bytes_tips_wording"
+      uint32 left_chat_time = 2; // "uint32_left_chat_time"
+      uint64 match_ts = 3; // "uint64_match_ts"
+      uint32 match_expired_time = 4; // "uint32_match_expired_time"
+      uint32 c2c_expired_time = 5; // "uint32_c2c_expired_time"
+      uint64 ready_ts = 6; // "uint64_ready_ts"
+      bytes match_nick = 7; // "bytes_match_nick"
+    }
+    // LimitChatExit
+    message LimitChatExit {
+      uint32 exit_method = 1; // "uint32_exit_method"
+      uint64 match_ts = 2; // "uint64_match_ts"
+    }
+  }
+  // MsgElemInfo_servtype27
+  message ServiceType27 {
+    IMMessageBody.VideoFile video_file = 1; // "video_file"
+  }
+  // MsgElemInfo_servtype29
+  message ServiceType29 {
+    bytes luckybag_message = 1; // "bytes_luckybag_msg"
+  }
+  // MsgElemInfo_servtype3
+  message ServiceType3 {
+    IMMessageBody.CustomFace flash_troop_pic = 1; // "flash_troop_pic"
+    IMMessageBody.NotOnlineImage flash_c2c_pic = 2; // "flash_c2c_pic"
+  }
+  // MsgElemInfo_servtype31
+  message ServiceType31 {
+    bytes text = 1; // "bytes_text"
+    bytes extra = 2; // "bytes_ext"
+  }
+  // MsgElemInfo_servtype33
+  message ServiceType33 {
+    uint32 index = 1; // "uint32_index"
+    bytes text = 2; // "bytes_text"
+    bytes compat = 3; // "bytes_compat"
+    bytes buffer = 4; // "bytes_buf"
+  }
+  // MsgElemInfo_servtype34
+  message ServiceType34 {
+    bytes from_nickname = 1; // "from_nickname"
+    uint32 push_window_flag = 2; // "push_window_flag"
+    GameSession game_session = 3; // "game_session"
+    bytes ext = 4; // "bytes_ext"
+    // GameSession
+    message GameSession {
+      bytes from_role_id = 1; // "from_role_id"
+      bytes from_open_id = 2; // "from_open_id"
+      bytes to_role_id = 3; // "to_role_id"
+      bytes to_open_id = 4; // "to_open_id"
+      uint64 game_appid = 5; // "game_appid"
+      uint64 from_tiny_id = 6; // "from_tiny_id"
+      uint64 to_tiny_id = 7; // "to_tiny_id"
+    }
+  }
+  // MsgElemInfo_servtype35
+  message ServiceType35 {
+    bytes token = 1; // "bytes_token"
+    bytes global_padid = 2; // "bytes_global_padid"
+    uint32 get_rev = 3; // "uint32_get_rev"
+    uint32 his_edit_uin_num = 4; // "uint32_his_edit_uin_num"
+  }
+  // MsgElemInfo_servtype37
+  message ServiceType37 {
+    bytes package_id = 1; // "bytes_packid"
+    bytes sticker_id = 2; // "bytes_stickerid"
+    uint32 q_sid = 3; // "uint32_qsid"
+    uint32 source_type = 4; // "uint32_sourcetype" Enum
+    uint32 sticker_type = 5; // "uint32_stickertype" Enum
+    bytes result_id = 6; // "bytes_resultid"
+    bytes text = 7; // "bytes_text"
+    bytes surprise_id = 8; // "bytes_surpriseid"
+    uint32 random_type = 9; // "uint32_randomtype" Enum
+  }
+  // MsgElemInfo_servtype4
+  message ServiceType4 {
+    uint32 imsg_type = 1; // "uint32_imsg_type"
+    StoryAioObjMessage st_story_aio_obj_message = 4; // "st_story_aio_obj_msg"
+    // StoryAioObjMsg
+    message StoryAioObjMessage {
+      string ui_url = 1; // "str_ui_url"
+      string jmp_url = 2; // "str_jmp_url"
+    }
+  }
+  // MsgElemInfo_servtype5
+  message ServiceType5 {
+    bytes vid = 1; // "vid"
+    bytes cover = 2; // "cover"
+    bytes title = 3; // "title"
+    bytes summary = 4; // "summary"
+    uint64 createTime = 5; // "createTime"
+    bytes comment_content = 6; // "comment_content"
+    uint64 author = 7; // "author"
+  }
+  // MsgElemInfo_servtype8
+  message ServiceType8 {
+    IMMessageBody.DeliverGiftMessage wifi_deliver_gift_message = 1; // "wifi_deliver_gift_msg"
+  }
+  // MsgElemInfo_servtype9
+  message ServiceType9 {
+    uint32 anchor_status = 1; // "uint32_anchor_status"
+    bytes jump_schema = 2; // "bytes_jump_schema"
+    string anchor_nickname = 3; // "str_anchor_nickname"
+    bytes anchor_head_url = 4; // "bytes_anchor_head_url"
+    string live_title = 5; // "str_live_title"
   }
 }
 
-message MutilTransferHead {
-  uint32 status = 1;
+// im_msg_body
+message IMMessageBody {
+  // AnonymousGroupMsg
+  message AnonymousGroupMessage {
+    uint32 flags = 1; // "uint32_flags"
+    bytes anonymous_id = 2; // "str_anon_id"
+    bytes anonymous_nick = 3; // "str_anon_nick"
+    uint32 head_portrait = 4; // "uint32_head_portrait"
+    uint32 expire_time = 5; // "uint32_expire_time"
+    uint32 bubble_id = 6; // "uint32_bubble_id"
+    bytes rank_color = 7; // "str_rank_color"
+  }
+  // ApolloActMsg
+  message ApolloActionMessage {
+    uint32 action_id = 1; // "uint32_action_id"
+    bytes action_name = 2; // "bytes_action_name"
+    bytes action_text = 3; // "bytes_action_text"
+    uint32 flag = 4; // "uint32_flag"
+    uint32 peer_uin = 5; // "uint32_peer_uin"
+    uint32 sender_ts = 6; // "uint32_sender_ts"
+    uint32 peer_ts = 7; // "uint32_peer_ts"
+    int32 sender_status = 8; // "int32_sender_status"
+    int32 peer_status = 9; // "int32_peer_status"
+    uint32 diytext_id = 10; // "diytext_id"
+    bytes diytext_content = 11; // "diytext_content"
+    bytes input_text = 12; // "input_text"
+    bytes pb_reserve = 13; // "bytes_pb_reserve"
+  }
+  // ArkAppElem
+  message ArkAppElement {
+    string app_name = 1; // "app_name"
+    string min_version = 2; // "min_version"
+    string xml_template = 3; // "xml_template"
+    bytes data = 4; // "bytes_data"
+  }
+  // Attr
+  message Attribute {
+    sint32 code_page = 1; // "code_page"
+    uint32 time = 2; // "time"
+    uint32 random = 3; // "random"
+    uint32 color = 4; // "color"
+    uint32 size = 5; // "size"
+    uint32 effect = 6; // "effect"
+    uint32 char_set = 7; // "char_set"
+    uint32 pitch_and_family = 8; // "pitch_and_family"
+    string font_name = 9; // "font_name"
+    bytes reserve_data = 10; // "reserve_data"
+  }
+  // BitAppMsg
+  message BitAppMessage {
+    bytes buf = 1; // "bytes_buf"
+  }
+  // BlessingMessage
+  message BlessingMessage {
+    uint32 message_type = 1; // "uint32_msg_type"
+    uint32 ex_flag = 2; // "uint32_ex_flag"
+  }
+  // CommonElem
+  message CommonElement {
+    uint32 service_type = 1; // "uint32_service_type"
+    bytes buffer = 2; // "bytes_pb_elem"
+    uint32 business_type = 3; // "uint32_business_type"
+  }
+  // ConferenceTipsInfo
+  message ConferenceTipsInfo {
+    uint32 session_type = 1; // "uint32_session_type"
+    uint64 session_uin = 2; // "uint64_session_uin"
+    string text = 3; // "str_text"
+  }
+  // CrmElem
+  message CrmElement {
+    bytes crm_buf = 1; // "crm_buf"
+    bytes message_resid = 2; // "bytes_msg_resid"
+    uint32 qidian_flag = 3; // "uint32_qidian_flag"
+    uint32 push_flag = 4; // "uint32_push_flag"
+    uint32 count_flag = 5; // "uint32_count_flag"
+  }
+  // CustomElem
+  message CustomElement {
+    bytes desc = 1; // "bytes_desc"
+    bytes data = 2; // "bytes_data"
+    uint32 enum_type = 3; // "enum_type" Enum
+    bytes extra = 4; // "bytes_ext"
+    bytes sound = 5; // "bytes_sound"
+  }
+  // CustomFace
+  message CustomFace {
+    bytes guid = 1; // "bytes_guid"
+    string file_path = 2; // "str_file_path"
+    string shortcut = 3; // "str_shortcut"
+    bytes buffer = 4; // "bytes_buffer"
+    bytes flag = 5; // "bytes_flag"
+    bytes old_data = 6; // "bytes_old_data"
+    uint32 file_id = 7; // "uint32_file_id"
+    uint32 server_ip = 8; // "uint32_server_ip"
+    uint32 server_port = 9; // "uint32_server_port"
+    uint32 file_type = 10; // "uint32_file_type"
+    bytes signature = 11; // "bytes_signature"
+    uint32 useful = 12; // "uint32_useful"
+    bytes file_md5 = 13; // "bytes_md5"
+    string thumb_url = 14; // "str_thumb_url"
+    string big_url = 15; // "str_big_url"
+    string orig_url = 16; // "str_orig_url"
+    uint32 biz_type = 17; // "biz_type"
+    uint32 repeat_index = 18; // "repeat_index"
+    uint32 repeat_image = 19; // "repeat_image"
+    uint32 image_type = 20; // "image_type"
+    uint32 index = 21; // "index"
+    uint32 width = 22; // "uint32_width"
+    uint32 height = 23; // "uint32_height"
+    uint32 source = 24; // "uint32_source"
+    uint32 file_size = 25; // "uint32_size"
+    uint32 origin = 26; // "uint32_origin"
+    uint32 thumb_width = 27; // "uint32_thumb_width"
+    uint32 thumb_height = 28; // "uint32_thumb_height"
+    uint32 show_len = 29; // "uint32_show_len"
+    uint32 download_len = 30; // "uint32_download_len"
+    string url_400 = 31; // "str_400_url"
+    uint32 width_400 = 32; // "uint32_400_width"
+    uint32 height_400 = 33; // "uint32_400_height"
+    bytes pb_reserve = 34; // "bytes_pb_reserve"
+  }
+  // DeliverGiftMsg
+  message DeliverGiftMessage {
+    bytes gray_tip_content = 1; // "bytes_gray_tip_content"
+    uint32 animation_package_id = 2; // "uint32_animation_package_id"
+    bytes animation_package_url_a = 3; // "bytes_animation_package_url_a"
+    bytes animation_package_url_i = 4; // "bytes_animation_package_url_i"
+    bytes remind_brief = 5; // "bytes_remind_brief"
+    uint32 gift_id = 6; // "uint32_gift_id"
+    uint32 gift_count = 7; // "uint32_gift_count"
+    bytes animation_brief = 8; // "bytes_animation_brief"
+    uint64 sender_uin = 9; // "uint64_sender_uin"
+    uint64 receiver_uin = 10; // "uint64_receiver_uin"
+    bytes stmessage_title = 11; // "bytes_stmessage_title"
+    bytes stmessage_subtitle = 12; // "bytes_stmessage_subtitle"
+    bytes stmessage_message = 13; // "bytes_stmessage_message"
+    uint32 stmessage_giftpicid = 14; // "uint32_stmessage_giftpicid"
+    bytes stmessage_comefrom = 15; // "bytes_stmessage_comefrom"
+    uint32 stmessage_exflag = 16; // "uint32_stmessage_exflag"
+    bytes to_all_gift_id = 17; // "bytes_to_all_gift_id"
+    bytes comefrom_link = 18; // "bytes_comefrom_link"
+    bytes pb_reserve = 19; // "bytes_pb_reserve"
+    bytes receiver_name = 20; // "bytes_receiver_name"
+    bytes receiver_pic = 21; // "bytes_receiver_pic"
+    bytes stmessage_gifturl = 22; // "bytes_stmessage_gifturl"
+  }
+  // EIMInfo
+  message EIMInfo {
+    uint64 root_id = 1; // "uint64_root_id"
+    uint32 flag = 2; // "uint32_flag"
+  }
+  // Elem
+  message Element {
+    optional Text text = 1; // "text"
+    optional Face face = 2; // "face"
+    optional OnlineImage online_image = 3; // "online_image"
+    optional NotOnlineImage not_online_image = 4; // "not_online_image"
+    optional TransportElement transport = 5; // "trans_elem_info"
+    optional MarketFace market_face = 6; // "market_face"
+    optional ElementFlags element_flags = 7; // "elem_flags"
+    optional CustomFace custom_face = 8; // "custom_face"
+    optional ElementFlags2 element_flags2 = 9; // "elem_flags2"
+    optional FunFace fun_face = 10; // "fun_face"
+    optional SecretFileMessage secret_file = 11; // "secret_file"
+    optional RichMessage rich_message = 12; // "rich_msg"
+    optional GroupFile group_file = 13; // "group_file"
+    optional PublicGroup public_group = 14; // "pub_group"
+    optional MarketTransport market_transport = 15; // "market_trans"
+    optional ExtraInfo extra_info = 16; // "extra_info"
+    optional ShakeWindow shake_window = 17; // "shake_window"
+    optional PublicAccount public_account = 18; // "pub_account"
+    optional VideoFile video_file = 19; // "video_file"
+    optional TipsInfo tips_info = 20; // "tips_info"
+    optional AnonymousGroupMessage anonymous_group_message = 21; // "anon_group_msg"
+    optional QQLiveOld qq_live_old = 22; // "qq_live_old"
+    optional LifeOnlineAccount life_online = 23; // "life_online"
+    optional QQWalletMessage qqwallet_message = 24; // "qqwallet_msg"
+    optional CrmElement crm = 25; // "crm_elem"
+    optional ConferenceTipsInfo conference_tips_info = 26; // "conference_tips_info"
+    optional RedBagInfo redbag_info = 27; // "redbag_info"
+    optional LowVersionTips low_version_tips = 28; // "low_version_tips"
+    optional bytes bankcode_ctrl_info = 29; // "bankcode_ctrl_info"
+    optional NearByMessageType near_by_message = 30; // "near_by_msg"
+    optional CustomElement custom = 31; // "custom_elem"
+    optional LocationInfo location_info = 32; // "location_info"
+    optional PublicAccountInfo public_account_info = 33; // "pub_acc_info"
+    optional SmallEmoji small_emoji = 34; // "small_emoji"
+    optional FSJMessageElement fsj_message = 35; // "fsj_msg_elem"
+    optional ArkAppElement ark_app = 36; // "ark_app"
+    optional GeneralFlags general_flags = 37; // "general_flags"
+    optional CustomFace hc_flash_pic = 38; // "hc_flash_pic"
+    optional DeliverGiftMessage deliver_gift_message = 39; // "deliver_gift_msg"
+    optional BitAppMessage bitapp_message = 40; // "bitapp_msg"
+    optional OpenQQData open_qq_data = 41; // "open_qq_data"
+    optional ApolloActionMessage apollo_message = 42; // "apollo_msg"
+    optional GroupPublicAccountInfo group_pub_acc_info = 43; // "group_pub_acc_info"
+    optional BlessingMessage blessing_message = 44; // "bless_msg"
+    optional SourceMessage source_message = 45; // "src_msg"
+    optional LolaMessage lola_message = 46; // "lola_msg"
+    optional GroupBusinessMessage group_business_message = 47; // "group_business_msg"
+    optional WorkflowNotifyMessage message_workflow_notify = 48; // "msg_workflow_notify"
+    optional PatsElement pat = 49; // "pat_elem"
+    optional GroupPostElement group_post = 50; // "group_post_elem"
+    optional LightAppElement light_app = 51; // "light_app"
+    optional EIMInfo eim_info = 52; // "eim_info"
+    optional CommonElement common = 53; // "common_elem"
+  }
+  // ElemFlags
+  message ElementFlags {
+    bytes flags = 1; // "bytes_flags1"
+    bytes business_data = 2; // "bytes_business_data"
+  }
+  // ElemFlags2
+  message ElementFlags2 {
+    uint32 color_text_id = 1; // "uint32_color_text_id"
+    uint64 message_id = 2; // "uint64_msg_id"
+    uint32 whisper_session_id = 3; // "uint32_whisper_session_id"
+    uint32 ptt_change_bit = 4; // "uint32_ptt_change_bit"
+    uint32 vip_status = 5; // "uint32_vip_status"
+    uint32 compatible_id = 6; // "uint32_compatible_id"
+    repeated Instance items = 7; // "rpt_insts"
+    uint32 message_rpt_cnt = 8; // "uint32_msg_rpt_cnt"
+    Instance src_inst = 9; // "src_inst"
+    uint32 longtitude = 10; // "uint32_longtitude"
+    uint32 latitude = 11; // "uint32_latitude"
+    uint32 custom_font = 12; // "uint32_custom_font"
+    PCSupportDefine pc_support_define = 13; // "pc_support_def"
+    uint32 crm_flags = 14; // "uint32_crm_flags"
+    // Inst
+    message Instance {
+      uint32 app_id = 1; // uint32_app_id
+      uint32 instance_id = 2; // uint32_inst_id
+    }
+  }
+  // ExtraInfo
+  message ExtraInfo {
+    bytes nick = 1; // "bytes_nick"
+    bytes group_card = 2; // "bytes_group_card"
+    uint32 level = 3; // "uint32_level"
+    uint32 flags = 4; // "uint32_flags"
+    uint32 group_mask = 5; // "uint32_group_mask"
+    uint32 message_tail_id = 6; // "uint32_msg_tail_id"
+    bytes sender_title = 7; // "bytes_sender_title"
+    bytes apns_tips = 8; // "bytes_apns_tips"
+    uint64 uin = 9; // "uint64_uin"
+    uint32 message_state_flag = 10; // "uint32_msg_state_flag"
+    uint32 apns_sound_type = 11; // "uint32_apns_sound_type"
+    uint32 new_group_flag = 12; // "uint32_new_group_flag"
+  }
+  // FSJMessageElem
+  message FSJMessageElement {
+    uint32 message_type = 1; // "uint32_msg_type"
+  }
+  // Face
+  message Face {
+    uint32 index = 1; // "index"
+    bytes old = 2; // "old"
+    bytes buffer = 11; // "buf"
+  }
+  // FunFace
+  message FunFace {
+    Turntable message_turntable = 1; // "msg_turntable"
+    Bomb message_bomb = 2; // "msg_bomb"
+    // Bomb
+    message Bomb {
+      bool burst = 1; // bool_burst
+    }
+    // Turntable
+    message Turntable {
+      repeated uint64 uin_list = 1; // rpt_uint64_uin_list
+      uint64 hit_uin = 2; // uint64_hit_uin
+      string hit_uin_nick = 3; // str_hit_uin_nick
+    }
+  }
+  // GeneralFlags
+  message GeneralFlags {
+    uint32 bubble_diy_text_id = 1; // "uint32_bubble_diy_text_id"
+    uint32 group_flag_new = 2; // "uint32_group_flag_new"
+    uint64 uin = 3; // "uint64_uin"
+    bytes rp_id = 4; // "bytes_rp_id"
+    uint32 prp_fold = 5; // "uint32_prp_fold"
+    uint32 long_text_flag = 6; // "long_text_flag"
+    bytes long_text_resid = 7; // "long_text_resid"
+    uint32 group_type = 8; // "uint32_group_type"
+    uint32 to_uin_flag = 9; // "uint32_to_uin_flag"
+    uint32 glamour_level = 10; // "uint32_glamour_level"
+    uint32 member_level = 11; // "uint32_member_level"
+    uint64 group_rank_seq = 12; // "uint64_group_rank_seq"
+    uint32 olympic_torch = 13; // "uint32_olympic_torch"
+    bytes babyq_guide_msg_cookie = 14; // "babyq_guide_msg_cookie"
+    uint32 uin32_expert_flag = 15; // "uin32_expert_flag"
+    uint32 bubble_sub_id = 16; // "uint32_bubble_sub_id"
+    uint64 pendant_id = 17; // "uint64_pendant_id"
+    bytes rp_index = 18; // "bytes_rp_index"
+    bytes pb_reserve = 19; // "bytes_pb_reserve"
+  }
+  // GroupBusinessMsg
+  message GroupBusinessMessage {
+    uint32 flags = 1; // "uint32_flags"
+    bytes head_url = 2; // "bytes_head_url"
+    bytes head_clk_url = 3; // "bytes_head_clk_url"
+    bytes nick = 4; // "bytes_nick"
+    bytes nick_color = 5; // "bytes_nick_color"
+    bytes rank = 6; // "bytes_rank"
+    bytes rank_color = 7; // "bytes_rank_color"
+    bytes rank_bgcolor = 8; // "bytes_rank_bgcolor"
+  }
+  // GroupFile
+  message GroupFile {
+    bytes filename = 1; // "bytes_filename"
+    uint64 file_size = 2; // "uint64_file_size"
+    bytes file_id = 3; // "bytes_file_id"
+    bytes batch_id = 4; // "bytes_batch_id"
+    bytes file_key = 5; // "bytes_file_key"
+    bytes mark = 6; // "bytes_mark"
+    uint64 sequence = 7; // "uint64_sequence"
+    bytes batch_item_id = 8; // "bytes_batch_item_id"
+    uint32 feed_msg_time = 9; // "uint32_feed_msg_time"
+    bytes pb_reserve = 10; // "bytes_pb_reserve"
+  }
+  // GroupPostElem
+  message GroupPostElement {
+    uint32 transport_type = 1; // "uint32_trans_type"
+    bytes transport_message = 2; // "bytes_trans_msg"
+  }
+  // GroupPubAccountInfo
+  message GroupPublicAccountInfo {
+    uint64 public_account = 1; // "uint64_pub_account"
+  }
+  // LifeOnlineAccount
+  message LifeOnlineAccount {
+    uint64 unique_id = 1; // "uint64_unique_id"
+    uint32 op = 2; // "uint32_op"
+    uint32 show_time = 3; // "uint32_show_time"
+    uint32 report = 4; // "uint32_report"
+    uint32 ack = 5; // "uint32_ack"
+    uint64 bitmap = 6; // "uint64_bitmap"
+    bytes gdt_imp_data = 7; // "gdt_imp_data"
+    bytes gdt_cli_data = 8; // "gdt_cli_data"
+    bytes view_id = 9; // "view_id"
+  }
+  // LightAppElem
+  message LightAppElement {
+    bytes data = 1; // "bytes_data"
+    bytes resource_id = 2; // "bytes_msg_resid"
+  }
+  // LolaMsg
+  message LolaMessage {
+    bytes message_resid = 1; // "bytes_msg_resid"
+    bytes encode_content = 2; // "bytes_encode_content"
+    bytes long_msg_url = 3; // "bytes_long_msg_url"
+    bytes download_key = 4; // "bytes_download_key"
+  }
+  // LowVersionTips
+  message LowVersionTips {
+    uint32 business_id = 1; // "uint32_business_id"
+    uint32 session_type = 2; // "uint32_session_type"
+    uint64 session_uin = 3; // "uint64_session_uin"
+    uint64 sender_uin = 4; // "uint64_sender_uin"
+    string text = 5; // "str_text"
+  }
+  // MarketFace
+  message MarketFace {
+    bytes face_name = 1; // "bytes_face_name"
+    uint32 item_type = 2; // "uint32_item_type"
+    uint32 face_info = 3; // "uint32_face_info"
+    bytes face_id = 4; // "bytes_face_id"
+    uint32 tab_id = 5; // "uint32_tab_id"
+    uint32 sub_type = 6; // "uint32_sub_type"
+    bytes key = 7; // "bytes_key"
+    bytes param = 8; // "bytes_param"
+    uint32 media_type = 9; // "uint32_media_type"
+    uint32 image_width = 10; // "uint32_image_width"
+    uint32 image_height = 11; // "uint32_image_height"
+    bytes mobile_param = 12; // "bytes_mobileparam"
+    bytes pb_reserve = 13; // "bytes_pb_reserve"
+  }
+  // MarketTrans
+  message MarketTransport {
+    int32 flag = 1; // "int32_flag"
+    bytes xml = 2; // "bytes_xml"
+    bytes message_resid = 3; // "bytes_msg_resid"
+    uint32 ability = 4; // "uint32_ability"
+    uint32 min_ability = 5; // "uint32_min_ability"
+  }
+  // MsgBody
+  message MessageBody {
+    RichText rich_text = 1; // "rich_text"
+    bytes content = 2; // "msg_content"
+    bytes encrypt_content = 3; // "msg_encrypt_content"
+  }
+  // MsgBody_subtype4
+  message MessageBodySubType4 {
+    NotOnlineFile not_online_file = 1; // "msg_not_online_file"
+    uint32 time = 2; // "uint32_msg_time"
+  }
+  // NearByMessageType
+  message NearByMessageType {
+    uint32 type = 1; // "uint32_type"
+    uint32 identify_type = 2; // "uint32_identify_type"
+  }
+  // NotOnlineFile
+  message NotOnlineFile {
+    uint32 file_type = 1; // "uint32_file_type"
+    bytes sig = 2; // "bytes_sig"
+    bytes file_uuid = 3; // "bytes_file_uuid"
+    bytes file_md5 = 4; // "bytes_file_md5"
+    string file_name = 5; // "bytes_file_name"
+    uint64 file_size = 6; // "uint64_file_size"
+    bytes note = 7; // "bytes_note"
+    uint32 reserved = 8; // "uint32_reserved"
+    uint32 subcmd = 9; // "uint32_subcmd"
+    uint32 micro_cloud = 10; // "uint32_micro_cloud"
+    repeated string file_urls = 11; // "rpt_bytes_file_urls"
+    uint32 download_flag = 12; // "uint32_download_flag"
+    uint32 danger_evel = 50; // "uint32_danger_evel"
+    uint32 life_time = 51; // "uint32_life_time"
+    uint32 upload_time = 52; // "uint32_upload_time"
+    uint32 abs_file_type = 53; // "uint32_abs_file_type"
+    uint32 client_type = 54; // "uint32_client_type"
+    uint32 expire_time = 55; // "uint32_expire_time"
+    bytes pb_reserve = 56; // "bytes_pb_reserve"
+    string fileidcrc_media = 57; // "str_fileidcrc_media"
+  }
+  // NotOnlineImage
+  message NotOnlineImage {
+    string file_path = 1; // "file_path"
+    uint32 file_size = 2; // "file_len"
+    string download_path = 3; // "download_path"
+    bytes old_ver_send_file = 4; // "old_ver_send_file"
+    uint32 img_type = 5; // "img_type"
+    bytes previews_image = 6; // "previews_image"
+    bytes file_md5 = 7; // "pic_md5"
+    uint32 height = 8; // "pic_height"
+    uint32 width = 9; // "pic_width"
+    string resource_id = 10; // "res_id"
+    bytes flag = 11; // "flag"
+    string thumb_url = 12; // "str_thumb_url"
+    uint32 original = 13; // "original"
+    string big_url = 14; // "str_big_url"
+    string orig_url = 15; // "str_orig_url"
+    uint32 biz_type = 16; // "biz_type"
+    uint32 result = 17; // "result"
+    uint32 index = 18; // "index"
+    bytes op_face_buffer = 19; // "op_face_buf"
+    bool old_file_md5 = 20; // "old_pic_md5"
+    uint32 thumb_width = 21; // "uint32_thumb_width"
+    uint32 thumb_height = 22; // "uint32_thumb_height"
+    uint32 file_id = 23; // "uint32_file_id"
+    uint32 show_len = 24; // "uint32_show_len"
+    uint32 download_len = 25; // "uint32_download_len"
+    string url_400 = 26; // "str_400_url"
+    uint32 width_400 = 27; // "uint32_400_width"
+    uint32 height_400 = 28; // "uint32_400_height"
+    bytes pb_reserve = 29; // "bytes_pb_reserve"
+  }
+  // OnlineImage
+  message OnlineImage {
+    bytes guid = 1; // "guid"
+    bytes file_path = 2; // "file_path"
+    bytes old_ver_send_file = 3; // "old_ver_send_file"
+  }
+  // OpenQQData
+  message OpenQQData {
+    bytes car_qq_data = 1; // "bytes_car_qq_data"
+  }
+  // PatsElem
+  message PatsElement {
+    uint32 pat_type = 1; // "uint32_pat_type"
+    uint32 pat_count = 2; // "uint32_pat_count"
+  }
+  // PcSupportDef
+  message PCSupportDefine {
+    uint32 pc_ptl_begin = 1; // "uint32_pc_ptl_begin"
+    uint32 pc_ptl_end = 2; // "uint32_pc_ptl_end"
+    uint32 mac_ptl_begin = 3; // "uint32_mac_ptl_begin"
+    uint32 mac_ptl_end = 4; // "uint32_mac_ptl_end"
+    repeated uint32 ptls_support = 5; // "rpt_ptls_support"
+    repeated uint32 ptls_not_support = 6; // "rpt_ptls_not_support"
+  }
+  // Ptt
+  message PTT {
+    uint32 file_type = 1; // "uint32_file_type"
+    uint64 src_uin = 2; // "uint64_src_uin"
+    bytes file_uuid = 3; // "bytes_file_uuid"
+    bytes file_md5 = 4; // "bytes_file_md5"
+    bytes file_name = 5; // "bytes_file_name"
+    uint32 file_size = 6; // "uint32_file_size"
+    bytes reserve = 7; // "bytes_reserve"
+    uint32 file_id = 8; // "uint32_file_id"
+    uint32 server_ip = 9; // "uint32_server_ip"
+    uint32 server_port = 10; // "uint32_server_port"
+    bool valid = 11; // "bool_valid"
+    bytes signature = 12; // "bytes_signature"
+    bytes shortcut = 13; // "bytes_shortcut"
+    bytes file_key = 14; // "bytes_file_key"
+    uint32 magic_ptt_index = 15; // "uint32_magic_ptt_index"
+    uint32 voice_switch = 16; // "uint32_voice_switch"
+    bytes ptt_url = 17; // "bytes_ptt_url"
+    bytes group_file_key = 18; // "bytes_group_file_key"
+    uint32 time = 19; // "uint32_time"
+    bytes down_para = 20; // "bytes_down_para"
+    uint32 format = 29; // "uint32_format"
+    bytes pb_reserve = 30; // "bytes_pb_reserve"
+    repeated string ptt_urls = 31; // "rpt_bytes_ptt_urls"
+    uint32 download_flag = 32; // "uint32_download_flag"
+  }
+  // PubAccInfo
+  message PublicAccountInfo {
+    uint32 is_inter_num = 1; // "uint32_is_inter_num"
+    string msg_template_id = 2; // "string_msg_template_id"
+    string long_msg_url = 3; // "string_long_msg_url"
+    bytes download_key = 4; // "bytes_download_key"
+  }
+  // PubAccount
+  message PublicAccount {
+    bytes buf = 1; // "bytes_buf"
+    uint64 pub_account_uin = 2; // "uint64_pub_account_uin"
+  }
+  // PubGroup
+  message PublicGroup {
+    bytes nickname = 1; // "bytes_nickname"
+    uint32 gender = 2; // "uint32_gender"
+    uint32 age = 3; // "uint32_age"
+    uint32 distance = 4; // "uint32_distance"
+  }
+  // QQLiveOld
+  message QQLiveOld {
+    uint32 sub_cmd = 1; // "uint32_sub_cmd"
+    bytes show_text = 2; // "str_show_text"
+    bytes param = 3; // "str_param"
+    bytes introduce = 4; // "str_introduce"
+  }
+  // QQWalletAioBody
+  message QQWalletAIOBody {
+    uint64 senduin = 1; // "uint64_senduin"
+    QQWalletAIOElement sender = 2; // "sender"
+    QQWalletAIOElement receiver = 3; // "receiver"
+    sint32 channel_id = 4; // "sint32_channelid"
+    sint32 template_id = 5; // "sint32_templateid"
+    uint32 resend = 6; // "uint32_resend"
+    uint32 message_priority = 7; // "uint32_msg_priority"
+    sint32 redtype = 8; // "sint32_redtype"
+    bytes billno = 9; // "bytes_billno"
+    bytes authkey = 10; // "bytes_authkey"
+    sint32 sessiontype = 11; // "sint32_sessiontype"
+    sint32 msgtype = 12; // "sint32_msgtype"
+    sint32 envelopeid = 13; // "sint32_envelopeid"
+    bytes name = 14; // "bytes_name"
+    sint32 conftype = 15; // "sint32_conftype"
+    sint32 message_from = 16; // "sint32_msg_from"
+    bytes pc_body = 17; // "bytes_pc_body"
+    bytes index = 18; // "string_index"
+    uint32 redchannel = 19; // "uint32_redchannel"
+    repeated uint64 grap_uin = 20; // "uint64_grap_uin"
+    bytes pb_reserve = 21; // "bytes_pb_reserve"
+  }
+  // QQWalletAioElem
+  message QQWalletAIOElement {
+    uint32 background = 1; // "uint32_background"
+    uint32 icon = 2; // "uint32_icon"
+    bytes title = 3; // "bytes_title"
+    bytes subtitle = 4; // "bytes_subtitle"
+    bytes content = 5; // "bytes_content"
+    bytes linkurl = 6; // "bytes_linkurl"
+    bytes blackstripe = 7; // "bytes_blackstripe"
+    bytes notice = 8; // "bytes_notice"
+    uint32 title_color = 9; // "uint32_title_color"
+    uint32 subtitle_color = 10; // "uint32_subtitle_color"
+    bytes actions_priority = 11; // "bytes_actions_priority"
+    bytes jump_url = 12; // "bytes_jump_url"
+    bytes native_ios = 13; // "bytes_native_ios"
+    bytes native_android = 14; // "bytes_native_android"
+    bytes iconurl = 15; // "bytes_iconurl"
+    uint32 content_color = 16; // "uint32_content_color"
+    uint32 content_bgcolor = 17; // "uint32_content_bgcolor"
+    bytes aio_image_left = 18; // "bytes_aio_image_left"
+    bytes aio_image_right = 19; // "bytes_aio_image_right"
+    bytes cft_image = 20; // "bytes_cft_image"
+    bytes pb_reserve = 21; // "bytes_pb_reserve"
+  }
+  // QQWalletMsg
+  message QQWalletMessage {
+    QQWalletAIOBody aio_body = 1; // "aio_body"
+  }
+  // RedBagInfo
+  message RedBagInfo {
+    uint32 redbag_type = 1; // "redbag_type"
+  }
+  // RichMsg
+  message RichMessage {
+    bytes template = 1; // "bytes_template_1"
+    uint32 service_id = 2; // "uint32_service_id"
+    bytes resource_id = 3; // "bytes_msg_resid"
+    uint32 random = 4; // "uint32_rand"
+    uint32 seq = 5; // "uint32_seq"
+    uint32 flags = 6; // "uint32_flags"
+  }
+  // RichText
+  message RichText {
+    Attribute attribute = 1; // "attr"
+    repeated Element elements = 2; // "elems"
+    NotOnlineFile not_online_file = 3; // "not_online_file"
+    PTT ptt = 4; // "ptt"
+    TempPTT temp_ptt = 5; // "tmp_ptt"
+    Transport211TempMessage transport_211_tmp_message = 6; // "trans_211_tmp_msg"
+  }
+  // SecretFileMsg
+  message SecretFileMessage {
+    bytes file_key = 1; // "bytes_file_key"
+    uint64 from_uin = 2; // "uint64_from_uin"
+    uint64 to_uin = 3; // "uint64_to_uin"
+    uint32 status = 4; // "uint32_status"
+    uint32 ttl = 5; // "uint32_ttl"
+    uint32 type = 6; // "uint32_type"
+    uint32 encrypt_prehead_length = 7; // "uint32_encrypt_prehead_length"
+    uint32 encrypt_type = 8; // "uint32_encrypt_type"
+    bytes encrypt_key = 9; // "bytes_encrypt_key"
+    uint32 read_times = 10; // "uint32_read_times"
+    uint32 left_time = 11; // "uint32_left_time"
+    NotOnlineImage not_online_image = 12; // "not_online_image"
+    ElementFlags2 elem_flags2 = 13; // "elem_flags2"
+    uint32 opertype = 14; // "uint32_opertype"
+    string fromphonenum = 15; // "str_fromphonenum"
+  }
+  // ShakeWindow
+  message ShakeWindow {
+    uint32 type = 1; // "uint32_type"
+    uint32 reserve = 2; // "uint32_reserve"
+    uint64 uin = 3; // "uint64_uin"
+  }
+  // SmallEmoji
+  message SmallEmoji {
+    uint32 packIdSum = 1; // "packIdSum"
+    uint32 imageType = 2; // "imageType"
+  }
+  // SourceMsg
+  message SourceMessage {
+    repeated uint32 orig_seqs = 1; // "uint32_orig_seqs"
+    uint64 from_uin = 2; // "uint64_sender_uin"
+    uint32 time = 3; // "uint32_time"
+    uint32 flag = 4; // "uint32_flag"
+    repeated Element elems = 5; // "elems"
+    uint32 type = 6; // "uint32_type"
+    bytes richMessage = 7; // "bytes_richMsg"
+    bytes pb_reserve = 8; // "bytes_pb_reserve"
+    bytes src_message = 9; // "bytes_src_msg"
+    uint64 to_uin = 10; // "uint64_to_uin"
+    bytes troop_name = 11; // "bytes_troop_name"
+  }
+  // Text
+  message Text {
+    string text = 1; // "str"
+    string link = 2; // "link"
+    bytes attribute6_buffer = 3; // "attr_6_buf"
+    bytes attribute7_buffer = 4; // "attr_7_buf"
+    bytes buffer = 11; // "buf"
+    bytes pb_reserve = 12; // "bytes_pb_reserve"
+  }
+  // TipsInfo
+  message TipsInfo {
+    string text = 1; // "text"
+  }
+  // TmpPtt
+  message TempPTT {
+    uint32 file_type = 1; // "uint32_file_type"
+    bytes file_uuid = 2; // "bytes_file_uuid"
+    bytes file_md5 = 3; // "bytes_file_md5"
+    bytes file_name = 4; // "bytes_file_name"
+    uint32 file_size = 5; // "uint32_file_size"
+    uint32 ptt_times = 6; // "uint64_ptt_times"
+    uint32 user_type = 7; // "uint32_user_type"
+    uint32 ptttrans_flag = 8; // "uint32_ptttrans_flag"
+    uint32 busi_type = 9; // "uint32_busi_type"
+    uint64 message_id = 10; // "uint64_msg_id"
+    bytes pb_reserve = 30; // "bytes_pb_reserve"
+    bytes ptt_encode_data = 31; // "ptt_encode_data"
+  }
+  // Trans211TmpMsg
+  message Transport211TempMessage {
+    bytes message_body = 1; // "bytes_msg_body"
+    uint32 c2c_cmd = 2; // "uint32_c2c_cmd"
+  }
+  // TransElem
+  message TransportElement {
+    uint32 elem_type = 1; // "elem_type"
+    bytes elem_value = 2; // "elem_value"
+  }
+  // VideoFile
+  message VideoFile {
+    bytes file_uuid = 1; // "bytes_file_uuid"
+    bytes file_md5 = 2; // "bytes_file_md5"
+    bytes file_name = 3; // "bytes_file_name"
+    uint32 file_format = 4; // "uint32_file_format"
+    uint32 file_time = 5; // "uint32_file_time"
+    uint32 file_size = 6; // "uint32_file_size"
+    uint32 thumb_width = 7; // "uint32_thumb_width"
+    uint32 thumb_height = 8; // "uint32_thumb_height"
+    bytes thumb_file_md5 = 9; // "bytes_thumb_file_md5"
+    bytes source = 10; // "bytes_source"
+    uint32 thumb_file_size = 11; // "uint32_thumb_file_size"
+    uint32 busi_type = 12; // "uint32_busi_type"
+    uint32 from_chat_type = 13; // "uint32_from_chat_type"
+    uint32 to_chat_type = 14; // "uint32_to_chat_type"
+    bool support_progressive = 15; // "bool_support_progressive"
+    uint32 file_width = 16; // "uint32_file_width"
+    uint32 file_height = 17; // "uint32_file_height"
+    uint32 sub_busi_type = 18; // "uint32_sub_busi_type"
+    uint32 video_attr = 19; // "uint32_video_attr"
+    repeated string thumb_file_urls = 20; // "rpt_bytes_thumb_file_urls"
+    repeated string video_file_urls = 21; // "rpt_bytes_video_file_urls"
+    uint32 thumb_download_flag = 22; // "uint32_thumb_download_flag"
+    uint32 video_download_flag = 23; // "uint32_video_download_flag"
+    bytes pb_reserve = 24; // "bytes_pb_reserve"
+  }
+  // WorkflowNotifyMsg
+  message WorkflowNotifyMessage {
+    bytes extra_message = 1; // "bytes_ext_msg"
+    uint64 create_uin = 2; // "uint64_create_uin"
+  }
+  // LocationInfo
+  message LocationInfo {
+    double longitude = 1; // "double_longitude"
+    double latitude = 2; // "double_latitude"
+    bytes desc = 3; // "bytes_desc"
+  }
 }
 
-message PluginInfo {
-  uint32 id = 1;
-  string package_name = 2;
-  uint32 new_version = 3;
-  uint32 type = 4;
-  uint32 lan_type = 5;
-  uint32 priority = 6;
-  string name = 7;
-  string desc = 8;
-  string url_big = 9;
-  string url_small = 10;
-  string config = 11;
+// im_msg_head
+message IMMessageHead {
+  // C2CHead
+  message C2CHead {
+    uint64 to_uin = 1; // "uint64_to_uin"
+    uint64 from_uin = 2; // "uint64_from_uin"
+    uint32 cc_type = 3; // "uint32_cc_type"
+    uint32 cc_cmd = 4; // "uint32_cc_cmd"
+    bytes auth_pic_sig = 5; // "bytes_auth_pic_sig"
+    bytes auth_sig = 6; // "bytes_auth_sig"
+    bytes auth_buf = 7; // "bytes_auth_buf"
+    uint32 server_time = 8; // "uint32_server_time"
+    uint32 client_time = 9; // "uint32_client_time"
+    uint32 rand = 10; // "uint32_rand"
+    string phone_number = 11; // "string_phone_number"
+  }
+  // CSHead
+  message CSHead {
+    uint64 uin = 1; // "uint64_uin"
+    uint32 command = 2; // "uint32_command"
+    uint32 seq = 3; // "uint32_seq"
+    uint32 version = 4; // "uint32_version"
+    uint32 retry_times = 5; // "uint32_retry_times"
+    uint32 client_type = 6; // "uint32_client_type"
+    uint32 pubno = 7; // "uint32_pubno"
+    uint32 localid = 8; // "uint32_localid"
+    uint32 timezone = 9; // "uint32_timezone"
+    fixed32 client_ip = 10; // "uint32_client_ip"
+    uint32 client_port = 11; // "uint32_client_port"
+    fixed32 conn_ip = 12; // "uint32_conn_ip"
+    uint32 conn_port = 13; // "uint32_conn_port"
+    fixed32 interface_ip = 14; // "uint32_interface_ip"
+    uint32 interface_port = 15; // "uint32_interface_port"
+    fixed32 actual_ip = 16; // "uint32_actual_ip"
+    uint32 flag = 17; // "uint32_flag"
+    fixed32 timestamp = 18; // "uint32_timestamp"
+    uint32 subcmd = 19; // "uint32_subcmd"
+    uint32 result = 20; // "uint32_result"
+    uint32 app_id = 21; // "uint32_app_id"
+    uint32 instance_id = 22; // "uint32_instance_id"
+    uint64 session_id = 23; // "uint64_session_id"
+    uint32 idc_id = 24; // "uint32_idc_id"
+  }
+  // DeltaHead
+  message DeltaHead {
+    uint64 total_len = 1; // "uint64_total_len"
+    uint64 offset = 2; // "uint64_offset"
+    uint64 ack_offset = 3; // "uint64_ack_offset"
+    bytes cookie = 4; // "bytes_cookie"
+    bytes ack_cookie = 5; // "bytes_ack_cookie"
+    uint32 result = 6; // "uint32_result"
+    uint32 flags = 7; // "uint32_flags"
+  }
+  // Head
+  message Head {
+    uint32 head_type = 1; // "uint32_head_type"
+    CSHead msg_cs_head = 2; // "msg_cs_head"
+    S2CHead msg_s2c_head = 3; // "msg_s2c_head"
+    HttpConnHead msg_httpconn_head = 4; // "msg_httpconn_head"
+    uint32 paint_flag = 5; // "uint32_paint_flag"
+    LoginSig msg_login_sig = 6; // "msg_login_sig"
+    DeltaHead msg_delta_head = 7; // "msg_delta_head"
+    C2CHead msg_c2c_head = 8; // "msg_c2c_head"
+    SConnHead msg_sconn_head = 9; // "msg_sconn_head"
+    InstCtrl msg_inst_ctrl = 10; // "msg_inst_ctrl"
+  }
+  // HttpConnHead
+  message HttpConnHead {
+    uint64 uin = 1; // "uint64_uin"
+    uint32 command = 2; // "uint32_command"
+    uint32 sub_command = 3; // "uint32_sub_command"
+    uint32 seq = 4; // "uint32_seq"
+    uint32 version = 5; // "uint32_version"
+    uint32 retry_times = 6; // "uint32_retry_times"
+    uint32 client_type = 7; // "uint32_client_type"
+    uint32 pub_no = 8; // "uint32_pub_no"
+    uint32 local_id = 9; // "uint32_local_id"
+    uint32 time_zone = 10; // "uint32_time_zone"
+    fixed32 client_ip = 11; // "uint32_client_ip"
+    uint32 client_port = 12; // "uint32_client_port"
+    fixed32 qzhttp_ip = 13; // "uint32_qzhttp_ip"
+    uint32 qzhttp_port = 14; // "uint32_qzhttp_port"
+    fixed32 spp_ip = 15; // "uint32_spp_ip"
+    uint32 spp_port = 16; // "uint32_spp_port"
+    uint32 flag = 17; // "uint32_flag"
+    bytes key = 18; // "bytes_key"
+    uint32 compress_type = 19; // "uint32_compress_type"
+    uint32 origin_size = 20; // "uint32_origin_size"
+    uint32 error_code = 21; // "uint32_error_code"
+    RedirectMsg msg_redirect = 22; // "msg_redirect"
+    uint32 command_id = 23; // "uint32_command_id"
+    uint32 service_cmdid = 24; // "uint32_service_cmdid"
+    TransOidbHead msg_oidbhead = 25; // "msg_oidbhead"
+  }
+  // InstCtrl
+  message InstCtrl {
+    repeated InstInfo msg_send_to_inst = 1; // "rpt_msg_send_to_inst"
+    repeated InstInfo msg_exclude_inst = 2; // "rpt_msg_exclude_inst"
+    InstInfo msg_from_inst = 3; // "msg_from_inst"
+  }
+  // InstInfo
+  message InstInfo {
+    uint32 apppid = 1; // "uint32_apppid"
+    uint32 instid = 2; // "uint32_instid"
+    uint32 platform = 3; // "uint32_platform"
+    uint32 enum_device_type = 10; // "enum_device_type" Enum
+  }
+  // LoginSig
+  message LoginSig {
+    uint32 type = 1; // "uint32_type"
+    bytes sig = 2; // "bytes_sig"
+  }
+  // RedirectMsg
+  message RedirectMsg {
+    fixed32 last_redirect_ip = 1; // "uint32_last_redirect_ip"
+    uint32 last_redirect_port = 2; // "uint32_last_redirect_port"
+    fixed32 redirect_ip = 3; // "uint32_redirect_ip"
+    uint32 redirect_port = 4; // "uint32_redirect_port"
+    uint32 redirect_count = 5; // "uint32_redirect_count"
+  }
+  // S2CHead
+  message S2CHead {
+    uint32 sub_msgtype = 1; // "uint32_sub_msgtype"
+    uint32 msg_type = 2; // "uint32_msg_type"
+    uint64 from_uin = 3; // "uint64_from_uin"
+    uint32 msg_id = 4; // "uint32_msg_id"
+    fixed32 relay_ip = 5; // "uint32_relay_ip"
+    uint32 relay_port = 6; // "uint32_relay_port"
+    uint64 to_uin = 7; // "uint64_to_uin"
+  }
+  // SConnHead
+  message SConnHead {
+  }
+  // TransOidbHead
+  message TransOidbHead {
+    uint32 command = 1; // "uint32_command"
+    uint32 service_type = 2; // "uint32_service_type"
+    uint32 result = 3; // "uint32_result"
+    string error_msg = 4; // "str_error_msg"
+  }
 }
 
-message UinPairMessage {
-  int64 last_read_time = 1;
-  int64 peer_uin = 2;
-  int32 message_completed = 3;
-  repeated Message messages = 4;
-  int32 unread_message_number = 5;
+// im_receipt
+message IMReceipt {
+  // MsgInfo
+  message MessageInfo {
+    int64 from_uin = 1; // "uint64_from_uin"
+    int64 to_uin = 2; // "uint64_to_uin"
+    int32 message_seq = 3; // "uint32_msg_seq"
+    int32 message_random = 4; // "uint32_msg_random"
+  }
+  // ReceiptInfo
+  message ReceiptInfo {
+    int64 read_time = 1; // "uint64_read_time"
+  }
+  // ReceiptReq
+  message ReceiptRequest {
+    int32 command = 1; // "command" Enum
+    MessageInfo message_info = 2; // "msg_info"
+  }
+  // ReceiptResp
+  message ReceiptResponse {
+    int32 command = 1; // "command" Enum
+    ReceiptInfo receipt_info = 2; // "receipt_info"
+  }
 }
 
-message WithdrawWordingInfo {
-  int32 id = 1;
-  string name = 2;
-} // WithDrawWordingInfo
+// msg_comm
+message MessageCommon {
+  // AppShareInfo
+  message AppShareInfo {
+    int32 id = 1; // "appshare_id"
+    bytes cookie = 2; // "appshare_cookie"
+    PluginInfo resource = 3; // "appshare_resource"
+  }
+  // C2CTmpMsgHead
+  message C2CTempMessageHead {
+    int32 c2c_type = 1; // "c2c_type"
+    int32 service_type = 2; // "service_type"
+    int64 group_uin = 3; // "group_uin"
+    int64 group_code = 4; // "group_code"
+    bytes sig = 5; // "sig"
+    int32 sig_type = 6; // "sig_type"
+    string from_phone = 7; // "from_phone"
+    string to_phone = 8; // "to_phone"
+    int32 lock_display = 9; // "lock_display"
+    uint32 direction_flag = 10; // "direction_flag"
+    bytes reserved = 11; // "reserved"
+    bytes business_name = 14; // "business_name"
+    bytes business_sub_content = 15; // "business_sub_content"
+  }
+  // ContentHead
+  message ContentHead {
+    int32 package_num = 1; // "pkg_num"
+    int32 package_index = 2; // "pkg_index"
+    int32 div_seq = 3; // "div_seq"
+    int32 auto_reply = 4; // "auto_reply"
+  }
+  // DiscussInfo
+  message DiscussInfo {
+    int64 discuss_uin = 1; // "discuss_uin"
+    int32 discuss_type = 2; // "discuss_type"
+    int64 discuss_info_seq = 3; // "discuss_info_seq"
+    bytes discuss_remark = 4; // "discuss_remark"
+    bytes discuss_name = 5; // "discuss_name"
+  }
+  // ExtGroupKeyInfo
+  message ExtraGroupKeyInfo {
+    int32 current_max_seq = 1; // "cur_max_seq"
+    int64 current_time = 2; // "cur_time"
+    int32 operate_by_parents = 3; // "operate_by_parents"
+    bytes extra_group_info = 4; // "bytes_ext_group_info"
+  }
+  // GroupInfo
+  message GroupInfo {
+    int64 group_code = 1; // "group_code"
+    int32 group_type = 2; // "group_type"
+    int64 group_info_seq = 3; // "group_info_seq"
+    bytes group_card = 4; // "group_card"
+    bytes group_rank = 5; // "group_rank"
+    int32 group_level = 6; // "group_level"
+    int32 group_card_type = 7; // "group_card_type"
+    bytes group_name = 8; // "group_name"
+  }
+  // Msg
+  message Message {
+    MessageHead message_head = 1; // "msg_head"
+    ContentHead content_head = 2; // "content_head"
+    IMMessageBody.MessageBody message_body = 3; // "msg_body"
+    AppShareInfo app_share_info = 4; // "appshare_info"
+  }
+  // MsgHead
+  message MessageHead {
+    int64 from_uin = 1; // "from_uin"
+    int64 to_uin = 2; // "to_uin"
+    int32 message_type = 3; // "msg_type"
+    uint32 c2c_cmd = 4; // "c2c_cmd"
+    int32 message_seq = 5; // "msg_seq"
+    int64 message_time = 6; // "msg_time"
+    int64 message_uid = 7; // "msg_uid"
+    C2CTempMessageHead c2c_temp_message_head = 8; // "c2c_tmp_msg_head"
+    GroupInfo group_info = 9; // "group_info"
+    uint32 from_appid = 10; // "from_appid"
+    uint32 from_instid = 11; // "from_instid"
+    uint32 user_active = 12; // "user_active"
+    DiscussInfo discuss_info = 13; // "discuss_info"
+    string from_nick = 14; // "from_nick"
+    uint64 auth_uin = 15; // "auth_uin"
+    string auth_nick = 16; // "auth_nick"
+    uint32 message_flag = 17; // "msg_flag"
+    string auth_remark = 18; // "auth_remark"
+    string group_name = 19; // "group_name"
+    MutilTransportHead mutil_trans_head = 20; // "mutiltrans_head"
+    IMMessageHead.InstCtrl message_inst_ctrl = 21; // "msg_inst_ctrl"
+    uint32 public_account_group_send_flag = 22; // "public_account_group_send_flag"
+    uint32 wseq_in_c2c_msghead = 23; // "wseq_in_c2c_msghead"
+    uint64 cpid = 24; // "cpid"
+    ExtraGroupKeyInfo ext_group_key_info = 25; // "ext_group_key_info"
+    string multi_compatible_text = 26; // "multi_compatible_text"
+    uint32 auth_sex = 27; // "auth_sex"
+    bool is_src_message = 28; // "is_src_msg"
+  }
+  // MsgType0x210
+  message MessageType0210 {
+    uint32 sub_type = 1; // "sub_msg_type"
+    bytes content = 2; // "msg_content"
+  }
+  // MutilTransHead
+  message MutilTransportHead {
+    uint32 status = 1; // "status"
+    uint32 message_id = 2; // "msgId"
+  }
+  // PluginInfo
+  message PluginInfo {
+    uint32 resource_id = 1; // "res_id"
+    string package_name = 2; // "pkg_name"
+    uint32 new_version = 3; // "new_ver"
+    uint32 resource_type = 4; // "res_type"
+    uint32 lan_type = 5; // "lan_type"
+    uint32 priority = 6; // "priority"
+    string resource_name = 7; // "res_name"
+    string resource_desc = 8; // "res_desc"
+    string resource_url_big = 9; // "res_url_big"
+    string resource_url_small = 10; // "res_url_small"
+    string resource_config = 11; // "res_conf"
+  }
+  // Uin2Nick
+  message Uin2Nick {
+    uint64 uin = 1; // "uint64_uin"
+    string nick = 2; // "str_nick"
+  }
+  // UinPairMsg
+  message UinPairMessage {
+    int64 last_read_time = 1; // "last_read_time"
+    int64 peer_uin = 2; // "peer_uin"
+    int32 message_completed = 3; // "msg_completed"
+    repeated Message items = 4; // "msg"
+    int32 unread_message_number = 5; // "unread_msg_num"
+    uint32 c2c_type = 8; // "c2c_type"
+    uint32 service_type = 9; // "service_type"
+    bytes pb_reserve = 10; // "bytes_pb_reserve"
+    uint64 to_tiny_id = 11; // "uint64_to_tiny_id"
+  }
+}
+
+// msg_ctrl
+message MessageControl {
+  uint32 msg_flag = 1; // "msg_flag"
+  ReserveInfo reserve_info = 2; // "resv_resv_info"
+  // ResvResvInfo
+  message ReserveInfo {
+    uint32 flag = 1; // "uint32_flag"
+    bytes reserv1 = 2; // "bytes_reserv1"
+    uint64 reserv2 = 3; // "uint64_reserv2"
+    uint64 reserv3 = 4; // "uint64_reserv3"
+    uint32 create_time = 5; // "uint32_create_time"
+    uint32 pic_height = 6; // "uint32_pic_height"
+    uint32 pic_width = 7; // "uint32_pic_width"
+    uint32 resv_flag = 8; // "uint32_resv_flag"
+  }
+}
+
+// msg_svc
+message MessageService {
+  // AccostTmp
+  message AccostTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+    bool reply = 3; // "reply"
+  }
+  // AddressListTmp
+  message AddressListTemp {
+    string from_phone = 1; // "from_phone"
+    string to_phone = 2; // "to_phone"
+    int64 to_uin = 3; // "to_uin"
+    bytes sig = 4; // "sig"
+    uint32 from_contact_size = 5; // "from_contact_size"
+  }
+  // AuthTmp
+  message AuthTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+  }
+  // BsnsTmp
+  message BusinessTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+  }
+  // BusinessWPATmp
+  message BusinessWPATemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+    bytes sigt = 3; // "sigt"
+  }
+  // C2C
+  message C2C {
+    int64 to_uin = 1; // "to_uin"
+  }
+  // CommTmp
+  message CommonTemp {
+    int64 to_uin = 1; // "to_uin"
+    uint32 c2c_type = 2; // "c2c_type"
+    uint32 svr_type = 3; // "svr_type"
+    bytes sig = 4; // "sig"
+    bytes reserved = 5; // "reserved"
+  }
+  // Dis
+  message Discuss {
+    int64 dis_uin = 1; // "dis_uin"
+  }
+  // DisTmp
+  message DiscussTemp {
+    int64 dis_uin = 1; // "dis_uin"
+    int64 to_uin = 2; // "to_uin"
+  }
+  // Grp
+  message Group {
+    int64 group_code = 1; // "group_code"
+  }
+  // GrpTmp
+  message GroupTemp {
+    int64 group_uin = 1; // "group_uin"
+    int64 to_uin = 2; // "to_uin"
+  }
+  // NearByAssistantTmp
+  message NearByAssistantTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+    bool reply = 3; // "reply"
+  }
+  // NearByDatingTmp
+  message NearByDatingTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+    bool reply = 3; // "reply"
+  }
+  // PubGroupTmp
+  message PublicGroupTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+    int64 group_uin = 3; // "group_uin"
+  }
+  // PublicPlat
+  message PublicPlat {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+  }
+  // QQQueryBusinessTmp
+  message QQQueryBusinessTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+  }
+  // RichStatusTmp
+  message RichStatusTemp {
+    int64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+  }
+  // RoutingHead
+  message RoutingHead {
+    C2C c2c = 1; // "c2c"
+    Group group = 2; // "grp"
+    GroupTemp group_temp = 3; // "grp_tmp"
+    Discuss discuss = 4; // "dis"
+    DiscussTemp discuss_temp = 5; // "dis_tmp"
+    WPATemp wpa_temp = 6; // "wpa_tmp"
+    SecretFileHead secret_file = 7; // "secret_file"
+    PublicPlat public_plat = 8; // "public_plat"
+    TransportMessage trans_message = 9; // "trans_msg"
+    AddressListTemp address_list = 10; // "address_list"
+    RichStatusTemp rich_status_temp = 11; // "rich_status_tmp"
+    TransportCmd transport_cmd = 12; // "trans_cmd"
+    AccostTemp accost_temp = 13; // "accost_tmp"
+    PublicGroupTemp pub_group_temp = 14; // "pub_group_tmp"
+    Transport0x211 trans_0x211 = 15; // "trans_0x211"
+    BusinessWPATemp business_wpa_temp = 16; // "business_wpa_tmp"
+    AuthTemp auth_temp = 17; // "auth_tmp"
+    BusinessTemp business_temp = 18; // "bsns_tmp"
+    QQQueryBusinessTemp qq_querybusiness_temp = 19; // "qq_querybusiness_tmp"
+    NearByDatingTemp nearby_dating_temp = 20; // "nearby_dating_tmp"
+    NearByAssistantTemp nearby_assistant_temp = 21; // "nearby_assistant_tmp"
+    CommonTemp commom_temp = 22; // "comm_tmp"
+  }
+  // SecretFileHead
+  message SecretFileHead {
+    MessageType00A6.Type00C1.Body secret_file_message = 1; // "secret_file_msg"
+    MessageType0210.Type001A.Body secret_file_status = 2; // "secret_file_status"
+  }
+  // Trans0x211
+  message Transport0x211 {
+    uint64 to_uin = 1; // "to_uin"
+    uint32 cc_cmd = 2; // "cc_cmd"
+    IMMessageHead.InstCtrl inst_ctrl = 3; // "inst_ctrl"
+    bytes sig = 4; // "sig"
+    uint32 c2c_type = 5; // "c2c_type"
+    uint32 service_type = 6; // "service_type"
+    uint32 dataline_flag = 7; // "dataline_flag"
+  }
+  // TransCmd
+  message TransportCmd {
+    uint64 to_uin = 1; // "to_uin"
+    uint32 msg_type = 2; // "msg_type"
+  }
+  // TransMsg
+  message TransportMessage {
+    uint64 to_uin = 1; // "to_uin"
+    uint32 c2c_cmd = 2; // "c2c_cmd"
+  }
+  // TransReq
+  message TransportReq {
+    int32 command = 1; // "command"
+    uint32 req_tag = 2; // "req_tag"
+    bytes req_buff = 3; // "req_buff"
+  }
+  // TransResp
+  message TransportResp {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint32 resp_tag = 3; // "resp_tag"
+    bytes resp_buff = 4; // "resp_buff"
+  }
+  // WPATmp
+  message WPATemp {
+    uint64 to_uin = 1; // "to_uin"
+    bytes sig = 2; // "sig"
+  }
+  // WithDrawWordingInfo
+  message WithdrawWordingInfo {
+    int32 item_id = 1; // "int32_item_id"
+    string item_name = 2; // "string_item_name"
+  }
+
+  // // PbBindUinGetMsgReq
+  // message PbBindUinGetMessageReq {
+  //   uint64 bind_uin = 1; // "bind_uin"
+  //   bytes bind_uin_sig = 2; // "bind_uin_sig"
+  //   uint32 sync_flag = 3; // "sync_flag" Enum
+  //   bytes sync_cookie = 4; // "sync_cookie"
+  // }
+
+  // PbDeleteMsgReq
+  message DeleteRequest {
+    repeated MessageItem items = 1; // "msgItems"
+    // MsgItem
+    message MessageItem {
+      int64 from_uin = 1; // "from_uin"
+      int64 to_uin = 2; // "to_uin"
+      int32 message_type = 3; // "msg_type"
+      int32 message_seq = 4; // "msg_seq"
+      int64 message_uid = 5; // "msg_uid"
+      bytes sig = 7; // "sig"
+    }
+  }
+  // PbDeleteMsgResp
+  message DeleteResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+  }
+  // PbDelRoamMsgReq
+  message DeleteRoamingRequest {
+    C2CMessage c2c = 1; // "c2c_msg"
+    GroupMessage group = 2; // "grp_msg"
+    DiscussMessage discuss = 3; // "dis_msg"
+    // C2CMsg
+    message C2CMessage {
+      int64 from_uin = 1; // "from_uin"
+      int64 peer_uin = 2; // "peer_uin"
+      int64 message_time = 3; // "msg_time"
+      int32 message_random = 4; // "msg_random"
+      int32 message_seq = 5; // "msg_seq"
+    }
+    // DisMsg
+    message DiscussMessage {
+      int64 discuss_uin = 1; // "discuss_uin"
+      int64 message_seq = 2; // "msg_seq"
+    }
+    // GrpMsg
+    message GroupMessage {
+      int64 group_code = 1; // "group_code"
+      int64 message_seq = 2; // "msg_seq"
+      int32 reserve_flag = 3; // "uint32_resv_flag"
+    }
+  }
+  // PbDelRoamMsgResp
+  message DeleteRoamingResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+  }
+  // PbGetMsgReq
+  message GetRequest {
+    uint32 sync_flag = 1; // "sync_flag" Enum
+    bytes sync_cookie = 2; // "sync_cookie"
+    uint32 ramble_flag = 3; // "ramble_flag"
+    uint32 latest_ramble_number = 4; // "latest_ramble_number"
+    uint32 other_ramble_number = 5; // "other_ramble_number"
+    uint32 online_sync_flag = 6; // "online_sync_flag"
+    uint32 context_flag = 7; // "context_flag"
+    uint32 whisper_session_id = 8; // "whisper_session_id"
+    uint32 message_request_type = 9; // "msg_req_type"
+    bytes public_account_cookie = 10; // "pubaccount_cookie"
+    bytes message_control_buffer = 11; // "msg_ctrl_buf"
+    bytes server_buffer = 12; // "bytes_server_buf"
+  }
+  // PbGetMsgResp
+  message GetResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    bytes sync_cookie = 3; // "sync_cookie"
+    uint32 sync_flag = 4; // "sync_flag" Enum
+    repeated MessageCommon.UinPairMessage uin_pair_messages = 5; // "uin_pair_msgs"
+    uint64 bind_uin = 6; // "bind_uin"
+    uint32 message_response_type = 7; // "msg_rsp_type"
+    bytes public_account_cookie = 8; // "pubaccount_cookie"
+    bool is_partial_sync = 9; // "is_partial_sync"
+    bytes message_ctrl_buf = 10; // "msg_ctrl_buf"
+  }
+  // PbGetDiscussMsgReq
+  message GetDiscussRequest {
+    uint64 discuss_uin = 1; // "discuss_uin"
+    uint64 end_seq = 2; // "end_seq"
+    uint64 begin_seq = 3; // "begin_seq"
+    uint64 last_get_time = 4; // "last_get_time"
+    uint64 discuss_info_seq = 5; // "discuss_info_seq"
+    uint32 filter = 6; // "filter" Enum
+    uint64 member_seq = 7; // "member_seq"
+  }
+  // PbGetDiscussMsgResp
+  message GetDiscussResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 discuss_uin = 3; // "discuss_uin"
+    uint64 return_end_seq = 4; // "return_end_seq"
+    uint64 return_begin_seq = 5; // "return_begin_seq"
+    MessageCommon.Message item = 6; // "msg"
+    uint64 last_get_time = 7; // "last_get_time"
+    uint64 discuss_info_seq = 8; // "discuss_info_seq"
+  }
+  // PbGetGroupMsgReq
+  message GetGroupRequest {
+    uint64 group_code = 1; // "group_code"
+    uint64 begin_seq = 2; // "begin_seq"
+    uint64 end_seq = 3; // "end_seq"
+    uint32 filter = 4; // "filter" Enum
+    uint64 member_seq = 5; // "member_seq"
+    bool public_group = 6; // "public_group"
+    uint32 shield_flag = 7; // "shield_flag"
+    uint32 save_traffic_flag = 8; // "save_traffic_flag"
+  }
+  // PbGetGroupMsgResp
+  message GetGroupResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 group_code = 3; // "group_code"
+    uint64 return_begin_seq = 4; // "return_begin_seq"
+    uint64 return_end_seq = 5; // "return_end_seq"
+    MessageCommon.Message item = 6; // "msg"
+  }
+  // PbGetOneDayRoamMsgReq
+  message GetRoamingOneDayRequest {
+    uint64 peer_uin = 1; // "peer_uin"
+    uint64 last_msgtime = 2; // "last_msgtime"
+    uint64 random = 3; // "random"
+    uint32 read_cnt = 4; // "read_cnt"
+  }
+  // PbGetOneDayRoamMsgResp
+  message GetRoamingOneDayResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 peer_uin = 3; // "peer_uin"
+    uint64 last_msgtime = 4; // "last_msgtime"
+    uint64 random = 5; // "random"
+    MessageCommon.Message item = 6; // "msg"
+    uint32 iscomplete = 7; // "iscomplete"
+  }
+  // PbGetRoamMsgReq
+  message GetRoamingRequest {
+    uint64 peer_uin = 1; // "peer_uin"
+    uint64 last_msgtime = 2; // "last_msgtime"
+    uint64 random = 3; // "random"
+    uint32 read_cnt = 4; // "read_cnt"
+    uint32 check_pwd = 5; // "check_pwd"
+    bytes sig = 6; // "sig"
+    bytes pwd = 7; // "pwd"
+    uint32 subcmd = 8; // "subcmd"
+    uint64 begin_msgtime = 9; // "begin_msgtime"
+    uint32 req_type = 10; // "req_type"
+  }
+  // PbGetRoamMsgResp
+  message GetRoamingResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 peer_uin = 3; // "peer_uin"
+    uint64 last_msgtime = 4; // "last_msgtime"
+    uint64 random = 5; // "random"
+    MessageCommon.Message item = 6; // "msg"
+    bytes sig = 7; // "sig"
+  }
+  // PbBindUinUnReadMsgNumReq
+  message GetUnreadBindUinRequest {
+    uint64 bind_uin = 1; // "bind_uin"
+    bytes sync_cookie = 2; // "sync_cookie"
+  }
+  // PbBindUinUnReadMsgNumResp
+  message GetUnreadBindUinResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 bind_uin = 3; // "bind_uin"
+    uint32 msg_num = 4; // "msg_num"
+  }
+  // PbC2CUnReadMsgNumReq
+  message GetUnreadC2CRequest {
+  }
+  // PbC2CUnReadMsgNumResp
+  message GetUnreadC2CResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint32 msg_num = 3; // "msg_num"
+  }
+  // PbPullDiscussMsgSeqReq
+  message GetUnreadDiscussRequest {
+    repeated DiscussInfoReq discuss_info_req = 1; // "discuss_info_req"
+    // DiscussInfoReq
+    message DiscussInfoReq {
+      uint64 conf_uin = 1; // "conf_uin"
+      uint64 last_seq = 2; // "last_seq"
+    }
+  }
+  // PbPullDiscussMsgSeqResp
+  message GetUnreadDiscussResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    repeated DiscussInfoResp discuss_info_resp = 3; // "discuss_info_resp"
+    // DiscussInfoResp
+    message DiscussInfoResp {
+      uint64 conf_uin = 1; // "conf_uin"
+      uint64 member_seq = 2; // "member_seq"
+      uint64 conf_seq = 3; // "conf_seq"
+    }
+  }
+  // PbPullGroupMsgSeqReq
+  message GetUnreadGroupRequest {
+    repeated GroupInfoReq items = 1; // "group_info_req"
+    // GroupInfoReq
+    message GroupInfoReq {
+      uint64 group_code = 1; // "group_code"
+      uint64 last_seq = 2; // "last_seq"
+    }
+  }
+  // PbPullGroupMsgSeqResp
+  message GetUnreadGroupResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    repeated GroupInfoResp items = 3; // "group_info_resp"
+    // GroupInfoResp
+    message GroupInfoResp {
+      uint64 group_code = 1; // "group_code"
+      uint64 member_seq = 2; // "member_seq"
+      uint64 group_seq = 3; // "group_seq"
+    }
+  }
+  // PbThirdQQUnReadMsgNumReq
+  message GetUnreadThirdQQRequest {
+    repeated ThirdQQReqInfo thirdqq_req_info = 1; // "thirdqq_req_info"
+    uint32 source = 2; // "source"
+    // ThirdQQReqInfo
+    message ThirdQQReqInfo {
+      uint64 third_uin = 1; // "third_uin"
+      bytes third_uin_sig = 2; // "third_uin_sig"
+      bytes third_uin_cookie = 3; // "third_uin_cookie"
+    }
+  }
+  // PbThirdQQUnReadMsgNumResp
+  message GetUnreadThirdQQResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    repeated ThirdQQRespInfo thirdqq_resp_info = 3; // "thirdqq_resp_info"
+    uint32 interval = 4; // "interval"
+    // ThirdQQRespInfo
+    message ThirdQQRespInfo {
+      uint64 third_uin = 1; // "third_uin"
+      bytes third_uin_cookie = 2; // "third_uin_cookie"
+      uint32 msg_num = 3; // "msg_num"
+      uint32 msg_flag = 4; // "msg_flag"
+      uint32 redbag_time = 5; // "redbag_time"
+      uint32 status = 6; // "status"
+      uint32 last_msg_time = 7; // "last_msg_time"
+    }
+  }
+  // PbUnReadMsgSeqReq
+  message GetUnreadRequest {
+    GetUnreadC2CRequest c2c = 1; // "c2c_unread_info"
+    repeated GetUnreadBindUinRequest bind_uin = 2; // "binduin_unread_info"
+    GetUnreadGroupRequest group = 3; // "group_unread_info"
+    GetUnreadDiscussRequest discuss = 4; // "discuss_unread_info"
+    GetUnreadThirdQQRequest third_qq = 5; // "thirdqq_unread_info"
+  }
+  // PbUnReadMsgSeqResp
+  message GetUnreadResponse {
+    GetUnreadC2CResponse c2c = 1; // "c2c_unread_info"
+    repeated GetUnreadBindUinResponse bind_uin = 2; // "binduin_unread_info"
+    GetUnreadGroupResponse group = 3; // "group_unread_info"
+    GetUnreadDiscussResponse discuss = 4; // "discuss_unread_info"
+    GetUnreadThirdQQResponse third_qq = 5; // "thirdqq_unread_info"
+  }
+  // PbBindUinMsgReadedConfirmReq
+  message ReportReadedBindUinRequest {
+    bytes sync_cookie = 1; // "sync_cookie"
+    uint64 bind_uin = 2; // "bind_uin"
+  }
+  // PbBindUinMsgReadedConfirmResp
+  message ReportReadedBindUinResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    bytes sync_cookie = 3; // "sync_cookie"
+    uint64 bind_uin = 4; // "bind_uin"
+  }
+  // PbC2CReadedReportReq
+  message ReportReadedC2CRequest {
+    bytes sync_cookie = 1; // "sync_cookie"
+    repeated UinPairReadInfo items = 2; // "pair_info"
+    // UinPairReadInfo
+    message UinPairReadInfo {
+      uint64 peer_uin = 1; // "peer_uin"
+      uint32 last_read_time = 2; // "last_read_time"
+      bytes crm_sig = 3; // "crm_sig"
+      uint32 peer_type = 4; // "peer_type" Enum
+      uint32 chat_type = 5; // "chat_type"
+      uint64 cpid = 6; // "cpid"
+      uint32 aio_type = 7; // "aio_type"
+      uint64 to_tiny_id = 9; // "uint64_to_tiny_id"
+    }
+  }
+  // PbC2CReadedReportResp
+  message ReportReadedC2CResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    bytes sync_cookie = 3; // "sync_cookie"
+  }
+  // PbDiscussReadedReportReq
+  message ReportReadedDiscussRequest {
+    uint64 conf_uin = 1; // "conf_uin"
+    uint64 last_read_seq = 2; // "last_read_seq"
+  }
+  // PbDiscussReadedReportResp
+  message ReportReadedDiscussResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 conf_uin = 3; // "conf_uin"
+    uint64 member_seq = 4; // "member_seq"
+    uint64 conf_seq = 5; // "conf_seq"
+  }
+  // PbGroupReadedReportReq
+  message ReportReadedGroupRequest {
+    uint64 group_code = 1; // "group_code"
+    uint64 last_read_seq = 2; // "last_read_seq"
+  }
+  // PbGroupReadedReportResp
+  message ReportReadedGroupResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint64 group_code = 3; // "group_code"
+    uint64 member_seq = 4; // "member_seq"
+    uint64 group_msg_seq = 5; // "group_msg_seq"
+  }
+  // PbMsgReadedReportReq
+  message ReportReadedRequest {
+    repeated ReportReadedGroupRequest group = 1; // "grp_read_report"
+    repeated ReportReadedDiscussRequest c = 2; // "dis_read_report"
+    ReportReadedC2CRequest c2c = 3; // "c2c_read_report"
+    ReportReadedBindUinRequest bind_uin = 4; // "bind_uin_read_report"
+  }
+  // PbMsgReadedReportResp
+  message ReportReadedResponse {
+    repeated ReportReadedGroupResponse group = 1; // "grp_read_report"
+    repeated ReportReadedDiscussResponse discuss = 2; // "dis_read_report"
+    ReportReadedC2CResponse c2c = 3; // "c2c_read_report"
+    ReportReadedBindUinResponse bind_uin = 4; // "bind_uin_read_report"
+  }
+  // PbSearchRoamMsgInCloudReq
+  message SearchRoamingRequest {
+    bytes serialize_reqbody = 1; // "serialize_reqbody"
+  }
+  // PbSearchRoamMsgInCloudResp
+  message SearchRoamingResponse {
+    MessageCommon.Message item = 1; // "msg"
+    bytes serialize_rspbody = 2; // "serialize_rspbody"
+  }
+  // PbSendMsgReq
+  message SendRequest {
+    RoutingHead routing_head = 1; // "routing_head"
+    MessageCommon.ContentHead content_head = 2; // "content_head"
+    IMMessageBody.MessageBody message_body = 3; // "msg_body"
+    int32 message_seq = 4; // "msg_seq"
+    int32 message_rand = 5; // "msg_rand"
+    bytes sync_cookie = 6; // "sync_cookie"
+    MessageCommon.AppShareInfo app_share = 7; // "app_share"
+    int32 message_via = 8; // "msg_via"
+    int32 data_statist = 9; // "data_statist"
+    MultiMessageAssist multi_msg_assist = 10; // "multi_msg_assist"
+    InputNotifyInfo input_notify_info = 11; // "input_notify_info"
+    MessageControl message_control = 12; // "msg_ctrl"
+    IMReceipt.ReceiptRequest receipt_request = 13; // "receipt_req"
+    uint32 multi_send_seq = 14; // "multi_send_seq"
+    // MultiMsgAssist
+    message MultiMessageAssist {
+      repeated RoutingHead repeated_routing = 1; // "repeated_routing"
+      uint32 msg_use = 2; // "msg_use" Enum
+      uint64 temp_id = 3; // "uint64_temp_id"
+      uint64 vedio_len = 4; // "uint64_vedio_len"
+      bytes redbag_id = 5; // "bytes_redbag_id"
+      uint64 redbag_amount = 6; // "uint64_redbag_amount"
+      uint32 has_readbag = 7; // "uint32_has_readbag"
+      uint32 has_vedio = 8; // "uint32_has_vedio"
+    }
+    // PbInputNotifyInfo
+    message InputNotifyInfo {
+      uint64 to_uin = 1; // "to_uin"
+      uint32 ime = 2; // "ime"
+      uint32 notify_flag = 3; // "notify_flag"
+      bytes pb_reserve = 4; // "bytes_pb_reserve"
+      bytes ios_push_wording = 5; // "ios_push_wording"
+    }
+  }
+  // PbSendMsgResp
+  message SendResponse {
+    int32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    int64 send_time = 3; // "send_time"
+    int32 svrbusy_wait_time = 4; // "uint32_svrbusy_wait_time"
+    MessageSendInfo msg_send_info = 5; // "msg_send_info"
+    int32 error_type = 6; // "errtype"
+    TransportServerInfo trans_svr_info = 7; // "trans_svr_info"
+    IMReceipt.ReceiptResponse receipt_response = 8; // "receipt_resp"
+    int32 text_analysis_result = 9; // "text_analysis_result"
+    int32 msg_info_flag = 10; // "uint32_msg_info_flag"
+    bytes msgeleminfo_servtype37 = 13; // "msgeleminfo_servtype37"
+    // MsgSendInfo
+    message MessageSendInfo {
+      int32 receiver = 1; // "receiver"
+    }
+    // TransSvrInfo
+    message TransportServerInfo {
+      int32 sub_type = 1; // "uint32_sub_type"
+      int32 return_code = 2; // "int32_ret_code"
+      bytes err_message = 3; // "bytes_err_msg"
+      bytes trans_info = 4; // "bytes_trans_info"
+    }
+  }
+  // PbC2CMsgWithDrawReq
+  message WithdrawC2CRequest {
+    repeated MessageInfo items = 1; // "msg_info"
+    uint32 long_message_flag = 2; // "uint32_long_message_flag"
+    bytes reserved = 3; // "bytes_reserved"
+    uint32 sub_cmd = 4; // "uint32_sub_cmd"
+    // MsgInfo
+    message MessageInfo {
+      uint64 from_uin = 1; // "uint64_from_uin"
+      uint64 to_uin = 2; // "uint64_to_uin"
+      uint32 message_seq = 3; // "uint32_msg_seq"
+      uint64 message_uid = 4; // "uint64_msg_uid"
+      uint64 message_time = 5; // "uint64_msg_time"
+      uint32 message_random = 6; // "uint32_msg_random"
+      uint32 pkg_num = 7; // "uint32_pkg_num"
+      uint32 pkg_index = 8; // "uint32_pkg_index"
+      uint32 div_seq = 9; // "uint32_div_seq"
+      uint32 message_type = 10; // "uint32_msg_type"
+      RoutingHead routing_head = 20; // "routing_head"
+    }
+  }
+  // PbC2CMsgWithDrawResp
+  message WithdrawC2CResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    repeated Status items = 3; // "msg_status"
+    uint32 sub_cmd = 4; // "uint32_sub_cmd"
+    WithdrawWordingInfo wording = 5; // "msg_wording_info"
+    // MsgStatus
+    message Status {
+      WithdrawC2CRequest.MessageInfo item = 1; // "msg_info"
+      uint32 status = 2; // "uint32_status"
+    }
+  }
+  // PbGroupMsgWithDrawReq
+  message WithdrawGroupRequest {
+    uint32 sub_cmd = 1; // "uint32_sub_cmd"
+    uint32 group_type = 2; // "uint32_group_type"
+    uint64 group_code = 3; // "uint64_group_code"
+    repeated MessageInfo items = 4; // "msg_list"
+    bytes userdef = 5; // "bytes_userdef"
+    // MessageInfo
+    message MessageInfo {
+      uint32 message_seq = 1; // "uint32_msg_seq"
+      uint32 message_random = 2; // "uint32_msg_random"
+      uint32 message_type = 3; // "uint32_msg_type"
+      uint32 reserve_flag = 4; // "uint32_resv_flag"
+    }
+  }
+  // PbGroupMsgWithDrawResp
+  message WithdrawGroupResponse {
+    uint32 result = 1; // "result"
+    string error_message = 2; // "errmsg"
+    uint32 sub_cmd = 3; // "uint32_sub_cmd"
+    uint32 group_type = 4; // "uint32_group_type"
+    uint64 group_code = 5; // "uint64_group_code"
+    repeated MessageResult failed_items = 6; // "failed_msg_list"
+    bytes userdef = 7; // "bytes_userdef"
+    WithdrawWordingInfo wording = 8; // "msg_wording_info"
+    // MessageResult
+    message MessageResult {
+      uint32 result = 1; // "uint32_result"
+      uint32 message_seq = 2; // "uint32_msg_seq"
+      uint32 message_time = 3; // "uint32_msg_time"
+      uint32 message_random = 4; // "uint32_msg_random"
+      bytes error_message = 5; // "bytes_err_msg"
+      uint32 message_type = 6; // "uint32_msg_type"
+    }
+  }
+  // PbMsgWithDrawReq
+  message WithdrawRequest {
+    repeated WithdrawC2CRequest c2c = 1; // "c2c_with_draw"
+    repeated WithdrawGroupRequest group = 2; // "group_with_draw"
+  }
+  // PbMsgWithDrawResp
+  message WithdrawResponse {
+    repeated WithdrawC2CResponse c2c = 1; // "c2c_with_draw"
+    repeated WithdrawGroupResponse group = 2; // "group_with_draw"
+  }
+}
+
+// msgtype0xa6
+message MessageType00A6 {
+  // SubMsgType0xc1
+  message Type00C1 {
+    // MsgBody
+    message Body {
+      bytes file_key = 1; // "bytes_file_key"
+      int64 from_uin = 2; // "uint64_from_uin"
+      int64 to_uin = 3; // "uint64_to_uin"
+      int32 status = 4; // "uint32_status"
+      int32 ttl = 5; // "uint32_ttl"
+      int32 type = 6; // "uint32_type"
+      int32 encrypt_prehead_length = 7; // "uint32_encrypt_prehead_length"
+      int32 encrypt_type = 8; // "uint32_encrypt_type"
+      bytes encrypt_key = 9; // "bytes_encrypt_key"
+      int32 read_times = 10; // "uint32_read_times"
+      int64 left_time = 11; // "uint32_left_time"
+      NotOnlineImage not_online_image = 12; // "not_online_image"
+    }
+    // NotOnlineImage
+    message NotOnlineImage {
+      bytes file_path = 1; // "file_path"
+      int32 file_len = 2; // "file_len"
+      bytes download_path = 3; // "download_path"
+      bytes old_ver_send_file = 4; // "old_ver_send_file"
+      int32 img_type = 5; // "img_type"
+      bytes previews_image = 6; // "previews_image"
+      bytes pic_md5 = 7; // "pic_md5"
+      int32 pic_height = 8; // "pic_height"
+      int32 pic_width = 9; // "pic_width"
+      bytes res_id = 10; // "res_id"
+      bytes flag = 11; // "flag"
+      string download_url = 12; // "str_download_url"
+      int32 original = 13; // "original"
+    }
+  }
+}
+
+// msgtype0x210
+message MessageType0210 {
+  // SubMsgType0x1a
+  message Type001A {
+    // MsgBody
+    message Body {
+      bytes file_key = 1; // "bytes_file_key"
+      int32 word_from_uin = 2; // "uint32_from_uin"
+      int32 word_to_uin = 3; // "uint32_to_uin"
+      int32 status = 4; // "uint32_status"
+      int32 ttl = 5; // "uint32_ttl"
+      string desc = 6; // "string_desc"
+      int32 type = 7; // "uint32_type"
+      int32 capture_times = 8; // "uint32_capture_times"
+      int64 from_uin = 9; // "uint64_from_uin"
+      int64 to_uin = 10; // "uint64_to_uin"
+    }
+  }
+  // SubMsgType0x27
+  message Type0027 {
+    // AddGroup
+    message AddGroup {
+      uint32 group_id = 1; // "uint32_groupid"
+      uint32 sort_id = 2; // "uint32_sortid"
+      bytes group_name = 3; // "bytes_groupname"
+    }
+    // AppointmentNotify
+    message AppointmentNotify {
+      uint64 from_uin = 1; // "uint64_from_uin"
+      string appointment_id = 2; // "str_appoint_id"
+      uint32 notify_type = 3; // "uint32_notifytype"
+      string tips_content = 4; // "str_tips_content"
+      uint32 unread_count = 5; // "uint32_unread_count"
+      string join_wording = 6; // "str_join_wording"
+      string view_wording = 7; // "str_view_wording"
+      bytes sig = 8; // "bytes_sig"
+      bytes event_info = 9; // "bytes_event_info"
+      bytes nearby_event_info = 10; // "bytes_nearby_event_info"
+      bytes feed_event_info = 11; // "bytes_feed_event_info"
+    }
+    // BinaryMsg
+    message BinaryMessage {
+      uint32 type = 1; // "uint32_op_type"
+      bytes value = 2; // "bytes_op_value"
+    }
+    // MsgBody
+    message Body {
+      repeated NotifyItem items = 1; // "rpt_msg_mod_infos"
+    }
+    // ChatMatchInfo
+    message ChatMatchInfo {
+      bytes sig = 1; // "bytes_sig"
+      uint64 uin = 2; // "uint64_uin"
+      uint64 match_uin = 3; // "uint64_match_uin"
+      bytes tips_wording = 4; // "bytes_tips_wording"
+      uint32 left_chat_time = 5; // "uint32_left_chat_time"
+      uint64 time_stamp = 6; // "uint64_time_stamp"
+      uint32 match_expired_time = 7; // "uint32_match_expired_time"
+      uint32 c2c_expired_time = 8; // "uint32_c2c_expired_time"
+      uint32 match_count = 9; // "uint32_match_count"
+      bytes nick = 10; // "bytes_nick"
+    }
+    // ConfMsgRoamFlag
+    message ConfMessageRoamingFlag {
+      uint64 conf_id = 1; // "uint64_confid"
+      uint32 flag = 2; // "uint32_flag"
+      uint64 timestamp = 3; // "uint64_timestamp"
+    }
+    // DaRenNotify
+    message DaRenNotify {
+      uint64 uin = 1; // "uint64_uin"
+      uint32 login_days = 2; // "uint32_login_days"
+      uint32 days = 3; // "uint32_days"
+      uint32 is_yestoday_login = 4; // "uint32_is_yestoday_login"
+      uint32 is_today_login = 5; // "uint32_is_today_login"
+    }
+    // DelFriend
+    message DeleteFriend {
+      repeated uint64 uins = 1; // "rpt_uint64_uins"
+    }
+    // DelGroup
+    message DeleteGroup {
+      uint32 group_id = 1; // "uint32_groupid"
+    }
+    // FanpaiziNotify
+    message FanpaiziNotify {
+      uint64 from_uin = 1; // "uint64_from_uin"
+      string from_nick = 2; // "str_from_nick"
+      bytes tips_content = 3; // "bytes_tips_content"
+      bytes sig = 4; // "bytes_sig"
+    }
+    // ForwardBody
+    message NotifyItem {
+      uint32 type = 1; // "uint32_notify_type"
+      uint32 op_type = 2; // "uint32_op_type"
+      AddGroup add_group = 3; // "msg_add_group"
+      DeleteGroup delete_group = 4; // "msg_del_group"
+      ModGroupName mod_group_name = 5; // "msg_mod_group_name"
+      ModGroupSort mod_group_sort = 6; // "msg_mod_group_sort"
+      ModFriendGroup mod_friend_group = 7; // "msg_mod_friend_group"
+      ModProfile mod_profile = 8; // "msg_mod_profile"
+      ModFriendRemark mod_friend_remark = 9; // "msg_mod_friend_remark"
+      ModLongNick mod_long_nick = 10; // "msg_mod_long_nick"
+      ModCustomFace mod_custom_face = 11; // "msg_mod_custom_face"
+      ModGroupProfile mod_group_profile = 12; // "msg_mod_group_profile"
+      ModGroupMemberProfile mod_group_member_profile = 13; // "msg_mod_group_member_profile"
+      DeleteFriend del_friend = 14; // "msg_del_friend"
+      ModFriendRoamingPriv roam_priv = 15; // "msg_roam_priv"
+      GroupMessageRoamingFlag group_msg_roam_flag = 16; // "msg_grp_msg_roam_flag"
+      ConfMessageRoamingFlag conf_msg_roam_flag = 17; // "msg_conf_msg_roam_flag"
+      ModLongNick mod_rich_long_nick = 18; // "msg_mod_rich_long_nick"
+      BinaryMessage bin_pkg = 19; // "msg_bin_pkg"
+      ModSNSGeneralInfo mod_friend_rings = 20; // "msg_mod_friend_rings"
+      ModConfProfile mod_conf_profile = 21; // "msg_mod_conf_profile"
+      SNSUpdateFlag mod_friend_flag = 22; // "msg_mod_friend_flag"
+      AppointmentNotify appointment_notify = 23; // "msg_appointment_notify"
+      DaRenNotify daren_notify = 25; // "msg_daren_notify"
+      NewComeinUserNotify new_comein_user_notify = 26; // "msg_new_comein_user_notify"
+      PushSearchDev push_search_dev = 200; // "msg_push_search_dev"
+      PushReportDev push_report_dev = 201; // "msg_push_report_dev"
+      QQPayPush qq_pay_push = 202; // "msg_qq_pay_push"
+      bytes redpoint_info = 203; // "bytes_redpoint_info"
+      HotFriendNotify hot_friend_notify = 204; // "msg_hot_friend_notify"
+      PraiseRankNotify praise_rank_notify = 205; // "msg_praise_rank_notify"
+      MQQCampusNotify campus_notify = 210; // "msg_campus_notify"
+      ModLongNick mod_rich_long_nick_ex = 211; // "msg_mod_rich_long_nick_ex"
+      ChatMatchInfo chat_match_info = 212; // "msg_chat_match_info"
+      FriendCustomOnlineStatusChange frd_custom_online_status_change = 214; // "msg_frd_custom_online_status_change"
+      FanpaiziNotify fanpanzi_notify = 2000; // "msg_fanpanzi_notify"
+    }
+    // FrdCustomOnlineStatusChange
+    message FriendCustomOnlineStatusChange {
+      uint64 uin = 1; // "uint64_uin"
+    }
+    // FriendGroup
+    message FriendGroup {
+      uint64 uin = 1; // "uint64_fuin"
+      repeated uint32 old_group_id = 2; // "rpt_uint32_old_group_id"
+      repeated uint32 new_group_id = 3; // "rpt_uint32_new_group_id"
+    }
+    // FriendRemark
+    message FriendRemark {
+      uint32 type = 1; // "uint32_type"
+      uint64 uin = 2; // "uint64_fuin"
+      bytes remark_name = 3; // "bytes_rmk_name"
+      uint64 group_code = 4; // "uint64_group_code"
+    }
+    // GPS
+    message GPS {
+      int32 lat = 1; // "int32_lat"
+      int32 lon = 2; // "int32_lon"
+      int32 alt = 3; // "int32_alt"
+      int32 type = 4; // "int32_type"
+    }
+    // GroupMemberProfileInfo
+    message GroupMemberProfileInfo {
+      uint32 field = 1; // "uint32_field"
+      bytes value = 2; // "bytes_value"
+    }
+    // GroupProfileInfo
+    message GroupProfileInfo {
+      uint32 field = 1; // "uint32_field"
+      bytes value = 2; // "bytes_value"
+    }
+    // GroupSort
+    message GroupSort {
+      uint32 group_id = 1; // "uint32_groupid"
+      uint32 sort_id = 2; // "uint32_sortid"
+    }
+    // GrpMsgRoamFlag
+    message GroupMessageRoamingFlag {
+      uint64 group_code = 1; // "uint64_groupcode"
+      uint32 flag = 2; // "uint32_flag"
+      uint64 timestamp = 3; // "uint64_timestamp"
+    }
+    // HotFriendNotify
+    message HotFriendNotify {
+      uint64 dst_uin = 1; // "uint64_dst_uin"
+      uint32 praise_hot_level = 2; // "uint32_praise_hot_level"
+      uint32 chat_hot_level = 3; // "uint32_chat_hot_level"
+      uint32 praise_hot_days = 4; // "uint32_praise_hot_days"
+      uint32 chat_hot_days = 5; // "uint32_chat_hot_days"
+      uint32 close_level = 6; // "uint32_close_level"
+      uint32 close_days = 7; // "uint32_close_days"
+      uint32 praise_flag = 8; // "uint32_praise_flag"
+      uint32 chat_flag = 9; // "uint32_chat_flag"
+      uint32 close_flag = 10; // "uint32_close_flag"
+      uint64 notify_time = 11; // "uint64_notify_time"
+      uint64 last_praise_time = 12; // "uint64_last_praise_time"
+      uint64 last_chat_time = 13; // "uint64_last_chat_time"
+      uint32 qzone_hot_level = 14; // "uint32_qzone_hot_level"
+      uint32 qzone_hot_days = 15; // "uint32_qzone_hot_days"
+      uint32 qzone_flag = 16; // "uint32_qzone_flag"
+      uint64 last_qzone_time = 17; // "uint64_last_qzone_time"
+    }
+    // MQQCampusNotify
+    message MQQCampusNotify {
+      uint64 from_uin = 1; // "uint64_from_uin"
+      string wording = 2; // "str_wording"
+      string target = 3; // "str_target"
+      uint32 type = 4; // "uint32_type"
+      string source = 5; // "str_source"
+    }
+    // ModConfProfile
+    message ModConfProfile {
+      uint64 uin = 1; // "uint64_uin"
+      uint32 conf_uin = 2; // "uint32_conf_uin"
+      repeated ProfileInfo items = 3; // "rpt_msg_profile_infos"
+    }
+    // ModCustomFace
+    message ModCustomFace {
+      uint32 type = 1; // "uint32_type"
+      uint64 uin = 2; // "uint64_uin"
+      uint64 group_code = 3; // "uint64_group_code"
+      uint64 cmd_uin = 4; // "uint64_cmd_uin"
+    }
+    // ModFrdRoamPriv
+    message ModFriendRoamingPriv {
+      repeated OneRoamingPriv items = 1; // "rpt_msg_roam_priv"
+    }
+    // ModFriendGroup
+    message ModFriendGroup {
+      repeated FriendGroup items = 1; // "rpt_msg_frd_group"
+    }
+    // ModFriendRemark
+    message ModFriendRemark {
+      repeated FriendRemark items = 1; // "rpt_msg_frd_rmk"
+    }
+    // ModGroupMemberProfile
+    message ModGroupMemberProfile {
+      uint64 group_uin = 1; // "uint64_group_uin"
+      uint64 uin = 2; // "uint64_uin"
+      repeated GroupMemberProfileInfo items = 3; // "rpt_msg_group_member_profile_infos"
+      uint64 group_code = 4; // "uint64_group_code"
+    }
+    // ModGroupName
+    message ModGroupName {
+      uint32 group_id = 1; // "uint32_groupid"
+      bytes group_name = 2; // "bytes_groupname"
+    }
+    // ModGroupProfile
+    message ModGroupProfile {
+      uint64 group_uin = 1; // "uint64_group_uin"
+      repeated GroupProfileInfo items = 2; // "rpt_msg_group_profile_infos"
+      uint64 group_code = 3; // "uint64_group_code"
+      uint64 cmd_uin = 4; // "uint64_cmd_uin"
+    }
+    // ModGroupSort
+    message ModGroupSort {
+      repeated GroupSort items = 1; // "rpt_msg_groupsort"
+    }
+    // ModLongNick
+    message ModLongNick {
+      uint64 uin = 1; // "uint64_uin"
+      bytes value = 2; // "bytes_value"
+    }
+    // ModProfile
+    message ModProfile {
+      uint64 uin = 1; // "uint64_uin"
+      repeated ProfileInfo items = 2; // "rpt_msg_profile_infos"
+    }
+    // ModSnsGeneralInfo
+    message ModSNSGeneralInfo {
+      repeated SNSUpateBuffer items = 1; // "rpt_msg_sns_general_infos"
+    }
+    // NewComeinUser
+    message NewComeinUser {
+      uint64 uin = 1; // "uint64_uin"
+      uint32 is_friend = 2; // "uint32_is_frd"
+      bytes remark = 3; // "bytes_remark"
+      bytes nick = 4; // "bytes_nick"
+    }
+    // NewComeinUserNotify
+    message NewComeinUserNotify {
+      uint32 type = 1; // "uint32_msg_type"
+      bool strong_notify = 2; // "bool_strong_notify"
+      uint32 push_time = 3; // "uint32_push_time"
+      NewComeinUser new_comein_user = 4; // "msg_new_comein_user"
+      NewGroup new_group = 5; // "msg_new_group"
+      NewGroupUser new_group_user = 6; // "msg_new_group_user"
+    }
+    // NewGroup
+    message NewGroup {
+      uint64 group_code = 1; // "uint64_group_code"
+      bytes group_name = 2; // "bytes_group_name"
+      uint64 owner_uin = 3; // "uint64_owner_uin"
+      bytes owner_nick = 4; // "bytes_owner_nick"
+      bytes distance = 5; // "bytes_distance"
+    }
+    // NewGroupUser
+    message NewGroupUser {
+      uint64 uin = 1; // "uint64_uin"
+      int32 sex = 2; // "int32_sex"
+      int32 age = 3; // "int32_age"
+      string nick = 4; // "str_nick"
+      bytes distance = 5; // "bytes_distance"
+    }
+    // OneRoamPriv
+    message OneRoamingPriv {
+      uint64 uin = 1; // "uint64_fuin"
+      uint32 priv_tag = 2; // "uint32_priv_tag"
+      uint32 priv_value = 3; // "uint32_priv_value"
+    }
+    // PraiseRankNotify
+    message PraiseRankNotify {
+      uint32 is_champion = 11; // "uint32_is_champion"
+      uint32 rank_num = 12; // "uint32_rank_num"
+      string message = 13; // "str_msg"
+    }
+    // ProfileInfo
+    message ProfileInfo {
+      uint32 field = 1; // "uint32_field"
+      bytes value = 2; // "bytes_value"
+    }
+    // PushReportDev
+    message PushReportDev {
+      uint32 type = 1; // "uint32_msg_type"
+      bytes cookie = 4; // "bytes_cookie"
+      uint32 report_max_num = 5; // "uint32_report_max_num"
+      bytes sn = 6; // "bytes_sn"
+    }
+    // PushSearchDev
+    message PushSearchDev {
+      uint32 type = 1; // "uint32_msg_type"
+      GPS gps_info = 2; // "msg_gps_info"
+      uint32 dev_time = 3; // "uint32_dev_time"
+      uint32 push_time = 4; // "uint32_push_time"
+      uint64 din = 5; // "uint64_din"
+      string data = 6; // "str_data"
+    }
+    // QQPayPush
+    message QQPayPush {
+      uint64 uin = 1; // "uint64_uin"
+      bool pay_ok = 2; // "bool_pay_ok"
+    }
+    // SnsUpateBuffer
+    message SNSUpateBuffer {
+      uint64 uin = 1; // "uint64_uin"
+      uint64 code = 2; // "uint64_code"
+      uint32 result = 3; // "uint32_result"
+      repeated SNSUpdateItem items = 400; // "rpt_msg_sns_update_item"
+      repeated uint32 id_list = 401; // "rpt_uint32_idlist"
+    }
+    // SnsUpdateFlag
+    message SNSUpdateFlag {
+      repeated SNSUpdateOneFlag items = 1; // "rpt_msg_update_sns_flag"
+    }
+    // SnsUpdateItem
+    message SNSUpdateItem {
+      uint32 type = 1; // "uint32_update_sns_type"
+      bytes value = 2; // "bytes_value"
+    }
+    // SnsUpdateOneFlag
+    message SNSUpdateOneFlag {
+      uint64 uin = 1; // "uint64__uin"
+      uint64 id = 2; // "uint64_id"
+      uint32 flag = 3; // "uint32_flag"
+    }
+  }
+  // Submsgtype0x8a
+  message Type008A {
+    // ReqBody
+    message Body {
+      repeated MessageInfo items = 1; // "msg_info"
+      uint32 app_id = 2; // "uint32_app_id"
+      uint32 instance_id = 3; // "uint32_inst_id"
+      uint32 long_flag = 4; // "uint32_long_message_flag"
+      bytes reserved = 5; // "bytes_reserved"
+    }
+    // MsgInfo
+    message MessageInfo {
+      int64 from_uin = 1; // "uint64_from_uin"
+      int64 to_uin = 2; // "uint64_to_uin"
+      int32 message_seq = 3; // "uint32_msg_seq"
+      int64 message_uid = 4; // "uint64_msg_uid"
+      int64 message_time = 5; // "uint64_msg_time"
+      int32 message_random = 6; // "uint32_msg_random"
+      uint32 package_num = 7; // "uint32_pkg_num"
+      uint32 package_index = 8; // "uint32_pkg_index"
+      uint32 div_seq = 9; // "uint32_div_seq"
+      uint32 flag = 12; // "uint32_flag"
+      MessageService.WithdrawWordingInfo wording = 13; // "msg_wording_info"
+    }
+  }
+  // SubMsgType0xb3
+  message Type00B3 {
+    // MsgBody
+    message Body {
+      uint32 type = 1; // "uint32_type"
+      AddFriendNotify notify = 2; // "msg_add_frd_notify"
+    }
+    // PushAddFrdNotify
+    message AddFriendNotify {
+      uint64 friend_uin = 1; // "uint64_fuin"
+      uint64 friend_bubble_id = 2; // "uint64_fuin_bubble_id"
+      fixed32 timestamp = 3; // "fixed32_timestamp"
+      string wording = 4; // "bytes_wording"
+      string friend_nick = 5; // "bytes_fuin_nick"
+      uint32 source_id = 6; // "uint32_source_id"
+      uint32 sub_source_id = 7; // "uint32_subsource_id"
+      string mobile = 8; // "bytes_mobile"
+      uint64 request_uin = 9; // "uint64_req_uin"
+    }
+  }
+}

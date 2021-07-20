@@ -70,7 +70,7 @@ type MessageRecord struct {
 	UserID    int64
 	FromID    int64
 	Text      string
-	Elements  []*pb.Element
+	Elements  []*pb.IMMessageBody_Element
 	Type      int32
 	CreatedAt time.Time
 	DeletedAt time.Time

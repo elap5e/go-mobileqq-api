@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
+	"encoding/hex"
 	"strconv"
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/elap5e/go-mobileqq-api/bytes"
 	"github.com/elap5e/go-mobileqq-api/encoding/mark"
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
@@ -14,14 +14,14 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessage, resp *pb.MessageGetMessageResponse) {
+func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessage, resp *pb.MessageService_GetResponse) {
 	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 	dumpServerToClientMessage(s2c, resp)
 
 	for _, uinPairMessage := range resp.GetUinPairMessages() {
 		syncUinPairMessage(uinPairMessage)
 
-		for _, msg := range uinPairMessage.GetMessages() {
+		for _, msg := range uinPairMessage.GetItems() {
 			skip := true
 			switch msg.GetMessageHead().GetMessageType() {
 			case 9, 10, 31, 79, 97, 120, 132, 133, 141, 166, 167:
@@ -34,45 +34,19 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 				skip = msg.GetMessageHead().GetGroupInfo() == nil
 			case 42, 83:
 				skip = msg.GetMessageHead().GetDiscussInfo() == nil
+			case 0x0210:
+				body, err := c.decodeMessageType0210(uin, msg.GetMessageBody().GetContent())
+				if err != nil {
+					log.Error().Err(err).Msg(">>x [0210] failed to decode")
+				} else if body != nil {
+					dumpServerToClientMessage(s2c, &body)
+				}
 			case 0x02DC:
-				content := msg.GetMessageBody().GetContent()
-				if len(content) > 4 {
-					buf := bytes.NewBuffer(content)
-					_, _ = buf.ReadUint32()
-					subType, _ := buf.ReadUint8()
-					switch subType {
-					case 0x03:
-					case 0x0c, 0x0e:
-					case 0x10, 0x11, 0x14, 0x15:
-						if len(content) > 7 {
-							notify := pb.NotifyMessageBody{}
-							_ = proto.Unmarshal(content[7:], &notify)
-							dumpServerToClientMessage(s2c, &notify)
-							if v := notify.GetMessageRecall(); v != nil {
-								for _, msg := range v.GetRecalledMessageList() {
-									mr := &db.MessageRecord{
-										Time:   msg.GetTime(),
-										Seq:    msg.GetSeq(),
-										Uid:    int64(msg.GetRandom()) | 1<<56,
-										PeerID: notify.GetGroupCode(),
-										UserID: 0,
-										FromID: v.GetUin(),
-										Text:   v.GetMessageWordingInfo().GetName(),
-										Type:   0x02DC,
-									}
-									mr.Text = "messageRecall: " + v.GetMessageWordingInfo().GetName()
-
-									c.PrintMessageRecord(mr)
-									if c.db != nil {
-										err := c.dbInsertMessageRecord(uin, mr)
-										if err != nil {
-											log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
-										}
-									}
-								}
-							}
-						}
-					}
+				body, err := c.decodeMessageType02DC(uin, msg.GetMessageBody().GetContent())
+				if err != nil {
+					log.Error().Err(err).Msg(">>x [02dC] failed to decode")
+				} else if body != nil {
+					dumpServerToClientMessage(s2c, &body)
 				}
 			}
 			if !skip {
@@ -101,7 +75,7 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 				if c.db != nil {
 					err := c.dbInsertMessageRecord(uin, mr)
 					if err != nil {
-						log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
+						log.Error().Err(err).Msg(">>x [db  ] dbInsertMessageRecord")
 					}
 				}
 			}
@@ -112,28 +86,28 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 func NewMessageGetMessageRequest(
 	flag uint32,
 	cookie []byte,
-) *pb.MessageGetMessageRequest {
-	return &pb.MessageGetMessageRequest{
-		SyncFlag:            flag,
-		SyncCookie:          cookie,
-		RambleFlag:          0x00000000,
-		LatestRambleNumber:  0x00000014,
-		OtherRambleNumber:   0x00000003,
-		OnlineSyncFlag:      0x00000001, // fix
-		ContextFlag:         0x00000001,
-		WhisperSessionId:    0x00000000,
-		RequestType:         0x00000000, // fix
-		PublicAccountCookie: nil,
-		ControlBuffer:       nil,
-		ServerBuffer:        nil,
+) *pb.MessageService_GetRequest {
+	return &pb.MessageService_GetRequest{
+		SyncFlag:             flag,
+		SyncCookie:           cookie,
+		RambleFlag:           0x00000000,
+		LatestRambleNumber:   0x00000014,
+		OtherRambleNumber:    0x00000003,
+		OnlineSyncFlag:       0x00000001, // fix
+		ContextFlag:          0x00000001,
+		WhisperSessionId:     0x00000000,
+		MessageRequestType:   0x00000000, // fix
+		PublicAccountCookie:  nil,
+		MessageControlBuffer: nil,
+		ServerBuffer:         nil,
 	}
 }
 
 func (c *Client) MessageGetMessage(
 	ctx context.Context,
 	username string,
-	req *pb.MessageGetMessageRequest,
-) (*pb.MessageGetMessageResponse, error) {
+	req *pb.MessageService_GetRequest,
+) (*pb.MessageService_GetResponse, error) {
 	uin, _ := strconv.ParseInt(username, 10, 64)
 	if len(req.SyncCookie) == 0 {
 		req.SyncCookie = c.syncCookie[uin]
@@ -152,8 +126,9 @@ func (c *Client) MessageGetMessage(
 	if err != nil {
 		return nil, err
 	}
-	resp := pb.MessageGetMessageResponse{}
+	resp := pb.MessageService_GetResponse{}
 	if err := proto.Unmarshal(s2c.Buffer, &resp); err != nil {
+		log.Debug().Msg(">>> [dump]\n" + hex.Dump(s2c.Buffer))
 		return nil, err
 	}
 

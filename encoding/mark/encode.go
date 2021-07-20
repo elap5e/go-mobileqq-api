@@ -24,7 +24,7 @@ func NewEncoder(peerID, userID, fromID int64) *encoder {
 	return &encoder{peerID, userID, fromID}
 }
 
-func (enc encoder) Encode(elems []*pb.Element) ([]byte, error) {
+func (enc encoder) Encode(elems []*pb.IMMessageBody_Element) ([]byte, error) {
 	head, text := "", ""
 	skip := new(int)
 	for i, elem := range elems {
@@ -59,10 +59,10 @@ func (enc encoder) Encode(elems []*pb.Element) ([]byte, error) {
 	return []byte(head + text), nil
 }
 
-func (enc encoder) encodeCommonElement(elem *pb.CommonElement, skip *int) string {
+func (enc encoder) encodeCommonElement(elem *pb.IMMessageBody_CommonElement, skip *int) string {
 	switch elem.GetServiceType() {
 	case 33: // extra face
-		info := pb.MessageElementInfoServiceType33{}
+		info := pb.CommonElement_ServiceType33{}
 		_ = proto.Unmarshal(elem.GetBuffer(), &info)
 		id := emoticon.FaceType(info.GetIndex())
 		return fmt.Sprintf(
@@ -72,21 +72,21 @@ func (enc encoder) encodeCommonElement(elem *pb.CommonElement, skip *int) string
 		)
 	case 37: // extra big face
 		*skip++
-		info := pb.MessageElementInfoServiceType37{}
+		info := pb.CommonElement_ServiceType37{}
 		_ = proto.Unmarshal(elem.GetBuffer(), &info)
-		id := emoticon.FaceType(info.GetQsId())
+		id := emoticon.FaceType(info.GetQSid())
 		return fmt.Sprintf(
 			"![%s](goqq://res/face?id=%d&pid=%s&sid=%s)",
 			id.String(),
 			id,
-			base64.URLEncoding.EncodeToString(info.GetPackId()),
+			base64.URLEncoding.EncodeToString(info.GetPackageId()),
 			base64.URLEncoding.EncodeToString(info.GetStickerId()),
 		)
 	}
 	return ""
 }
 
-func (enc encoder) encodeCustomFaceElement(elem *pb.CustomFace) string {
+func (enc encoder) encodeCustomFaceElement(elem *pb.IMMessageBody_CustomFace) string {
 	hash := elem.GetFileMd5()
 	return fmt.Sprintf(
 		"![%s](goqq://res/image?md5=%s&type=5&size=%d&h=%d&w=%d)",
@@ -98,7 +98,7 @@ func (enc encoder) encodeCustomFaceElement(elem *pb.CustomFace) string {
 	)
 }
 
-func (enc encoder) encodeFaceElement(elem *pb.Face) string {
+func (enc encoder) encodeFaceElement(elem *pb.IMMessageBody_Face) string {
 	id := emoticon.FaceType(elem.GetIndex())
 	return fmt.Sprintf(
 		"![%s](goqq://res/face?id=%d)",
@@ -107,7 +107,7 @@ func (enc encoder) encodeFaceElement(elem *pb.Face) string {
 	)
 }
 
-func (enc encoder) encodeLightAppElement(elem *pb.LightAppElement, skip *int) string {
+func (enc encoder) encodeLightAppElement(elem *pb.IMMessageBody_LightAppElement, skip *int) string {
 	*skip++
 	data := elem.GetData()[1:]
 	if elem.GetData()[0] == 1 {
@@ -120,11 +120,11 @@ func (enc encoder) encodeLightAppElement(elem *pb.LightAppElement, skip *int) st
 	return string(data)
 }
 
-func (enc encoder) encodeMarketFaceElement(elem *pb.MarketFace, text *pb.Text, skip *int) string {
+func (enc encoder) encodeMarketFaceElement(elem *pb.IMMessageBody_MarketFace, text *pb.IMMessageBody_Text, skip *int) string {
 	*skip++
 	name := string(elem.GetFaceName())
 	if name == "" {
-		name = text.GetData()
+		name = text.GetText()
 	}
 	return fmt.Sprintf(
 		"![%s](goqq://res/marketFace?id=%s&tabId=%d&key=%s&h=%d&w=%d&p=%s)",
@@ -138,7 +138,7 @@ func (enc encoder) encodeMarketFaceElement(elem *pb.MarketFace, text *pb.Text, s
 	)
 }
 
-func (enc encoder) encodeNotOnlineImageElement(elem *pb.NotOnlineImage) string {
+func (enc encoder) encodeNotOnlineImageElement(elem *pb.IMMessageBody_NotOnlineImage) string {
 	hash := elem.GetFileMd5()
 	return fmt.Sprintf(
 		"![%s](goqq://res/image?md5=%s&type=%d&size=%d&h=%d&w=%d)",
@@ -151,9 +151,9 @@ func (enc encoder) encodeNotOnlineImageElement(elem *pb.NotOnlineImage) string {
 	)
 }
 
-func (enc encoder) encodeRichMessage(elem *pb.RichMessage) string {
-	data := elem.GetTemplate1()[1:]
-	if elem.GetTemplate1()[0] == 1 {
+func (enc encoder) encodeRichMessage(elem *pb.IMMessageBody_RichMessage) string {
+	data := elem.GetTemplate()[1:]
+	if elem.GetTemplate()[0] == 1 {
 		reader, _ := zlib.NewReader(bytes.NewReader(data))
 		defer reader.Close()
 		var buf bytes.Buffer
@@ -163,7 +163,7 @@ func (enc encoder) encodeRichMessage(elem *pb.RichMessage) string {
 	return string(data)
 }
 
-func (enc encoder) encodeShakeWindowElement(elem *pb.ShakeWindow) string {
+func (enc encoder) encodeShakeWindowElement(elem *pb.IMMessageBody_ShakeWindow) string {
 	return fmt.Sprintf(
 		"![[shakeWindow]](goqq://act/shakeWindow?uin=%d&type=%d)",
 		elem.GetUin(),
@@ -171,17 +171,17 @@ func (enc encoder) encodeShakeWindowElement(elem *pb.ShakeWindow) string {
 	)
 }
 
-func (enc encoder) encodeSmallEmojiElement(elem *pb.SmallEmoji, text *pb.Text, skip *int) string {
+func (enc encoder) encodeSmallEmojiElement(elem *pb.IMMessageBody_SmallEmoji, text *pb.IMMessageBody_Text, skip *int) string {
 	*skip++
 	return fmt.Sprintf(
 		"![%s](goqq://res/smallEmoji?id=%d&type=%d)",
-		text.GetData(),
+		text.GetText(),
 		elem.GetPackIdSum(),
 		elem.GetImageType(),
 	)
 }
 
-func (enc encoder) encodeSourceMessage(elem *pb.SourceMessage) string {
+func (enc encoder) encodeSourceMessage(elem *pb.IMMessageBody_SourceMessage) string {
 	return fmt.Sprintf(
 		"<!--goqq://msg/reply?time=%d&peer=%d&user=%d&from=%d&seq=%d-->\n",
 		elem.GetTime(),
@@ -192,15 +192,15 @@ func (enc encoder) encodeSourceMessage(elem *pb.SourceMessage) string {
 	)
 }
 
-func (enc encoder) encodeTextMessage(elem *pb.Text) string {
-	attr6Buf := elem.GetAttr6Buffer()
+func (enc encoder) encodeTextMessage(elem *pb.IMMessageBody_Text) string {
+	attr6Buf := elem.GetAttribute6Buffer()
 	if len(attr6Buf) < 13 {
-		return escape(elem.GetData())
+		return escape(elem.GetText())
 	} else {
 		uin := uint64(attr6Buf[7])<<24 + uint64(attr6Buf[8])<<16 + uint64(attr6Buf[9])<<8 + uint64(attr6Buf[10])
 		return fmt.Sprintf(
 			"![%s](goqq://act/at?uin=%d)",
-			escape(elem.GetData()),
+			escape(elem.GetText()),
 			uin,
 		)
 	}
