@@ -9,8 +9,17 @@ func (b *Buffer) ReadUint8() (uint8, error) {
 	if len(v) < 1 {
 		return 0, io.ErrUnexpectedEOF
 	}
-	b.idx += 1
+	b.idx++
 	return v[0], nil
+}
+
+func (b *Buffer) ReadUint16() (uint16, error) {
+	v := b.buf[b.idx:]
+	if len(v) < 2 {
+		return 0, io.ErrUnexpectedEOF
+	}
+	b.idx += 2
+	return uint16(v[0])<<8 | uint16(v[1]), nil
 }
 
 func (b *Buffer) ReadUint32() (uint32, error) {
@@ -19,7 +28,7 @@ func (b *Buffer) ReadUint32() (uint32, error) {
 		return 0, io.ErrUnexpectedEOF
 	}
 	b.idx += 4
-	return uint32(v[0])<<24 | uint32(v[1])<<16 | uint32(v[2])<<8 | uint32(v[3])<<0, nil
+	return uint32(v[0])<<24 | uint32(v[1])<<16 | uint32(v[2])<<8 | uint32(v[3]), nil
 }
 
 func (b *Buffer) ReadUint32Bytes() ([]byte, error) {
@@ -52,6 +61,24 @@ func (b *Buffer) ReadUint64() (uint64, error) {
 func (b *Buffer) ReadInt64() (int64, error) {
 	v, err := b.ReadUint64()
 	return int64(v), err
+}
+
+func (b *Buffer) ReadBytes() ([]byte, error) {
+	n, err := b.ReadUint16()
+	if err != nil {
+		return nil, err
+	}
+	v := b.buf[b.idx:]
+	if len(v) < int(n) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	b.idx += int(n)
+	return v[:n], nil
+}
+
+func (b *Buffer) ReadString() (string, error) {
+	v, err := b.DecodeBytes()
+	return string(v), err
 }
 
 // DecodeUint8 consumes an encoded unsigned 8-bit integer from the buffer.

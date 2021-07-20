@@ -9,7 +9,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/pb"
 )
 
-func (hw *Highway) read(resp *pb.Highway_ResponseHead, body []byte) error {
+func (hw *Highway) read(resp *pb.Highway_ResponseHead, body *[]byte) error {
 	var err error
 	p := make([]byte, 1)
 	if _, err = hw.conn.Read(p); err != nil {
@@ -34,10 +34,10 @@ func (hw *Highway) read(resp *pb.Highway_ResponseHead, body []byte) error {
 		}
 		i += n
 	}
-	body = make([]byte, l2)
+	*body = make([]byte, l2)
 	i, n = 0, 0
 	for i < l2 {
-		n, err = hw.conn.Read(body[i:])
+		n, err = hw.conn.Read((*body)[i:])
 		if err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func (hw *Highway) recv() error {
 	var body []byte
 	for err == nil {
 		resp = pb.Highway_ResponseHead{}
-		err = hw.read(&resp, body)
+		err = hw.read(&resp, &body)
 		if err != nil {
 			break
 		}

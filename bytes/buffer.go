@@ -26,3 +26,7 @@ func (b *Buffer) Len() int {
 func (b *Buffer) Seek(i int) {
 	b.idx = i
 }
+
+func (b *Buffer) Skip(i int) {
+	b.idx += i
+}

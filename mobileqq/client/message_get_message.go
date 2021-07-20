@@ -35,7 +35,7 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 			case 42, 83:
 				skip = msg.GetMessageHead().GetDiscussInfo() == nil
 			case 0x0210:
-				body, err := c.decodeMessageType0210(uin, msg.GetMessageBody().GetContent())
+				body, err := c.decodeMessageType0210Pb(uin, msg.GetMessageBody().GetContent())
 				if err != nil {
 					log.Error().Err(err).Msg(">>x [0210] failed to decode")
 				} else if body != nil {

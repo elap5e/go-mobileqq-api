@@ -68,7 +68,7 @@ func (c *Client) PrintMessageRecord(mr *db.MessageRecord) {
 
 func syncUinPairMessage(uinPairMessage *pb.MessageCommon_UinPairMessage) {
 	log.Info().
-		Int64("@peer", uinPairMessage.GetPeerUin()).
+		Int64("@uin", uinPairMessage.GetPeerUin()).
 		Int64("readAt", uinPairMessage.GetLastReadTime()).
 		Msgf("<-> [sync] %d message(s)", len(uinPairMessage.GetItems()))
 

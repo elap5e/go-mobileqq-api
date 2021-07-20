@@ -51,6 +51,9 @@ func (dec decoder) Decode(v []byte) ([]*pb.IMMessageBody_Element, error) {
 			case "/at":
 				elems = append(elems,
 					dec.decodeActionAt(uri, body[idx[2]:idx[3]])...)
+			case "/poke":
+				elems = append(elems,
+					dec.decodeActionPoke(uri, body[idx[2]:idx[3]])...)
 			case "/shakeWindow":
 				elems = append(elems,
 					dec.decodeActionShakeWindow()...)
@@ -99,6 +102,22 @@ func (dec decoder) decodeActionAt(uri *url.URL, text string) []*pb.IMMessageBody
 		Text: &pb.IMMessageBody_Text{
 			Text:             text,
 			Attribute6Buffer: buf,
+		},
+	}}
+}
+
+func (dec decoder) decodeActionPoke(uri *url.URL, text string) []*pb.IMMessageBody_Element {
+	id, _ := strconv.ParseInt(uri.Query().Get("id"), 10, 16)
+	buf, _ := base64.URLEncoding.DecodeString(uri.Query().Get("buf"))
+	return []*pb.IMMessageBody_Element{{
+		Common: &pb.IMMessageBody_CommonElement{
+			ServiceType:  2,
+			Buffer:       buf,
+			BusinessType: uint32(id),
+		},
+	}, {
+		Text: &pb.IMMessageBody_Text{
+			Text: text,
 		},
 	}}
 }

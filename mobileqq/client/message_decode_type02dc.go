@@ -1,6 +1,9 @@
 package client
 
 import (
+	"encoding/hex"
+	"fmt"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/bytes"
@@ -14,12 +17,35 @@ func (c *Client) decodeMessageType02DC(uin uint64, p []byte) (interface{}, error
 		return nil, nil
 	}
 	buf := bytes.NewBuffer(p)
-	_, _ = buf.ReadUint32()
+	peerID, _ := buf.ReadUint32()
 	subType, _ := buf.ReadUint8()
-	log.Debug().Msgf(">>> [02DC] subType:0x%x(%d)", subType, len(p))
+	log.Debug().
+		Uint32("@peer", peerID).
+		Msgf(">>> [02DC] subType:0x%x(%d)", subType, len(p))
 
 	switch subType {
 	case 0x03:
+		buf.Skip(0x05)
+		time, _ := buf.ReadUint32()
+		l, _ := buf.ReadUint16()
+		mrs := []*db.MessageRecord{}
+		for i := 0; i < int(l); i++ {
+			mr := db.MessageRecord{
+				Time:   int64(time),
+				Seq:    0,
+				Uid:    0,
+				PeerID: int64(peerID),
+				UserID: 0,
+				FromID: 0,
+				Text:   "",
+				Type:   0x02DC,
+			}
+			mr.Text, _ = buf.ReadString()
+
+			c.PrintMessageRecord(&mr)
+			mrs = append(mrs, &mr)
+		}
+		return &mrs, nil
 	case 0x0C, 0x0E:
 	case 0x10, 0x11, 0x14, 0x15:
 		if len(p) < 8 {
@@ -42,7 +68,16 @@ func (c *Client) decodeMessageType02DC(uin uint64, p []byte) (interface{}, error
 					Text:   "",
 					Type:   0x02DC,
 				}
-				mr.Text = "messageRecall: " + notify.GetWording().GetItemName()
+				mr.Text = fmt.Sprintf(
+					"![%s](goqq://act/recall?time=%d&seq=%d&uid=%d&peer=%d&user=%d&from=%d)",
+					notify.GetWording().GetItemName(),
+					mr.Time,
+					mr.Seq,
+					mr.Uid,
+					mr.PeerID,
+					mr.UserID,
+					mr.FromID,
+				)
 
 				c.PrintMessageRecord(mr)
 				if c.db != nil {
@@ -55,5 +90,7 @@ func (c *Client) decodeMessageType02DC(uin uint64, p []byte) (interface{}, error
 		}
 		return &body, nil
 	}
+
+	log.Debug().Msg(">>> [dump]\n" + hex.Dump(p))
 	return nil, nil
 }

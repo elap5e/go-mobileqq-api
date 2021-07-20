@@ -240,11 +240,11 @@ message OIDB {
       string nickname = 2; // "bytes_nickname"
       repeated MessageInfo messages = 3; // "uint32_recalled_msg_list"
       bytes reminder_content = 4; // "str_reminder_content"
-      bytes userdef = 5; // "bytes_userdef"
+      bytes user_define = 5; // "bytes_userdef"
       uint32 group_type = 6; // "uint32_group_type"
       uint32 op_type = 7; // "uint32_op_type"
       int64 admin_uin = 8; // "uint64_admin_uin"
-      MessageService.WithdrawWordingInfo wording = 13; // "msg_wording_info"
+      MessageService.WithdrawWordingInfo wording = 9; // "msg_wording_info"
       // MessageMeta
       message MessageInfo {
         int32 message_seq = 1; // "uint32_seq"

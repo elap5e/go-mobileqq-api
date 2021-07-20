@@ -25,7 +25,7 @@ func NewEncoder(peerID, userID, fromID int64) *encoder {
 }
 
 func (enc encoder) Encode(elems []*pb.IMMessageBody_Element) ([]byte, error) {
-	head, text := "", ""
+	head, body := "", ""
 	skip := new(int)
 	for i, elem := range elems {
 		if *skip > 0 {
@@ -33,34 +33,50 @@ func (enc encoder) Encode(elems []*pb.IMMessageBody_Element) ([]byte, error) {
 			continue
 		}
 		if v := elem.GetLightApp(); v != nil {
-			text += enc.encodeLightAppElement(v, skip)
+			body += enc.encodeLightAppElement(v, skip)
 		} else if v := elem.GetRichMessage(); v != nil {
-			text += enc.encodeRichMessage(v)
+			body += enc.encodeRichMessage(v)
 		} else if v := elem.GetCommon(); v != nil {
-			text += enc.encodeCommonElement(v, skip)
+			text := new(pb.IMMessageBody_Text)
+			if len(elems) > i+1 {
+				text = elems[i+1].GetText()
+			}
+			body += enc.encodeCommonElement(v, text, skip)
 		} else if v := elem.GetText(); v != nil {
-			text += enc.encodeTextMessage(v)
+			body += enc.encodeTextMessage(v)
 		} else if v := elem.GetFace(); v != nil {
-			text += enc.encodeFaceElement(v)
+			body += enc.encodeFaceElement(v)
 		} else if v := elem.GetMarketFace(); v != nil {
-			text += enc.encodeMarketFaceElement(v, elems[i+1].GetText(), skip)
+			body += enc.encodeMarketFaceElement(v, elems[i+1].GetText(), skip)
 		} else if v := elem.GetSmallEmoji(); v != nil {
-			text += enc.encodeSmallEmojiElement(v, elems[i+1].GetText(), skip)
+			body += enc.encodeSmallEmojiElement(v, elems[i+1].GetText(), skip)
 		} else if v := elem.GetCustomFace(); v != nil {
-			text += enc.encodeCustomFaceElement(v)
+			body += enc.encodeCustomFaceElement(v)
 		} else if v := elem.GetNotOnlineImage(); v != nil {
-			text += enc.encodeNotOnlineImageElement(v)
+			body += enc.encodeNotOnlineImageElement(v)
 		} else if v := elem.GetShakeWindow(); v != nil {
-			text += enc.encodeShakeWindowElement(v)
+			body += enc.encodeShakeWindowElement(v)
 		} else if v := elem.GetSourceMessage(); v != nil {
-			text += enc.encodeSourceMessage(v)
+			body += enc.encodeSourceMessage(v)
 		}
 	}
-	return []byte(head + text), nil
+	return []byte(head + body), nil
 }
 
-func (enc encoder) encodeCommonElement(elem *pb.IMMessageBody_CommonElement, skip *int) string {
+func (enc encoder) encodeCommonElement(elem *pb.IMMessageBody_CommonElement, text *pb.IMMessageBody_Text, skip *int) string {
 	switch elem.GetServiceType() {
+	case 2: // poke
+		if id := elem.GetBusinessType(); id == 0 {
+			return "![[shakeWindow]](goqq://act/shakeWindow)"
+		} else {
+			*skip++
+			return fmt.Sprintf(
+				"![%s](goqq://act/poke?id=%d&buf=%s)",
+				text.GetText(),
+				id,
+				base64.URLEncoding.EncodeToString(elem.GetBuffer()),
+			)
+		}
 	case 33: // extra face
 		info := pb.CommonElement_ServiceType33{}
 		_ = proto.Unmarshal(elem.GetBuffer(), &info)
@@ -164,11 +180,7 @@ func (enc encoder) encodeRichMessage(elem *pb.IMMessageBody_RichMessage) string 
 }
 
 func (enc encoder) encodeShakeWindowElement(elem *pb.IMMessageBody_ShakeWindow) string {
-	return fmt.Sprintf(
-		"![[shakeWindow]](goqq://act/shakeWindow?uin=%d&type=%d)",
-		elem.GetUin(),
-		elem.GetType(),
-	)
+	return "![[shakeWindow]](goqq://act/shakeWindow)"
 }
 
 func (enc encoder) encodeSmallEmojiElement(elem *pb.IMMessageBody_SmallEmoji, text *pb.IMMessageBody_Text, skip *int) string {

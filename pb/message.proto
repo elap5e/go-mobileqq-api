@@ -2034,6 +2034,8 @@ message MessageType00A6 {
 
 // msgtype0x210
 message MessageType0210 {
+  int64 sub_type = 1;
+  bytes buffer = 2;
   // SubMsgType0x1a
   message Type001A {
     // MsgBody
@@ -2395,7 +2397,7 @@ message MessageType0210 {
   message Type008A {
     // ReqBody
     message Body {
-      repeated MessageInfo items = 1; // "msg_info"
+      repeated MessageInfo messages = 1; // "msg_info"
       uint32 app_id = 2; // "uint32_app_id"
       uint32 instance_id = 3; // "uint32_inst_id"
       uint32 long_flag = 4; // "uint32_long_message_flag"

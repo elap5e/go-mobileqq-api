@@ -98,7 +98,7 @@ func (c *Client) handleOnlinePushRequest(
 	for _, msg := range push.MessageInfos {
 		switch msg.MessageType {
 		case 0x0210:
-			body, err := c.decodeMessageType0210(uin, msg.MessageBytes)
+			body, err := c.decodeMessageType0210Jce(uin, msg.MessageBytes)
 			if err != nil {
 				return nil, err
 			} else if body != nil {

@@ -1,6 +1,9 @@
 package client
 
 import (
+	"encoding/hex"
+	"fmt"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/elap5e/go-mobileqq-api/encoding/jce"
@@ -14,39 +17,73 @@ type MessageType0210 struct {
 	Buffer  []byte `jce:",10" json:",omitempty"`
 }
 
-func (c *Client) decodeMessageType0210(uin uint64, p []byte) (interface{}, error) {
-	msg := MessageType0210{}
-	if err := jce.Unmarshal(p, &msg, true); err != nil {
+func (c *Client) decodeMessageType0210Pb(uin uint64, buf []byte) (interface{}, error) {
+	msg := pb.MessageType0210{}
+	if err := proto.Unmarshal(buf, &msg); err != nil {
 		return nil, err
 	}
-	log.Debug().Msgf(">>> [0210] subType:0x%x(%d)", msg.SubType, len(msg.Buffer))
 
-	switch msg.SubType {
+	body, err := c.decodeMessageType0210(uin, msg.SubType, msg.Buffer)
+	if err != nil {
+		return nil, err
+	} else if body == nil {
+		return &msg, nil
+	}
+	return body, nil
+}
+
+func (c *Client) decodeMessageType0210Jce(uin uint64, buf []byte) (interface{}, error) {
+	msg := MessageType0210{}
+	if err := jce.Unmarshal(buf, &msg, true); err != nil {
+		return nil, err
+	}
+
+	body, err := c.decodeMessageType0210(uin, msg.SubType, msg.Buffer)
+	if err != nil {
+		return nil, err
+	} else if body == nil {
+		return &msg, nil
+	}
+	return body, nil
+}
+
+func (c *Client) decodeMessageType0210(uin uint64, typ int64, buf []byte) (interface{}, error) {
+	log.Debug().Msgf(">>> [0210] subType:0x%x(%d)", typ, len(buf))
+	switch typ {
 	case 0x0027:
 		body := pb.MessageType0210_Type0027_Body{}
-		if err := proto.Unmarshal(msg.Buffer, &body); err != nil {
+		if err := proto.Unmarshal(buf, &body); err != nil {
 			return nil, err
 		}
 		return &body, nil
 
 	case 0x008A, 0x008B:
 		body := pb.MessageType0210_Type008A_Body{}
-		if err := proto.Unmarshal(msg.Buffer, &body); err != nil {
+		if err := proto.Unmarshal(buf, &body); err != nil {
 			return nil, err
 		}
 
-		for _, item := range body.GetItems() {
+		for _, msg := range body.GetMessages() {
 			mr := &db.MessageRecord{
-				Time:   item.GetMessageTime(),
-				Seq:    item.GetMessageSeq(),
-				Uid:    int64(item.GetMessageRandom()) | 1<<56,
+				Time:   msg.GetMessageTime(),
+				Seq:    msg.GetMessageSeq(),
+				Uid:    int64(msg.GetMessageRandom()) | 1<<56,
 				PeerID: 0,
-				UserID: item.GetFromUin(),
-				FromID: item.GetFromUin(),
+				UserID: msg.GetFromUin(),
+				FromID: msg.GetFromUin(),
 				Text:   "",
 				Type:   0x0210,
 			}
-			mr.Text = "messageRecall"
+			mr.Text = fmt.Sprintf(
+				"![%s](goqq://act/recall?time=%d&seq=%d&uid=%d&peer=%d&user=%d&from=%d)",
+				msg.GetWording().GetItemName(),
+				mr.Time,
+				mr.Seq,
+				mr.Uid,
+				mr.PeerID,
+				mr.UserID,
+				mr.FromID,
+			)
 
 			c.PrintMessageRecord(mr)
 			if c.db != nil {
@@ -60,7 +97,7 @@ func (c *Client) decodeMessageType0210(uin uint64, p []byte) (interface{}, error
 
 	case 0x00B3:
 		body := pb.MessageType0210_Type00B3_Body{}
-		if err := proto.Unmarshal(msg.Buffer, &body); err != nil {
+		if err := proto.Unmarshal(buf, &body); err != nil {
 			return nil, err
 		}
 		return &body, nil
@@ -96,5 +133,7 @@ func (c *Client) decodeMessageType0210(uin uint64, p []byte) (interface{}, error
 	case 307:
 	case 321:
 	}
-	return &msg, nil
+
+	log.Debug().Msg(">>> [dump]\n" + hex.Dump(buf))
+	return nil, nil
 }

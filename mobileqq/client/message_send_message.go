@@ -118,6 +118,7 @@ func (c *Client) MessageSendMessage(
 	//   241: ???
 	// -3902: marketFace (vip/svip)
 	// -4902: marketFace magic (vip/svip)
+	//  5002: poke (vip/svip)
 
 	c.handleMessageSendMessageResponse(&s2c, req, &resp)
 	return &resp, nil
