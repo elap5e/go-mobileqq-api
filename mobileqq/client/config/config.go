@@ -71,12 +71,12 @@ func NewClientConfig() *ClientConfig {
 
 func NewClientConfigForAndroid() *ClientConfig {
 	return &ClientConfig{
-		AppID: 0x20032ba2,
-		FixID: 0x20032ba2, // Release:"7363587:2" Debug:"7363587:2"
+		AppID: 0x20033f65,
+		FixID: 0x20033f65, // Release:"7363:367;" Debug:"7363:367;"
 
 		PackageName: "com.tencent.mobileqq",
-		VersionName: "8.8.5",
-		Revision:    "8.8.5.55c6675c",
+		VersionName: "8.8.12", // "8.8.12.5675"
+		Revision:    "8.8.12.5475818d",
 		SignatureMD5: []byte{
 			0xa6, 0xb7, 0x45, 0xbf, 0x24, 0xa2, 0xc2, 0x77,
 			0x52, 0x77, 0x16, 0xf6, 0xf3, 0x6e, 0xb6, 0x8d,

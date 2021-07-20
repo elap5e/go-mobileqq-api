@@ -3,6 +3,8 @@ package mark
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"math/rand"
 	"net/url"
 	"regexp"
@@ -195,13 +197,13 @@ func (dec decoder) decodeResourceImage(uri *url.URL, text string) []*pb.IMMessag
 	if dec.peerID == 0 {
 		return []*pb.IMMessageBody_Element{{
 			NotOnlineImage: &pb.IMMessageBody_NotOnlineImage{
-				BizType:  uint32(typ),
-				FileMd5:  md5,
-				FileSize: uint32(size),
-				Height:   uint32(h),
-				Width:    uint32(w),
-				FilePath: text,
-				FileId:   rand.Uint32(),
+				BizType:    uint32(typ),
+				FileMd5:    md5,
+				FileSize:   uint32(size),
+				Height:     uint32(h),
+				Width:      uint32(w),
+				FilePath:   text,
+				ResourceId: fmt.Sprintf("/%d-%d-%s", dec.fromID, rand.Uint32(), strings.ToUpper(hex.EncodeToString(md5))),
 			},
 		}}
 	} else {
