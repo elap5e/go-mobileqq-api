@@ -1,4 +1,4 @@
-package client
+package util
 
 import (
 	"encoding/binary"
@@ -8,16 +8,22 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/rs/zerolog"
 )
 
-func dumpClientToServerMessage(
+func DumpClientToServerMessage(
 	c2s *codec.ClientToServerMessage,
 	msg interface{},
 ) {
-	typ := reflect.TypeOf(msg)
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
+	if log.GetLevel() > zerolog.DebugLevel {
+		return
 	}
+	value := reflect.ValueOf(msg)
+	for value.Kind() == reflect.Interface ||
+		(value.Kind() == reflect.Ptr && !value.IsNil()) {
+		value = value.Elem()
+	}
+	typ := value.Type()
 	dump, _ := json.Marshal(&msg)
 	log.Debug().
 		Uint32("@seq", c2s.Seq).
@@ -26,14 +32,19 @@ func dumpClientToServerMessage(
 		Msg("<<< [dump] message:" + typ.String() + ":" + string(dump))
 }
 
-func dumpServerToClientMessage(
+func DumpServerToClientMessage(
 	s2c *codec.ServerToClientMessage,
 	msg interface{},
 ) {
-	typ := reflect.TypeOf(msg)
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
+	if log.GetLevel() > zerolog.DebugLevel {
+		return
 	}
+	value := reflect.ValueOf(msg)
+	for value.Kind() == reflect.Interface ||
+		(value.Kind() == reflect.Ptr && !value.IsNil()) {
+		value = value.Elem()
+	}
+	typ := value.Type()
 	dump, _ := json.Marshal(&msg)
 	log.Debug().
 		Uint32("@seq", s2c.Seq).
@@ -42,7 +53,7 @@ func dumpServerToClientMessage(
 		Msg(">>> [dump] message:" + typ.String() + ":" + string(dump))
 }
 
-func dumpServerIP(u uint32) {
+func DumpServerIP(u uint32) {
 	ip := net.IP{0, 0, 0, 0}
 	binary.LittleEndian.PutUint32(ip, u)
 	log.Debug().

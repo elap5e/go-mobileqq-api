@@ -7,6 +7,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type AccountStatusType uint32
@@ -79,27 +80,27 @@ type VendorPushInfo struct {
 }
 
 type AccountSetStatusResponse struct {
-	Uin            uint64 `jce:",0" json:",omitempty"`
-	Bid            uint64 `jce:",1" json:",omitempty"`
-	ReplyCode      uint8  `jce:",2" json:",omitempty"`
-	Result         string `jce:",3" json:",omitempty"`
-	ServerTime     uint64 `jce:",4" json:",omitempty"`
-	LogQQ          bool   `jce:",5" json:",omitempty"`
-	NeedKick       bool   `jce:",6" json:",omitempty"`
-	UpdateFlag     bool   `jce:",7" json:",omitempty"`
-	Timestamp      uint64 `jce:",8" json:",omitempty"`
-	CrashFlag      bool   `jce:",9" json:",omitempty"`
-	ClientIP       string `jce:",10" json:",omitempty"`
-	ClientPort     uint32 `jce:",11" json:",omitempty"`
-	HelloInterval  uint32 `jce:",12" json:",omitempty"`
-	LargeSeq       uint32 `jce:",13" json:",omitempty"`
-	LargeSeqUpdate bool   `jce:",14" json:",omitempty"`
+	Uin            int64  `jce:",0" json:"uin,omitempty"`
+	Bid            int64  `jce:",1" json:"bid,omitempty"`
+	ReplyCode      uint8  `jce:",2" json:"reply_code,omitempty"`
+	Result         string `jce:",3" json:"result,omitempty"`
+	ServerTime     int64  `jce:",4" json:"server_time,omitempty"`
+	LogQQ          bool   `jce:",5" json:"log_qq,omitempty"`
+	NeedKick       bool   `jce:",6" json:"need_kick,omitempty"`
+	UpdateFlag     bool   `jce:",7" json:"update_flag,omitempty"`
+	Timestamp      int64  `jce:",8" json:"timestamp,omitempty"`
+	CrashFlag      bool   `jce:",9" json:"crash_flag,omitempty"`
+	ClientIP       string `jce:",10" json:"client_ip,omitempty"`
+	ClientPort     int32  `jce:",11" json:"client_port,omitempty"`
+	HelloInterval  int32  `jce:",12" json:"hello_interval,omitempty"`
+	LargeSeq       int32  `jce:",13" json:"large_seq,omitempty"`
+	LargeSeqUpdate bool   `jce:",14" json:"large_seq_update,omitempty"`
 
-	Respbody0x769            []byte `jce:",15" json:",omitempty"`
-	Status                   uint32 `jce:",16" json:",omitempty"`
-	ExtraOnlineStatus        uint64 `jce:",17" json:",omitempty"`
-	ClientBatteryGetInterval uint64 `jce:",18" json:",omitempty"`
-	ClientAutoStatusInterval uint64 `jce:",19" json:",omitempty"`
+	Body0769                 []byte `jce:",15" json:"body0796,omitempty"`
+	Status                   int32  `jce:",16" json:"status,omitempty"`
+	ExtraOnlineStatus        int64  `jce:",17" json:"extra_online_status,omitempty"`
+	ClientBatteryGetInterval int64  `jce:",18" json:"client_battery_get_interval,omitempty"`
+	ClientAutoStatusInterval int64  `jce:",19" json:"client_auto_status_interval,omitempty"`
 }
 
 func (c *Client) initAutoStatusTimers() {
@@ -195,7 +196,7 @@ func (c *Client) AccountSetStatus(
 		return nil, err
 	}
 
-	dumpServerToClientMessage(&s2c, &resp)
+	util.DumpServerToClientMessage(&s2c, &resp)
 
 	c.autoStatusTimersMux.Lock()
 	timer, ok := c.autoStatusTimers[c2s.Username]

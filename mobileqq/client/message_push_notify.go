@@ -8,64 +8,25 @@ import (
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type MessagePushNotifyRequest struct {
-	Uin         uint64 `jce:",0" json:",omitempty"`
-	Type        uint8  `jce:",1" json:",omitempty"`
-	Service     string `jce:",2" json:",omitempty"`
-	Command     string `jce:",3" json:",omitempty"`
-	Cookie      []byte `jce:",4" json:",omitempty"`
-	MessageType uint16 `jce:",5" json:",omitempty"`
-	UserActive  uint32 `jce:",6" json:",omitempty"`
-	GeneralFlag uint32 `jce:",7" json:",omitempty"`
-	BindedUin   uint64 `jce:",8" json:",omitempty"`
+	Uin         int64  `jce:",0" json:"uin,omitempty"`
+	Type        uint8  `jce:",1" json:"type,omitempty"`
+	Service     string `jce:",2" json:"service,omitempty"`
+	Cmd         string `jce:",3" json:"cmd,omitempty"`
+	Cookie      []byte `jce:",4" json:"cookie,omitempty"`
+	MessageType uint16 `jce:",5" json:"message_type,omitempty"`
+	UserActive  uint32 `jce:",6" json:"user_active,omitempty"`
+	GeneralFlag uint32 `jce:",7" json:"general_flag,omitempty"`
+	BindedUin   int64  `jce:",8" json:"binded_uin,omitempty"`
 
-	MessageInfo       *MessageInfo `jce:",9" json:",omitempty"`
-	MessageCtrlBuffer string       `jce:",10" json:",omitempty"`
-	ServerBuffer      []byte       `jce:",11" json:",omitempty"`
-	PingFlag          uint64       `jce:",12" json:",omitempty"`
-	ServerIP          uint32       `jce:",13" json:",omitempty"`
-}
-
-type MessageInfo struct {
-	FromUin         int64            `jce:",0" json:",omitempty"`
-	MessageTime     int64            `jce:",1" json:",omitempty"`
-	MessageType     int16            `jce:",2" json:",omitempty"`
-	MessageSeq      int32            `jce:",3" json:",omitempty"`
-	Message         string           `jce:",4" json:",omitempty"`
-	RealMessageTime int64            `jce:",5" json:",omitempty"`
-	MessageBytes    []byte           `jce:",6" json:",omitempty"`
-	AppShareID      int64            `jce:",7" json:",omitempty"`
-	MessageCookies  []byte           `jce:",8" json:",omitempty"`
-	AppShareCookie  []byte           `jce:",9" json:",omitempty"`
-	MessageUid      int64            `jce:",10" json:",omitempty"`
-	LastChangeTime  int64            `jce:",11" json:",omitempty"`
-	CPicInfo        []CPicInfo       `jce:",12" json:",omitempty"`
-	ShareData       *ShareData       `jce:",13" json:",omitempty"`
-	FromInstID      int64            `jce:",14" json:",omitempty"`
-	RemarkOfSender  []byte           `jce:",15" json:",omitempty"`
-	FromMobile      string           `jce:",16" json:",omitempty"`
-	FromName        string           `jce:",17" json:",omitempty"`
-	Nickname        []string         `jce:",18" json:",omitempty"`
-	TempMessageHead *TempMessageHead `jce:",19" json:",omitempty"`
-}
-
-type CPicInfo struct {
-	Path []byte `jce:",0" json:",omitempty"`
-	Host []byte `jce:",1" json:",omitempty"`
-}
-
-type ShareData struct {
-	Pkgname     string `jce:",0" json:",omitempty"`
-	Messagetail string `jce:",1" json:",omitempty"`
-	PicURL      string `jce:",2" json:",omitempty"`
-	URL         string `jce:",3" json:",omitempty"`
-}
-
-type TempMessageHead struct {
-	C2CType     uint32 `jce:",0" json:",omitempty"`
-	ServiceType uint32 `jce:",1" json:",omitempty"`
+	Message       *Message     `jce:",9" json:"message,omitempty"`
+	ControlBuffer string       `jce:",10" json:"control_buffer,omitempty"`
+	ServerBuffer  []byte       `jce:",11" json:"server_buffer,omitempty"`
+	PingFlag      uint64       `jce:",12" json:"ping_flag,omitempty"`
+	ServerIP      Uint32IPType `jce:",13" json:"server_ip,omitempty"`
 }
 
 func (c *Client) handleMessagePushNotify(
@@ -79,11 +40,11 @@ func (c *Client) handleMessagePushNotify(
 	}); err != nil {
 		return nil, err
 	}
-	dumpServerToClientMessage(s2c, &req)
+	util.DumpServerToClientMessage(s2c, &req)
 
 	uin, _ := strconv.ParseInt(s2c.Username, 10, 64)
 	resp, err := c.MessageGetMessage(
-		ctx, s2c.Username, NewMessageGetMessageRequest(
+		ctx, uin, NewMessageGetMessageRequest(
 			0x00000000, c.syncCookie[uin],
 		),
 	)
@@ -98,7 +59,7 @@ func (c *Client) handleMessagePushNotify(
 		Text   []byte
 	}
 	dataList := []Data{}
-	infos := []MessageDeleteInfo{}
+	items := []MessageDelete{}
 
 	for {
 		for _, uinPairMessage := range resp.GetUinPairMessages() {
@@ -123,7 +84,7 @@ func (c *Client) handleMessagePushNotify(
 								Text:   text,
 							})
 						}
-						infos = append(infos, MessageDeleteInfo{
+						items = append(items, MessageDelete{
 							FromUin:     msg.GetMessageHead().GetFromUin(),
 							MessageTime: msg.GetMessageHead().GetMessageTime(),
 							MessageSeq:  msg.GetMessageHead().GetMessageSeq(),
@@ -143,9 +104,9 @@ func (c *Client) handleMessagePushNotify(
 			}
 		}
 		if resp.GetSyncFlag() == 0x00000001 {
-			dumpServerToClientMessage(s2c, &req)
+			util.DumpServerToClientMessage(s2c, &req)
 			resp, err := c.MessageGetMessage(
-				ctx, s2c.Username, NewMessageGetMessageRequest(
+				ctx, uin, NewMessageGetMessageRequest(
 					resp.GetSyncFlag(), c.syncCookie[uin],
 				),
 			)
@@ -187,5 +148,5 @@ func (c *Client) handleMessagePushNotify(
 		}
 	}
 
-	return NewOnlinePushMessageResponse(ctx, s2c.Username, infos, req.ServerIP, int32(s2c.Seq))
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, items, req.ServerIP, int32(s2c.Seq))
 }

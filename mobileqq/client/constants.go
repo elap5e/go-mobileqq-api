@@ -38,7 +38,7 @@ const (
 
 	ServiceMethodOnlinePushMessageSyncC2C   = "OnlinePush.PbC2CMsgSync"
 	ServiceMethodOnlinePushMessageSyncGroup = "OnlinePush.PbPushGroupMsg"
-	ServiceMethodOnlinePushMessageTransfer  = "OnlinePush.PbPushTransMsg"
+	ServiceMethodOnlinePushMessageTransport = "OnlinePush.PbPushTransMsg"
 	ServiceMethodOnlinePushRequest          = "OnlinePush.ReqPush"
 	ServiceMethodOnlinePushResponse         = "OnlinePush.RespPush"
 	ServiceMethodOnlinePushSIDTicketExpired = "OnlinePush.SidTicketExpired"

@@ -25,6 +25,7 @@ func (c *Client) dbInsertMessageRecord(uin uint64, v *db.MessageRecord) error {
 		if err != nil {
 			return err
 		}
+		c.PrintMessageRecord(v)
 	}
 	return tx.Commit()
 }

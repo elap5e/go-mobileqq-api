@@ -312,6 +312,6 @@ func (c *Client) MessageUploadImage(
 		return nil, err
 	}
 
-	dumpServerToClientMessage(&s2c, &resp)
+	util.DumpServerToClientMessage(&s2c, &resp)
 	return resp.GetTryUploadImage(), nil
 }

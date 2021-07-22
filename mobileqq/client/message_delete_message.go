@@ -8,6 +8,7 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 func NewMessageDeleteMessageRequest(
@@ -45,6 +46,6 @@ func (c *Client) MessageDeleteMessage(
 		return nil, err
 	}
 
-	dumpServerToClientMessage(&s2c, &resp)
+	util.DumpServerToClientMessage(&s2c, &resp)
 	return &resp, nil
 }

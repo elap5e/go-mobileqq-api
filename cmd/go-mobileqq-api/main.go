@@ -117,25 +117,24 @@ func main() {
 							errCh <- err
 							return
 						}
-						if _, err := rpc.FriendListGetFriendGroupList(ctx,
-							client.NewFriendListGetFriendGroupListRequest(
+						if _, err := rpc.FriendListGetFriendGroupList(
+							ctx, client.NewFriendListGetFriendGroupListRequest(
 								uin, 0, 100, 0, 100,
 							),
 						); err != nil {
 							errCh <- err
 							return
 						}
-						if _, err := rpc.FriendListGetGroupList(ctx,
-							client.NewFriendListGetGroupListRequest(
+						if _, err := rpc.FriendListGetGroupList(
+							ctx, client.NewFriendListGetGroupListRequest(
 								uin, nil,
 							),
 						); err != nil {
 							errCh <- err
 							return
 						}
-						if _, err := rpc.MessageGetMessage(ctx,
-							username,
-							client.NewMessageGetMessageRequest(
+						if _, err := rpc.MessageGetMessage(
+							ctx, uin, client.NewMessageGetMessageRequest(
 								0x00000000, nil,
 							),
 						); err != nil {

@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 
@@ -21,32 +22,70 @@ func (c *Client) decodeMessageType02DC(uin uint64, p []byte) (interface{}, error
 	subType, _ := buf.ReadUint8()
 	log.Debug().
 		Uint32("@peer", peerID).
-		Msgf(">>> [02DC] subType:0x%x(%d)", subType, len(p))
+		Msgf(">>> [02DC] decode message type:0x02dc sub_type:0x%04x length:%d", subType, len(p))
 
 	switch subType {
 	case 0x03:
-		buf.Skip(0x05)
-		time, _ := buf.ReadUint32()
+		buf.ReadUint8()
+		fromID, _ := buf.ReadUint32()
+		t, _ := buf.ReadUint32()
 		l, _ := buf.ReadUint16()
 		mrs := []*db.MessageRecord{}
 		for i := 0; i < int(l); i++ {
 			mr := db.MessageRecord{
-				Time:   int64(time),
+				Time:   int64(t),
 				Seq:    0,
 				Uid:    0,
 				PeerID: int64(peerID),
 				UserID: 0,
-				FromID: 0,
+				FromID: 10000,
 				Text:   "",
 				Type:   0x02DC,
 			}
+			_ = fromID
 			mr.Text, _ = buf.ReadString()
 
 			c.PrintMessageRecord(&mr)
 			mrs = append(mrs, &mr)
 		}
 		return &mrs, nil
-	case 0x0C, 0x0E:
+
+	case 0x0C: // Mute
+		buf.ReadUint8()
+		fromID, _ := buf.ReadUint32()
+		t, _ := buf.ReadUint32()
+		l, _ := buf.ReadUint16()
+		mrs := []*db.MessageRecord{}
+		for i := 0; i < int(l); i++ {
+			target, _ := buf.ReadUint32()
+			sec, _ := buf.ReadUint32()
+			mr := db.MessageRecord{
+				Time:   int64(t),
+				Seq:    0,
+				Uid:    0,
+				PeerID: int64(peerID),
+				UserID: 0,
+				FromID: 10000,
+				Text:   "",
+				Type:   0x02DC,
+			}
+			if sec == 0xFFFFFFFF {
+				mr.Text = fmt.Sprintf("%d set mute %d", fromID, target)
+			} else if sec != 0 {
+				mr.Text = fmt.Sprintf("%d set mute %d for %s", fromID, target, time.Duration(sec)*time.Second)
+			} else {
+				mr.Text = fmt.Sprintf("%d set unmute %d ", fromID, target)
+			}
+
+			c.PrintMessageRecord(&mr)
+			mrs = append(mrs, &mr)
+		}
+		return &mrs, nil
+
+	case 0x0E:
+
+	case 0x0F:
+
 	case 0x10, 0x11, 0x14, 0x15:
 		if len(p) < 8 {
 			return nil, nil
@@ -64,7 +103,7 @@ func (c *Client) decodeMessageType02DC(uin uint64, p []byte) (interface{}, error
 					Uid:    int64(msg.GetMessageRandom()) | 1<<56,
 					PeerID: body.GetGroupCode(),
 					UserID: 0,
-					FromID: notify.GetUin(),
+					FromID: msg.GetFromUin(),
 					Text:   "",
 					Type:   0x02DC,
 				}
@@ -79,16 +118,18 @@ func (c *Client) decodeMessageType02DC(uin uint64, p []byte) (interface{}, error
 					mr.FromID,
 				)
 
-				c.PrintMessageRecord(mr)
 				if c.db != nil {
 					err := c.dbInsertMessageRecord(uin, mr)
 					if err != nil {
 						log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
 					}
+				} else {
+					c.PrintMessageRecord(mr)
 				}
 			}
 		}
 		return &body, nil
+
 	}
 
 	log.Debug().Msg(">>> [dump]\n" + hex.Dump(p))

@@ -48,8 +48,16 @@ func (c *Client) decodeMessageType0210Jce(uin uint64, buf []byte) (interface{}, 
 }
 
 func (c *Client) decodeMessageType0210(uin uint64, typ int64, buf []byte) (interface{}, error) {
-	log.Debug().Msgf(">>> [0210] subType:0x%x(%d)", typ, len(buf))
+	log.Debug().
+		Msgf(">>> [0210] decode message type:0x0210 sub_type:0x%04x length:%d", typ, len(buf))
 	switch typ {
+	case 0x0026:
+		body := pb.MessageType0210_Type0026_Body{}
+		if err := proto.Unmarshal(buf, &body); err != nil {
+			return nil, err
+		}
+		return &body, nil
+
 	case 0x0027:
 		body := pb.MessageType0210_Type0027_Body{}
 		if err := proto.Unmarshal(buf, &body); err != nil {
@@ -57,7 +65,21 @@ func (c *Client) decodeMessageType0210(uin uint64, typ int64, buf []byte) (inter
 		}
 		return &body, nil
 
-	case 0x008A, 0x008B:
+	case 0x0044:
+		body := pb.MessageType0210_Type0044_Body{}
+		if err := proto.Unmarshal(buf, &body); err != nil {
+			return nil, err
+		}
+		return &body, nil
+
+	case 0x004E: // GroupBulletinNotify
+		body := pb.MessageType0210_Type004E_Body{}
+		if err := proto.Unmarshal(buf, &body); err != nil {
+			return nil, err
+		}
+		return &body, nil
+
+	case 0x008A, 0x008B: // RecallMessageNotify
 		body := pb.MessageType0210_Type008A_Body{}
 		if err := proto.Unmarshal(buf, &body); err != nil {
 			return nil, err
@@ -85,18 +107,26 @@ func (c *Client) decodeMessageType0210(uin uint64, typ int64, buf []byte) (inter
 				mr.FromID,
 			)
 
-			c.PrintMessageRecord(mr)
 			if c.db != nil {
 				err := c.dbInsertMessageRecord(uin, mr)
 				if err != nil {
 					log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
 				}
+			} else {
+				c.PrintMessageRecord(mr)
 			}
 		}
 		return &body, nil
 
-	case 0x00B3:
+	case 0x00B3: // AddFriendNotify
 		body := pb.MessageType0210_Type00B3_Body{}
+		if err := proto.Unmarshal(buf, &body); err != nil {
+			return nil, err
+		}
+		return &body, nil
+
+	case 0x00C7: // HotFriendNotify
+		body := pb.MessageType0210_Type00C7_Body{}
 		if err := proto.Unmarshal(buf, &body); err != nil {
 			return nil, err
 		}
@@ -108,7 +138,6 @@ func (c *Client) decodeMessageType0210(uin uint64, typ int64, buf []byte) (inter
 	case 0x00AA:
 	case 0x00AE:
 	case 197:
-	case 199:
 	case 203:
 	case 215:
 	case 220:

@@ -57,10 +57,22 @@ func (enc encoder) Encode(elems []*pb.IMMessageBody_Element) ([]byte, error) {
 		} else if v := elem.GetShakeWindow(); v != nil {
 			body += enc.encodeShakeWindowElement(v)
 		} else if v := elem.GetSourceMessage(); v != nil {
-			body += enc.encodeSourceMessage(v)
+			head += enc.encodeSourceMessage(v)
+		} else if v := elem.GetAnonymousGroupMessage(); v != nil {
+			head += enc.encodeAnonymousGroupMessage(v)
 		}
 	}
 	return []byte(head + body), nil
+}
+
+func (enc encoder) encodeAnonymousGroupMessage(elem *pb.IMMessageBody_AnonymousGroupMessage) string {
+	return fmt.Sprintf(
+		"![[anonymous(%s)]](goqq://act/anonymous?id=%s&bid=%d&exp=%d)",
+		elem.GetAnonymousNick(),
+		base64.URLEncoding.EncodeToString(elem.AnonymousId),
+		elem.GetBubbleId(),
+		elem.GetExpireTime(),
+	)
 }
 
 func (enc encoder) encodeCommonElement(elem *pb.IMMessageBody_CommonElement, text *pb.IMMessageBody_Text, skip *int) string {
@@ -92,11 +104,12 @@ func (enc encoder) encodeCommonElement(elem *pb.IMMessageBody_CommonElement, tex
 		_ = proto.Unmarshal(elem.GetBuffer(), &info)
 		id := emoticon.FaceType(info.GetQSid())
 		return fmt.Sprintf(
-			"![%s](goqq://res/face?id=%d&pid=%s&sid=%s)",
+			"![%s](goqq://res/face?id=%d&pid=%s&sid=%s&rsv=%s)",
 			id.String(),
 			id,
 			base64.URLEncoding.EncodeToString(info.GetPackageId()),
 			base64.URLEncoding.EncodeToString(info.GetStickerId()),
+			base64.URLEncoding.EncodeToString(text.GetPbReserve()),
 		)
 	}
 	return ""
@@ -195,7 +208,7 @@ func (enc encoder) encodeSmallEmojiElement(elem *pb.IMMessageBody_SmallEmoji, te
 
 func (enc encoder) encodeSourceMessage(elem *pb.IMMessageBody_SourceMessage) string {
 	return fmt.Sprintf(
-		"<!--goqq://msg/reply?time=%d&peer=%d&user=%d&from=%d&seq=%d-->\n",
+		"![[reply]](goqq://act/reply?time=%d&peer=%d&user=%d&from=%d&seq=%d)",
 		elem.GetTime(),
 		enc.peerID,
 		enc.userID,

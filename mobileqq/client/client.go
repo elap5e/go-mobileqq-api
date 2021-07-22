@@ -71,6 +71,7 @@ func (c *Client) initHandlers() {
 	c.rpc.Register(ServiceMethodMessagePushReaded, c.handleMessagePushReaded)
 	c.rpc.Register(ServiceMethodOnlinePushMessageSyncC2C, c.handleOnlinePushMessage)
 	c.rpc.Register(ServiceMethodOnlinePushMessageSyncGroup, c.handleOnlinePushMessage)
+	c.rpc.Register(ServiceMethodOnlinePushMessageTransport, c.handleOnlinePushTransport)
 	c.rpc.Register(ServiceMethodOnlinePushSIDTicketExpired, c.handleOnlinePushSIDTicketExpired)
 	c.rpc.Register(ServiceMethodOnlinePushRequest, c.handleOnlinePushRequest)
 	c.rpc.Register(ServiceMethodQualityTestPushList, c.handleQualityTestPushList)
@@ -154,6 +155,23 @@ func (c *Client) getNextRequestSeq() int32 {
 		c.requestSeq = rand.Int31n(100000) + 60000
 	}
 	return seq
+}
+
+func (c *Client) getSyncCookie(uin int64) []byte {
+	return c.syncCookie[uin]
+}
+
+func (c *Client) setSyncCookie(uin int64, cookie []byte) {
+	c.syncCookie[uin] = cookie
+	if c.db != nil {
+		if err := c.dbUpdateAccount(&db.Account{
+			Uin:        uin,
+			SyncCookie: cookie,
+		}); err != nil {
+			log.Fatal().Err(err).
+				Msg("failed to operate database")
+		}
+	}
 }
 
 func (c *Client) GetCacheByUsernameDir(username string) string {

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 
@@ -12,43 +13,48 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 func (c *Client) handleMessageSendMessageResponse(s2c *codec.ServerToClientMessage, req *pb.MessageService_SendRequest, resp *pb.MessageService_SendResponse) {
-	dumpServerToClientMessage(s2c, resp)
+	util.DumpServerToClientMessage(s2c, resp)
 
-	if resp.Result == 0 && c.db != nil {
-		uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
-		mr := &db.MessageRecord{
-			Time:   resp.GetSendTime(),
-			Seq:    req.GetMessageSeq(),
-			Uid:    int64(req.GetMessageRand()) | 1<<56,
-			PeerID: req.GetRoutingHead().GetGroup().GetGroupCode(),
-			UserID: req.GetRoutingHead().GetC2C().GetToUin(),
-			FromID: int64(uin),
-			Text:   string(""),
-			Type:   0,
-		}
-		if mr.UserID != 0 {
-			mr.Type = 166
-		} else if mr.PeerID != 0 {
-			mr.Type = 82
-		} else {
-			mr.PeerID = req.GetRoutingHead().GetGroupTemp().GetGroupUin()
-			mr.UserID = req.GetRoutingHead().GetGroupTemp().GetToUin()
-			mr.Type = 141
-		}
-		text, _ := mark.NewEncoder(mr.PeerID, mr.UserID, mr.FromID).
-			Encode(req.GetMessageBody().GetRichText().GetElements())
-		mr.Text = string(text)
+	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
+	mr := &db.MessageRecord{
+		Time:   resp.GetSendTime(),
+		Seq:    req.GetMessageSeq(),
+		Uid:    int64(req.GetMessageRand()) | 1<<56,
+		PeerID: req.GetRoutingHead().GetGroup().GetGroupCode(),
+		UserID: req.GetRoutingHead().GetC2C().GetToUin(),
+		FromID: int64(uin),
+		Text:   string(""),
+		Type:   0,
+	}
+	if mr.UserID != 0 {
+		mr.Type = 166
+	} else if mr.PeerID != 0 {
+		mr.Type = 82
+	} else {
+		mr.PeerID = req.GetRoutingHead().GetGroupTemp().GetGroupUin()
+		mr.UserID = req.GetRoutingHead().GetGroupTemp().GetToUin()
+		mr.Type = 141
+	}
+	text, _ := mark.NewEncoder(mr.PeerID, mr.UserID, mr.FromID).
+		Encode(req.GetMessageBody().GetRichText().GetElements())
+	mr.Text = string(text)
 
-		c.PrintMessageRecord(mr)
+	if resp.Result == 0 {
 		if c.db != nil {
 			err := c.dbInsertMessageRecord(uin, mr)
 			if err != nil {
 				log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
 			}
+		} else {
+			c.PrintMessageRecord(mr)
 		}
+	} else {
+		mr.Text += " " + log.Colorize(fmt.Sprintf("(%d)", resp.Result), log.ColorBrightRed, false)
+		c.PrintMessageRecord(mr)
 	}
 }
 
@@ -115,6 +121,7 @@ func (c *Client) MessageSendMessage(
 	//     0: success
 	//     1: ???
 	//    16: elements (notFriend)
+	//   120: elements (groupMute)
 	//   241: ???
 	// -3902: marketFace (vip/svip)
 	// -4902: marketFace magic (vip/svip)

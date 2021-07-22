@@ -36,7 +36,7 @@ func (hw *Highway) Upload(name string, ukey []byte) error {
 	if err := hw.Echo(); err != nil {
 		return err
 	}
-	chunk := make([]byte, 0x00010000) // 64KiB
+	chunk := make([]byte, 0x00080000) // 512KiB
 	offset := 0
 	for {
 		n, err := file.Read(chunk)

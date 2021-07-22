@@ -7,41 +7,35 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type OnlinePushRequest struct {
-	Uin             int64             `jce:",0" json:",omitempty"`
-	MessageTime     int64             `jce:",1" json:",omitempty"`
-	MessageInfos    []*MessageInfo    `jce:",2" json:",omitempty"`
-	ServerIP        uint32            `jce:",3" json:",omitempty"`
-	SyncCookie      []byte            `jce:",4" json:",omitempty"`
-	UinPairMessages []*UinPairMessage `jce:",5" json:",omitempty"`
-	Previews        map[string][]byte `jce:",6" json:",omitempty"`
-	UserActive      int32             `jce:",7" json:",omitempty"`
-	GeneralFlag     int32             `jce:",12" json:",omitempty"`
-}
-
-type UinPairMessage struct {
-	LastReadTime     int64          `jce:",1" json:",omitempty"`
-	PeerUin          int64          `jce:",2" json:",omitempty"`
-	MessageCompleted int64          `jce:",3" json:",omitempty"`
-	MessageInfos     []*MessageInfo `jce:",4" json:",omitempty"`
+	Uin             int64             `jce:",0" json:"uin,omitempty"`
+	Time            int64             `jce:",1" json:"time,omitempty"`
+	Messages        []*Message        `jce:",2" json:"messages,omitempty"`
+	ServerIP        Uint32IPType      `jce:",3" json:"server_ip,omitempty"`
+	SyncCookie      []byte            `jce:",4" json:"sync_cookie,omitempty"`
+	UinPairMessages []*UinPairMessage `jce:",5" json:"uin_pair_messages,omitempty"`
+	Previews        map[string][]byte `jce:",6" json:"previews,omitempty"`
+	UserActive      int32             `jce:",7" json:"user_active,omitempty"`
+	GeneralFlag     int32             `jce:",12" json:"general_flag,omitempty"`
 }
 
 type OnlinePushResponse struct {
-	Type   int32  `jce:",1" json:",omitempty"`
-	Seq    int64  `jce:",2" json:",omitempty"`
-	Buffer []byte `jce:",3" json:",omitempty"`
+	Type   int32  `jce:",1" json:"type,omitempty"`
+	Seq    int64  `jce:",2" json:"seq,omitempty"`
+	Buffer []byte `jce:",3" json:"buffer,omitempty"`
 }
 
 func NewOnlinePushMessageResponse(
 	ctx context.Context,
 	username string,
-	infos []MessageDeleteInfo,
-	serverIP uint32,
+	items []MessageDelete,
+	serverIP Uint32IPType,
 	seq int32,
 ) (*codec.ClientToServerMessage, error) {
-	if len(infos) == 0 {
+	if len(items) == 0 {
 		return nil, fmt.Errorf("zero length")
 	}
 
@@ -51,7 +45,7 @@ func NewOnlinePushMessageResponse(
 	}
 	resp := OnlinePushMessageResponse{
 		Uin:      uin,
-		Infos:    infos,
+		Items:    items,
 		ServerIP: serverIP,
 	}
 	buf, err := uni.Marshal(ctx, &uni.Message{
@@ -91,34 +85,34 @@ func (c *Client) handleOnlinePushRequest(
 	}); err != nil {
 		return nil, err
 	}
-	dumpServerToClientMessage(s2c, &push)
+	util.DumpServerToClientMessage(s2c, &push)
 
 	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
-	infos := []MessageDeleteInfo{}
-	for _, msg := range push.MessageInfos {
+	items := []MessageDelete{}
+	for _, msg := range push.Messages {
 		switch msg.MessageType {
 		case 0x0210:
 			body, err := c.decodeMessageType0210Jce(uin, msg.MessageBytes)
 			if err != nil {
 				return nil, err
 			} else if body != nil {
-				dumpServerToClientMessage(s2c, &body)
+				util.DumpServerToClientMessage(s2c, &body)
 			}
 		case 0x02DC:
 			body, err := c.decodeMessageType02DC(uin, msg.MessageBytes)
 			if err != nil {
 				return nil, err
 			} else if body != nil {
-				dumpServerToClientMessage(s2c, &body)
+				util.DumpServerToClientMessage(s2c, &body)
 			}
 		}
-		infos = append(infos, MessageDeleteInfo{
+		items = append(items, MessageDelete{
 			FromUin:       msg.FromUin,
 			MessageTime:   msg.MessageTime,
 			MessageSeq:    msg.MessageSeq,
-			MessageCookie: msg.MessageCookies,
+			MessageCookie: msg.MessageCookie,
 		})
 	}
 
-	return NewOnlinePushMessageResponse(ctx, s2c.Username, infos, push.ServerIP, int32(s2c.Seq))
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, items, push.ServerIP, int32(s2c.Seq))
 }

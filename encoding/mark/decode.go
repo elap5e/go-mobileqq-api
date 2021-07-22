@@ -144,7 +144,7 @@ func (dec decoder) decodeResourceFace(uri *url.URL, text string) []*pb.IMMessage
 		} else {
 			pid, _ := base64.URLEncoding.DecodeString(uri.Query().Get("pid"))
 			sid, _ := base64.URLEncoding.DecodeString(uri.Query().Get("sid"))
-			des := []byte(emoticon.FaceType(tmp).String())
+			des := emoticon.FaceType(tmp).String()
 			if len(pid)+len(sid) == 0 {
 				buf, _ := proto.Marshal(&pb.CommonElement_ServiceType33{
 					Index:  uint32(tmp),
@@ -159,6 +159,7 @@ func (dec decoder) decodeResourceFace(uri *url.URL, text string) []*pb.IMMessage
 					},
 				}}
 			} else {
+				rsv, _ := base64.URLEncoding.DecodeString(uri.Query().Get("rsv"))
 				buf, _ := proto.Marshal(&pb.CommonElement_ServiceType37{
 					PackageId:   pid,
 					StickerId:   sid,
@@ -175,7 +176,8 @@ func (dec decoder) decodeResourceFace(uri *url.URL, text string) []*pb.IMMessage
 					},
 				}, {
 					Text: &pb.IMMessageBody_Text{
-						Text: text,
+						Text:      text,
+						PbReserve: rsv,
 					},
 				}}
 			}

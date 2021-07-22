@@ -21,14 +21,14 @@ message CommonElement {
   }
   // MsgElemInfo_servtype11
   message ServiceType11 {
-    bytes resID = 1; // "bytes_resID"
-    bytes resMD5 = 2; // "bytes_resMD5"
-    bytes reserve_Info1 = 3; // "reserve_Info1"
-    bytes reserve_Info2 = 4; // "reserve_Info2"
-    uint32 doodleData_offset = 5; // "uint32_doodleData_offset"
+    bytes resource_id = 1; // "bytes_resID"
+    bytes resource_md5 = 2; // "bytes_resMD5"
+    bytes reserve_info1 = 3; // "reserve_Info1"
+    bytes reserve_info2 = 4; // "reserve_Info2"
+    uint32 doodle_data_offset = 5; // "uint32_doodleData_offset"
     uint32 doodle_gif_id = 6; // "uint32_doodle_gif_id"
-    bytes Doodle_url = 7; // "bytes_Doodle_url"
-    bytes Doodle_md5 = 8; // "bytes_Doodle_md5"
+    bytes doodle_url = 7; // "bytes_Doodle_url"
+    bytes doodle_md5 = 8; // "bytes_Doodle_md5"
   }
   // MsgElemInfo_servtype13
   message ServiceType13 {
@@ -197,14 +197,14 @@ message CommonElement {
   }
   // MsgElemInfo_servtype31
   message ServiceType31 {
-    bytes text = 1; // "bytes_text"
+    string text = 1; // "bytes_text"
     bytes extra = 2; // "bytes_ext"
   }
   // MsgElemInfo_servtype33
   message ServiceType33 {
     uint32 index = 1; // "uint32_index"
-    bytes text = 2; // "bytes_text"
-    bytes compat = 3; // "bytes_compat"
+    string text = 2; // "bytes_text"
+    string compat = 3; // "bytes_compat"
     bytes buffer = 4; // "bytes_buf"
   }
   // MsgElemInfo_servtype34
@@ -239,7 +239,7 @@ message CommonElement {
     uint32 source_type = 4; // "uint32_sourcetype" Enum
     uint32 sticker_type = 5; // "uint32_stickertype" Enum
     bytes result_id = 6; // "bytes_resultid"
-    bytes text = 7; // "bytes_text"
+    string text = 7; // "bytes_text"
     bytes surprise_id = 8; // "bytes_surpriseid"
     uint32 random_type = 9; // "uint32_randomtype" Enum
   }
@@ -283,7 +283,7 @@ message IMMessageBody {
   message AnonymousGroupMessage {
     uint32 flags = 1; // "uint32_flags"
     bytes anonymous_id = 2; // "str_anon_id"
-    bytes anonymous_nick = 3; // "str_anon_nick"
+    string anonymous_nick = 3; // "str_anon_nick"
     uint32 head_portrait = 4; // "uint32_head_portrait"
     uint32 expire_time = 5; // "uint32_expire_time"
     uint32 bubble_id = 6; // "uint32_bubble_id"
@@ -2052,6 +2052,84 @@ message MessageType0210 {
       int64 to_uin = 10; // "uint64_to_uin"
     }
   }
+  // submsgtype0x26
+  message Type0026 {
+    // AppID
+    message AppID {
+      uint64 app_id = 1; // "uint64_app_id"
+    }
+    // AppNotifyContent
+    message AppNotifyContent {
+      string text = 1; // "bytes_text"
+      repeated AppNotifyUser users = 2; // "opt_msg_app_notify_user"
+      uint32 online_count = 3; // "uint32_online_count"
+      uint32 expire_ts = 4; // "uint32_expire_ts"
+      uint32 room_mode = 5; // "room_mode"
+      uint32 live_extra_mode = 6; // "live_extra_mode"
+      uint32 game_id = 7; // "game_id"
+    }
+    // AppNotifyUser
+    message AppNotifyUser {
+      optional uint64 uin = 1; // "opt_uint64_uin"
+      optional uint32 flag = 2; // "opt_uint32_flag"
+    }
+    // AppTip
+    message AppTip {
+      uint32 tip_info_seq = 1; // "uint32_tip_info_seq"
+      bytes icon = 2; // "bytes_icon"
+      uint32 icon_time_stamp = 3; // "uint32_icon_time_stamp"
+      bytes tool_tip = 4; // "bytes_tooltip"
+      uint32 reportid_click = 5; // "uint32_reportid_click"
+      uint32 reportid_show = 6; // "uint32_reportid_show"
+    }
+    // AppTipNotify
+    message AppTipNotify {
+      AppTip msg_app_tip = 1; // "msg_app_tip"
+      uint32 action = 2; // "uint32_action"
+      string text = 3; // "bytes_text"
+      uint32 notify_seq = 4; // "uint32_notify_seq"
+      uint32 needed_tip_info_seq = 5; // "uint32_needed_tip_info_seq"
+      optional AppNotifyContent msg_app_notify_content = 6; // "opt_msg_app_notify_content"
+    }
+    // MsgBody
+    message Body {
+      uint32 sub_cmd = 1; // "uint32_sub_cmd"
+      repeated SubCmd01UpdateAppUnreadNumber sub_cmd01_items = 2; // "rpt_msg_subcmd_0x1_push_body"
+      SubCmd02UpdateAppList sub_cmd02_item = 3; // "msg_subcmd_0x2_push_body"
+      SubCmd03UpdateDiscussAppInfo sub_cmd03_item = 4; // "msg_subcmd_0x3_push_body"
+      SubCmd04UpdateApp sub_cmd04_item = 5; // "msg_subcmd_0x4_push_body"
+      // SubCmd0x1UpdateAppUnreadNum
+      message SubCmd01UpdateAppUnreadNumber {
+        AppID msg_app_id = 1; // "msg_app_id"
+        uint64 group_code = 2; // "uint64_group_code"
+        sint32 unread_num = 3; // "sint32_unread_num"
+        AppTipNotify msg_app_tip_notify = 4; // "msg_app_tip_notify"
+        sint32 album_cnt = 5; // "sint32_album_cnt"
+      }
+      // SubCmd0x2UpdateAppList
+      message SubCmd02UpdateAppList {
+        repeated AppID msg_app_id = 1; // "rpt_msg_app_id"
+        repeated uint32 time_stamp = 2; // "rpt_uint32_time_stamp"
+        uint64 group_code = 3; // "uint64_group_code"
+      }
+      // SubCmd0x3UpdateDiscussAppInfo
+      message SubCmd03UpdateDiscussAppInfo {
+        AppID msg_app_id = 1; // "msg_app_id"
+        uint64 conf_uin = 2; // "uint64_conf_uin"
+        AppTipNotify msg_app_tip_notify = 3; // "msg_app_tip_notify"
+      }
+      // SubCmd0x4UpdateApp
+      message SubCmd04UpdateApp {
+        AppID msg_app_id = 1; // "msg_app_id"
+        uint64 group_code = 2; // "uint64_group_code"
+        sint32 unread_num = 3; // "sint32_unread_num"
+      }
+    }
+    // TransferCnt
+    message TransferCount {
+      uint64 chain_id = 1; // "chain_id"
+    }
+  }
   // SubMsgType0x27
   message Type0027 {
     // AddGroup
@@ -2191,12 +2269,12 @@ message MessageType0210 {
     // GroupMemberProfileInfo
     message GroupMemberProfileInfo {
       uint32 field = 1; // "uint32_field"
-      bytes value = 2; // "bytes_value"
+      string value = 2; // "bytes_value"
     }
     // GroupProfileInfo
     message GroupProfileInfo {
       uint32 field = 1; // "uint32_field"
-      bytes value = 2; // "bytes_value"
+      string value = 2; // "bytes_value"
     }
     // GroupSort
     message GroupSort {
@@ -2393,6 +2471,96 @@ message MessageType0210 {
       uint32 flag = 3; // "uint32_flag"
     }
   }
+  // submsgtype0x44
+  message Type0044 {
+    // ClearCountMsg
+    message ClearCountMessage {
+      uint64 uin = 1; // "uint64_uin"
+      uint32 time = 2; // "uint32_time"
+      uint32 processflag = 3; // "uint32_processflag"
+      uint32 updateflag = 4; // "uint32_updateflag"
+    }
+    // DelMsgNotify
+    message DeleteMessageNotify {
+      uint64 sequence = 1; // "uint64_sequence"
+    }
+    // FriendSyncMsg
+    message FriendSyncMessage {
+      uint64 uin = 1; // "uint64_uin"
+      uint64 fuin = 2; // "uint64_fuin"
+      uint32 processtype = 3; // "uint32_processtype"
+      uint32 time = 4; // "uint32_time"
+      uint32 processflag = 5; // "uint32_processflag"
+      uint32 sourceid = 6; // "uint32_sourceid"
+      uint32 sourcesubid = 7; // "uint32_sourcesubid"
+      repeated string wording = 8; // "rpt_str_wording"
+    }
+    // GeneralNotify
+    message GeneralNotify {
+      uint32 msg_type = 1; // "uint32_msg_type"
+      uint64 msg_seq = 2; // "uint64_msg_seq"
+    }
+    // GroupSyncMsg
+    message GroupSyncMessage {
+      uint32 msg_type = 1; // "uint32_msg_type"
+      uint64 msg_seq = 2; // "uint64_msg_seq"
+      uint64 grp_code = 3; // "uint64_grp_code"
+      uint64 ga_code = 4; // "uint64_ga_code"
+      optional uint64 uin1 = 5; // "uint64_opt_uin1"
+      optional uint64 uin2 = 6; // "uint64_opt_uin2"
+      bytes msg_buf = 7; // "bytes_msg_buf"
+      bytes auth_key = 8; // "bytes_auth_key"
+      uint32 msg_status = 9; // "uint32_msg_status"
+      uint64 action_uin = 10; // "uint64_action_uin"
+      uint64 action_time = 11; // "uint64_action_time"
+      uint32 cur_max_mem_count = 12; // "uint32_cur_max_mem_count"
+      uint32 next_max_mem_count = 13; // "uint32_next_max_mem_count"
+      uint32 cur_mem_count = 14; // "uint32_cur_mem_count"
+      uint32 req_src_id = 15; // "uint32_req_src_id"
+      uint32 req_src_sub_id = 16; // "uint32_req_src_sub_id"
+      uint32 inviter_role = 17; // "uint32_inviter_role"
+      uint32 ext_admin_num = 18; // "uint32_ext_admin_num"
+      uint32 processflag = 19; // "uint32_processflag"
+    }
+    // ModifySyncMsg
+    message ModifySyncMessage {
+      uint32 time = 1; // "uint32_time"
+    }
+    // MsgBody
+    message Body {
+      FriendSyncMessage friend_message_sync = 1; // "msg_friend_msg_sync"
+      GroupSyncMessage group_message_sync = 2; // "msg_group_msg_sync"
+      ClearCountMessage clean_count_message = 3; // "msg_clean_count_msg"
+      ModifySyncMessage modify_message_sync = 4; // "msg_modify_msg_sync"
+      WaitingSyncMessage waiting_message_sync = 5; // "msg_waiting_msg_sync"
+      DeleteMessageNotify delete_message_notify = 7; // "msg_del_msg_notify"
+      GeneralNotify general_notify = 8; // "msg_general_notify"
+    }
+    // WaitingSyncMsg
+    message WaitingSyncMessage {
+      uint32 time = 1; // "uint32_time"
+    }
+  }
+  // Submsgtype0x4e
+  message Type004E {
+    // GroupBulletin
+    message GroupBulletin {
+      repeated Content items = 1; // "rpt_msg_content"
+      // Content
+      message Content {
+        string feed_id = 1; // "bytes_feedid"
+        uint64 uin = 2; // "uint64_uin"
+        fixed32 time = 3; // "uint32_time"
+      }
+    }
+    // MsgBody
+    message Body {
+      uint64 group_id = 1; // "uint64_group_id"
+      uint64 group_code = 2; // "uint64_group_code"
+      uint32 app_id = 3; // "uint32_appid"
+      GroupBulletin group_bulletin = 4; // "msg_group_bulletin"
+    }
+  }
   // Submsgtype0x8a
   message Type008A {
     // ReqBody
@@ -2436,6 +2604,114 @@ message MessageType0210 {
       uint32 sub_source_id = 7; // "uint32_subsource_id"
       string mobile = 8; // "bytes_mobile"
       uint64 request_uin = 9; // "uint64_req_uin"
+    }
+  }
+  // submsgtype0xc7
+  message Type00C7 {
+    // ForwardBody
+    message NotifyItem {
+      uint32 notify_type = 1; // "uint32_notify_type"
+      uint32 op_type = 2; // "uint32_op_type"
+      HotFriendNotify hot_friend_notify = 3000; // "msg_hot_friend_notify"
+      RelationalChainChange relational_chain_change = 4000; // "msg_relational_chain_change"
+    }
+    // FriendShipFlagNotify
+    message FriendShipFlagNotify {
+      uint64 dst_uin = 1; // "uint64_dst_uin"
+      uint32 level_1 = 2; // "uint32_level_1"
+      uint32 level_2 = 3; // "uint32_level_2"
+      uint32 continuity_days = 4; // "uint32_continuity_days"
+      uint32 chat_flag = 5; // "uint32_chat_flag"
+      uint64 last_chat_time = 6; // "uint64_last_chat_time"
+      uint64 notify_time = 7; // "uint64_notify_time"
+      uint32 seq = 8; // "uint32_seq"
+    }
+    // HotFriendNotify
+    message HotFriendNotify {
+      uint64 dst_uin = 1; // "uint64_dst_uin"
+      uint32 praise_hot_level = 2; // "uint32_praise_hot_level"
+      uint32 chat_hot_level = 3; // "uint32_chat_hot_level"
+      uint32 praise_hot_days = 4; // "uint32_praise_hot_days"
+      uint32 chat_hot_days = 5; // "uint32_chat_hot_days"
+      uint32 close_level = 6; // "uint32_close_level"
+      uint32 close_days = 7; // "uint32_close_days"
+      uint32 praise_flag = 8; // "uint32_praise_flag"
+      uint32 chat_flag = 9; // "uint32_chat_flag"
+      uint32 close_flag = 10; // "uint32_close_flag"
+      uint64 notify_time = 11; // "uint64_notify_time"
+      uint64 last_praise_time = 12; // "uint64_last_praise_time"
+      uint64 last_chat_time = 13; // "uint64_last_chat_time"
+      uint32 qzone_hot_level = 14; // "uint32_qzone_hot_level"
+      uint32 qzone_hot_days = 15; // "uint32_qzone_hot_days"
+      uint32 qzone_flag = 16; // "uint32_qzone_flag"
+      uint64 last_qzone_time = 17; // "uint64_last_qzone_time"
+      uint32 show_recheck_entry = 51; // "uint32_show_recheck_entry"
+      bytes wildcard_wording = 52; // "bytes_wildcard_wording"
+      uint32 lover_flag = 100; // "uint32_lover_flag"
+      uint32 key_hot_level = 200; // "uint32_key_hot_level"
+      uint32 key_hot_days = 201; // "uint32_key_hot_days"
+      uint32 key_flag = 202; // "uint32_key_flag"
+      uint64 last_key_time = 203; // "uint64_last_key_time"
+      bytes key_wording = 204; // "bytes_key_wording"
+      uint32 key_trans_flag = 205; // "uint32_key_trans_flag"
+      uint32 loverKeyBusinessType = 206; // "loverKeyBusinessType"
+      uint32 loverKeySubBusinessType = 207; // "loverKeySubBusinessType"
+      bytes loverKeyMainWording = 208; // "loverKeyMainWording"
+      bytes loverKeyLinkWording = 209; // "loverKeyLinkWording"
+      uint32 boat_level = 300; // "uint32_boat_level"
+      uint32 boat_days = 301; // "uint32_boat_days"
+      uint32 boat_flag = 302; // "uint32_boat_flag"
+      uint32 last_boat_time = 303; // "uint32_last_boat_time"
+      bytes boat_wording = 304; // "bytes_boat_wording"
+      uint32 notify_type = 400; // "uint32_notify_type"
+      FriendShipFlagNotify friendship_flag_notify = 401; // "msg_friendship_flag_notify"
+    }
+    // MsgBody
+    message Body {
+      repeated NotifyItem items = 1; // "rpt_msg_mod_infos"
+    }
+    // RelationalChainChange
+    message RelationalChainChange {
+      uint64 app_id = 1; // "uint64_appid"
+      uint64 src_uin = 2; // "uint64_src_uin"
+      uint64 dst_uin = 3; // "uint64_dst_uin"
+      uint32 change_type = 4; // "uint32_change_type" Enum
+      RelationalChainInfo relational_chain_info_old = 5; // "msg_relational_chain_info_old"
+      RelationalChainInfo relational_chain_info_new = 6; // "msg_relational_chain_info_new"
+      ToDegradeInfo to_degrade_info = 7; // "msg_to_degrade_info"
+      repeated RelationalChainInfos relational_chain_infos = 20; // "rpt_relational_chain_infos"
+      uint64 trigger_uin = 40; // "uint64_trigger_uin"
+      repeated uint32 feature_id = 100; // "rpt_uint32_feature_id"
+    }
+    // RelationalChainInfo
+    message RelationalChainInfo {
+      uint32 type = 1; // "uint64_type" Enum
+      bytes attr = 2; // "bytes_attr"
+      bytes intimate_info = 1002; // "bytes_intimate_info"
+      bytes music_switch = 91001; // "bytes_music_switch"
+      bytes mutualmark_alienation = 101001; // "bytes_mutualmark_alienation"
+    }
+    // RelationalChainInfos
+    message RelationalChainInfos {
+      RelationalChainInfo relational_chain_info_old = 1; // "msg_relational_chain_info_old"
+      RelationalChainInfo relational_chain_info_new = 2; // "msg_relational_chain_info_new"
+    }
+    // ToDegradeInfo
+    message ToDegradeInfo {
+      repeated ToDegradeItem to_degrade_item = 1; // "rpt_to_degrade_item"
+      bytes nick = 2; // "bytes_nick"
+      uint64 notify_time = 3; // "notify_time"
+      bytes wildcard_wording = 5; // "bytes_wildcard_wording"
+      uint32 graytip_type = 11; // "uint32_graytip_type"
+      bytes duplicate_removal = 1000; // "bytes_duplicate_removal"
+    }
+    // ToDegradeItem
+    message ToDegradeItem {
+      uint32 type = 1; // "type" Enum
+      uint32 old_level = 2; // "old_level"
+      uint32 new_level = 3; // "new_level"
+      uint32 continuity_days = 11; // "continuity_days"
+      uint64 last_action_time = 12; // "uint64_last_action_time"
     }
   }
 }

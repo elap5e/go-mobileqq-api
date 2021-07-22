@@ -12,19 +12,13 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type OnlinePushMessageResponse struct {
-	Uin      int64               `jce:",0" json:",omitempty"`
-	Infos    []MessageDeleteInfo `jce:",1" json:",omitempty"`
-	ServerIP uint32              `jce:",2" json:",omitempty"`
-}
-
-type MessageDeleteInfo struct {
-	FromUin       int64  `jce:",0" json:",omitempty"`
-	MessageTime   int64  `jce:",1" json:",omitempty"`
-	MessageSeq    int32  `jce:",2" json:",omitempty"`
-	MessageCookie []byte `jce:",3" json:",omitempty"`
+	Uin      int64           `jce:",0" json:"uin,omitempty"`
+	Items    []MessageDelete `jce:",1" json:"items,omitempty"`
+	ServerIP Uint32IPType    `jce:",2" json:"server_ip,omitempty"`
 }
 
 func (c *Client) handleOnlinePushMessage(
@@ -36,7 +30,7 @@ func (c *Client) handleOnlinePushMessage(
 		log.Debug().Msg(">>> [dump]\n" + hex.Dump(s2c.Buffer))
 		return nil, err
 	}
-	dumpServerToClientMessage(s2c, &push)
+	util.DumpServerToClientMessage(s2c, &push)
 
 	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 	msg := push.GetMessage()
@@ -61,12 +55,13 @@ func (c *Client) handleOnlinePushMessage(
 		Encode(msg.GetMessageBody().GetRichText().GetElements())
 	mr.Text = string(text)
 
-	c.PrintMessageRecord(mr)
 	if c.db != nil {
 		err := c.dbInsertMessageRecord(uin, mr)
 		if err != nil {
 			log.Error().Err(err).Msg(">>> [db  ] dbInsertMessageRecord")
 		}
+	} else {
+		c.PrintMessageRecord(mr)
 	}
 
 	if uin != uint64(mr.FromID) {
@@ -95,9 +90,9 @@ func (c *Client) handleOnlinePushMessage(
 		}
 	}
 
-	return NewOnlinePushMessageResponse(ctx, s2c.Username, []MessageDeleteInfo{{
+	return NewOnlinePushMessageResponse(ctx, s2c.Username, []MessageDelete{{
 		FromUin:     mr.FromID,
 		MessageTime: mr.Time,
 		MessageSeq:  mr.Seq,
-	}}, push.GetServerIp(), int32(s2c.Seq))
+	}}, Uint32IPType(push.GetServerIp()), int32(s2c.Seq))
 }

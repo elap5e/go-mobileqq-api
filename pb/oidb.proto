@@ -92,19 +92,19 @@ message OIDB {
     // AIOGrayTipsInfo
     message GrayTipsInfo {
       optional uint32 show_latest = 1; // "opt_uint32_show_lastest"
-      optional bytes content = 2; // "opt_bytes_content"
+      optional string content = 2; // "opt_bytes_content"
       optional uint32 remind = 3; // "opt_uint32_remind"
-      optional bytes brief = 4; // "opt_bytes_brief"
+      optional string brief = 4; // "opt_bytes_brief"
       uint64 receiver_uin = 5; // "uint64_receiver_uin"
       uint32 reliao_admin_option = 6; // "uint32_reliao_admin_opt"
       uint32 robot_group_option = 7; // "uint32_robot_group_opt"
     }
     // AIOTopTipsInfo
     message TopTipsInfo {
-      optional bytes content = 1; // "opt_bytes_content"
+      optional string content = 1; // "opt_bytes_content"
       optional uint32 icon = 2; // "opt_uint32_icon"
       optional uint32 action = 3; // "opt_enum_action" Enum
-      optional bytes url = 4; // "opt_bytes_url"
+      optional string url = 4; // "opt_bytes_url"
       optional bytes data = 5; // "opt_bytes_data"
       optional bytes data_i = 6; // "opt_bytes_data_i"
       optional bytes data_a = 7; // "opt_bytes_data_a"
@@ -112,7 +112,7 @@ message OIDB {
     }
     // FloatedTipsInfo
     message FloatedTipsInfo {
-      optional bytes content = 1; // "opt_bytes_content"
+      optional string content = 1; // "opt_bytes_content"
     }
     // GeneralGrayTipInfo
     message GeneralGrayTipInfo {
@@ -121,11 +121,11 @@ message OIDB {
       uint32 ctrl_flag = 3; // "uint32_ctrl_flag"
       uint32 c2c_type = 4; // "uint32_c2c_type"
       uint32 service_type = 5; // "uint32_service_type"
-      uint64 templ_id = 6; // "uint64_templ_id"
-      repeated TemplParam message_templ_param = 7; // "rpt_msg_templ_param"
-      bytes content = 8; // "bytes_content"
+      uint64 template_id = 6; // "uint64_templ_id"
+      repeated TemplateParameter items = 7; // "rpt_msg_templ_param"
+      string content = 8; // "bytes_content"
       uint64 tips_seq_id = 10; // "uint64_tips_seq_id"
-      bytes pb_reserv = 100; // "bytes_pb_reserv"
+      bytes pb_reserve = 100; // "bytes_pb_reserv"
     }
     // GoldMsgTipsElem
     message GoldMsgTipsElem {
@@ -200,7 +200,7 @@ message OIDB {
       uint64 message_seq = 7; // "uint64_msg_seq"
       uint32 join_nums = 8; // "uint32_join_nums"
       uint32 push_type = 99; // "uint32_push_type"
-      bytes ext_info = 100; // "bytes_ext_info"
+      bytes extra_info = 100; // "bytes_ext_info"
     }
     // LuckyBagNotify
     message LuckyBagNotify {
@@ -411,9 +411,9 @@ message OIDB {
       uint32 member_count = 1; // "member_count"
     }
     // TemplParam
-    message TemplParam {
-      bytes name = 1; // "bytes_name"
-      bytes value = 2; // "bytes_value"
+    message TemplateParameter {
+      string name = 1; // "bytes_name"
+      string value = 2; // "bytes_value"
     }
     // ThemeStateNotify
     message ThemeStateNotify {

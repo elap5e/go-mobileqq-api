@@ -12,11 +12,23 @@ import (
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
 	"github.com/elap5e/go-mobileqq-api/pb"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
-func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessage, resp *pb.MessageService_GetResponse) {
+func (c *Client) handleMessageGetMessageResponse(
+	ctx context.Context, uin int64,
+	s2c *codec.ServerToClientMessage,
+	resp *pb.MessageService_GetResponse,
+) {
+	util.DumpServerToClientMessage(s2c, resp)
+	for _, uinPairMessage := range resp.GetUinPairMessages() {
+		c.syncUinPairMessage(uinPairMessage)
+	}
+}
+
+func (c *Client) handleMessageGetMessageResponseOld(s2c *codec.ServerToClientMessage, resp *pb.MessageService_GetResponse) {
 	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
-	dumpServerToClientMessage(s2c, resp)
+	util.DumpServerToClientMessage(s2c, resp)
 
 	for _, uinPairMessage := range resp.GetUinPairMessages() {
 		syncUinPairMessage(uinPairMessage)
@@ -34,20 +46,27 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 				skip = msg.GetMessageHead().GetGroupInfo() == nil
 			case 42, 83:
 				skip = msg.GetMessageHead().GetDiscussInfo() == nil
-			case 0x0210:
+
+			case 33, 34: // GroupMemberJoined/GroupRobotJoined
+
+			case 35, 36, 37, 45, 46, 84, 85, 86, 87: // GroupSystemMessageType
+
+			case 0x0210: // MessageType0210(528)
 				body, err := c.decodeMessageType0210Pb(uin, msg.GetMessageBody().GetContent())
 				if err != nil {
 					log.Error().Err(err).Msg(">>x [0210] failed to decode")
 				} else if body != nil {
-					dumpServerToClientMessage(s2c, &body)
+					util.DumpServerToClientMessage(s2c, &body)
 				}
-			case 0x02DC:
+
+			case 0x02DC: // MessageType02DC(732)
 				body, err := c.decodeMessageType02DC(uin, msg.GetMessageBody().GetContent())
 				if err != nil {
 					log.Error().Err(err).Msg(">>x [02dC] failed to decode")
 				} else if body != nil {
-					dumpServerToClientMessage(s2c, &body)
+					util.DumpServerToClientMessage(s2c, &body)
 				}
+
 			}
 			if !skip {
 				mr := &db.MessageRecord{
@@ -71,12 +90,13 @@ func (c *Client) handleMessageGetMessageResponse(s2c *codec.ServerToClientMessag
 					Encode(msg.GetMessageBody().GetRichText().GetElements())
 				mr.Text = string(text)
 
-				c.PrintMessageRecord(mr)
 				if c.db != nil {
 					err := c.dbInsertMessageRecord(uin, mr)
 					if err != nil {
 						log.Error().Err(err).Msg(">>x [db  ] dbInsertMessageRecord")
 					}
+				} else {
+					c.PrintMessageRecord(mr)
 				}
 			}
 		}
@@ -104,13 +124,11 @@ func NewMessageGetMessageRequest(
 }
 
 func (c *Client) MessageGetMessage(
-	ctx context.Context,
-	username string,
+	ctx context.Context, uin int64,
 	req *pb.MessageService_GetRequest,
 ) (*pb.MessageService_GetResponse, error) {
-	uin, _ := strconv.ParseInt(username, 10, 64)
 	if len(req.SyncCookie) == 0 {
-		req.SyncCookie = c.syncCookie[uin]
+		req.SyncCookie = c.getSyncCookie(uin)
 	}
 
 	buf, err := proto.Marshal(req)
@@ -118,7 +136,7 @@ func (c *Client) MessageGetMessage(
 		return nil, err
 	}
 	c2s, s2c := codec.ClientToServerMessage{
-		Username: username,
+		Username: strconv.FormatInt(uin, 10),
 		Buffer:   buf,
 		Simple:   true,
 	}, codec.ServerToClientMessage{}
@@ -132,18 +150,7 @@ func (c *Client) MessageGetMessage(
 		return nil, err
 	}
 
-	if c.db != nil {
-		uin, _ := strconv.ParseInt(s2c.Username, 10, 64)
-		if err := c.dbUpdateAccount(&db.Account{
-			Uin:        uin,
-			SyncCookie: resp.GetSyncCookie(),
-		}); err != nil {
-			log.Fatal().Err(err).
-				Msg("failed to operate database")
-		}
-	}
-	c.syncCookie[uin] = resp.GetSyncCookie()
-
-	c.handleMessageGetMessageResponse(&s2c, &resp)
+	c.setSyncCookie(uin, resp.GetSyncCookie())
+	go c.handleMessageGetMessageResponseOld(&s2c, &resp)
 	return &resp, nil
 }

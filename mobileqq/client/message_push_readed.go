@@ -5,32 +5,14 @@ import (
 
 	"github.com/elap5e/go-mobileqq-api/encoding/uni"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type MessagePushReadedRequest struct {
-	Type       uint8                     `jce:",0" json:",omitempty"`
-	C2C        []MessageReadedC2C        `jce:",1" json:",omitempty"`
-	Group      []MessageReadedGroup      `jce:",2" json:",omitempty"`
-	Discussion []MessageReadedDiscussion `jce:",3" json:",omitempty"`
-}
-
-type MessageReadedC2C struct {
-	Uin          uint64 `jce:",0" json:",omitempty"`
-	LastReadTime uint64 `jce:",1" json:",omitempty"`
-}
-
-type MessageReadedGroup struct {
-	PeerUin    uint64 `jce:",0" json:",omitempty"`
-	Type       uint64 `jce:",1" json:",omitempty"`
-	MemberSeq  uint64 `jce:",2" json:",omitempty"`
-	MessageSeq uint64 `jce:",3" json:",omitempty"`
-}
-
-type MessageReadedDiscussion struct {
-	PeerUin    uint64 `jce:",0" json:",omitempty"`
-	Type       uint64 `jce:",1" json:",omitempty"`
-	MemberSeq  uint64 `jce:",2" json:",omitempty"`
-	MessageSeq uint64 `jce:",3" json:",omitempty"`
+	Type    uint8                  `jce:",0" json:"type,omitempty"`
+	C2C     []MessageReadedC2C     `jce:",1" json:"c2c,omitempty"`
+	Group   []MessageReadedGroup   `jce:",2" json:"group,omitempty"`
+	Discuss []MessageReadedDiscuss `jce:",3" json:"discuss,omitempty"`
 }
 
 func (c *Client) handleMessagePushReaded(
@@ -44,7 +26,7 @@ func (c *Client) handleMessagePushReaded(
 	}); err != nil {
 		return nil, err
 	}
-	dumpServerToClientMessage(s2c, &req)
+	util.DumpServerToClientMessage(s2c, &req)
 	// TODO: handle
 
 	return nil, nil

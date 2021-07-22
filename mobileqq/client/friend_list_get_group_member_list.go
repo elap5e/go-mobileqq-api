@@ -8,6 +8,7 @@ import (
 	"github.com/elap5e/go-mobileqq-api/log"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/client/db"
 	"github.com/elap5e/go-mobileqq-api/mobileqq/codec"
+	"github.com/elap5e/go-mobileqq-api/util"
 )
 
 type FriendListGetGroupMemberListRequest struct {
@@ -135,7 +136,7 @@ func (c *Client) FriendListGetGroupMemberList(
 		return nil, err
 	}
 
-	dumpServerToClientMessage(&s2c, &resp)
+	util.DumpServerToClientMessage(&s2c, &resp)
 
 	uin, _ := strconv.ParseUint(s2c.Username, 10, 64)
 	for _, item := range resp.GroupMemberList {

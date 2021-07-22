@@ -73,6 +73,7 @@ func (opt *Options) init() {
 	}
 	logFileWriter := log.ConsoleWriterNoColor
 	logFileWriter.Out = logFile
+	// log.Logger = zerolog.New(logFileWriter).With().Timestamp().Logger().Level(logLevel)
 	log.Logger = zerolog.New(
 		zerolog.MultiLevelWriter(log.ConsoleWriter, logFileWriter),
 	).With().Timestamp().Logger().Level(logLevel)
