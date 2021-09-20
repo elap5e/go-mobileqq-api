@@ -7,6 +7,6 @@ require (
 	github.com/gin-gonic/gin v1.7.4
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/rs/zerolog v1.25.0
-	github.com/spf13/viper v1.8.1
+	github.com/spf13/viper v1.9.0
 	google.golang.org/protobuf v1.27.1
 )
